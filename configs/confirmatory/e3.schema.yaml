@@ -1,0 +1,20 @@
+schema_version: POI_MPP_E3_CONFIRMATORY_SCOPE_V1
+publication_scope: E3_CONFIRMATORY_PUBLICATION_V1
+required_run_origin: REAL_MODEL_EXECUTION
+required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+required_calibration_split: DEVELOPMENT
+required_confirmatory_manifest_split: CONFIRMATORY
+forbidden_confirmatory_origins:
+  - SYNTHETIC_NON_EVIDENCE
+required_confirmatory_metadata:
+  - license_id
+  - privacy_status
+  - annotation_protocol_id
+required_evaluator_fields:
+  - evaluator_id
+  - evaluator_hash
+  - independence_basis
+  - verified
+notes:
+  - Synthetic fixtures are plumbing-only and can never satisfy the confirmatory publication path.
+  - Task11 annotation-driven semantics remain fail-closed; E3 metrics score typed outputs but do not mint semantic authority.

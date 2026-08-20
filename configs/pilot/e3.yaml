@@ -1,0 +1,12 @@
+schema_version: POI_MPP_RUN_CONFIG_V1
+run_id: pilot-e3-real-execution
+experiment_id: E3
+origin: REAL_MODEL_EXECUTION
+authorization_scope: LOCAL_AUTHORIZED_PILOT_ONLY
+model_hash: "5555555555555555555555555555555555555555555555555555555555555555"
+dataset_hash: "6666666666666666666666666666666666666666666666666666666666666666"
+parent_hashes: []
+data_availability:
+  total_shards: 16
+  samples: 8
+  replacement: false
