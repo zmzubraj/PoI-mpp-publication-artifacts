@@ -188,7 +188,7 @@ def verify_grounded(
     calibration: SemanticCalibrationArtifact,
     mode: VerificationMode = VerificationMode.CONFIRMATORY,
 ) -> GroundedVerificationResult:
-    """Verify claims against explicitly cited evidence without lexical inference."""
+    """Verify trusted grounded labels against cited evidence without lexical inference."""
 
     del mode  # The frozen calibration artifact is the only tuning input at verification time.
 

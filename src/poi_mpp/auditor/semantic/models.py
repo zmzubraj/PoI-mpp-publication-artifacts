@@ -42,6 +42,11 @@ class EvidenceAnnotationKind(StrEnum):
     CONTRADICTS = "CONTRADICTS"
 
 
+class SemanticLabelAuthority(StrEnum):
+    UNTRUSTED_CALLER = "UNTRUSTED_CALLER"
+    TRUSTED_GROUNDED_ANNOTATOR = "TRUSTED_GROUNDED_ANNOTATOR"
+
+
 class NumericComparator(StrEnum):
     EQUALS = "EQUALS"
     AT_LEAST = "AT_LEAST"
@@ -133,6 +138,7 @@ class EvidenceRecord(_FrozenModel):
     citation_id: str
     source_family: str
     origin: EvidenceOrigin
+    label_authority: SemanticLabelAuthority = SemanticLabelAuthority.UNTRUSTED_CALLER
     content: str
     content_hash: str
     annotations: tuple[EvidenceAnnotation, ...] = ()
@@ -164,6 +170,10 @@ class EvidenceRecord(_FrozenModel):
         )
         if self.content_hash != expected:
             raise ValueError("content_hash must match canonical evidence content")
+        if (self.annotations or self.numeric_facts) and (
+            self.label_authority is SemanticLabelAuthority.UNTRUSTED_CALLER
+        ):
+            raise ValueError("semantic annotations and numeric facts require trusted label authority")
         return self
 
 

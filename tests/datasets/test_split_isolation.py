@@ -67,6 +67,38 @@ def test_confirmatory_isolation_rejects_content_overlap():
         assert_confirmatory_isolation(development, confirmatory)
 
 
+def test_confirmatory_isolation_rejects_source_hash_overlap():
+    development = DatasetManifest(
+        dataset_id="development",
+        split=DatasetSplit.DEVELOPMENT,
+        records=(
+            _record(
+                "dev-1",
+                split=DatasetSplit.DEVELOPMENT,
+                source_family="paper-a",
+                source_hash="f" * 64,
+                content_hash="1" * 64,
+            ),
+        ),
+    )
+    confirmatory = DatasetManifest(
+        dataset_id="confirmatory",
+        split=DatasetSplit.CONFIRMATORY,
+        records=(
+            _record(
+                "conf-1",
+                split=DatasetSplit.CONFIRMATORY,
+                source_family="paper-b",
+                source_hash="f" * 64,
+                content_hash="2" * 64,
+            ),
+        ),
+    )
+
+    with pytest.raises(DatasetLeakageError, match="source hash overlap"):
+        assert_confirmatory_isolation(development, confirmatory)
+
+
 def test_confirmatory_isolation_rejects_source_family_overlap():
     development = DatasetManifest(
         dataset_id="development",
@@ -114,6 +146,82 @@ def test_manifest_rejects_duplicate_record_ids():
                 ),
             ),
         )
+
+
+def test_manifest_rejects_duplicate_content_hashes_within_split():
+    with pytest.raises(ValueError, match="duplicate content_hash"):
+        DatasetManifest(
+            dataset_id="confirmatory",
+            split=DatasetSplit.CONFIRMATORY,
+            records=(
+                _record(
+                    "conf-1",
+                    split=DatasetSplit.CONFIRMATORY,
+                    source_hash="a" * 64,
+                    content_hash="1" * 64,
+                ),
+                _record(
+                    "conf-2",
+                    split=DatasetSplit.CONFIRMATORY,
+                    source_hash="b" * 64,
+                    content_hash="1" * 64,
+                ),
+            ),
+        )
+
+
+def test_manifest_rejects_duplicate_source_hashes_within_split():
+    with pytest.raises(ValueError, match="duplicate source_hash"):
+        DatasetManifest(
+            dataset_id="confirmatory",
+            split=DatasetSplit.CONFIRMATORY,
+            records=(
+                _record(
+                    "conf-1",
+                    split=DatasetSplit.CONFIRMATORY,
+                    source_hash="a" * 64,
+                    content_hash="1" * 64,
+                ),
+                _record(
+                    "conf-2",
+                    split=DatasetSplit.CONFIRMATORY,
+                    source_hash="a" * 64,
+                    content_hash="2" * 64,
+                ),
+            ),
+        )
+
+
+def test_source_family_is_case_normalized_before_isolation():
+    development = DatasetManifest(
+        dataset_id="development",
+        split=DatasetSplit.DEVELOPMENT,
+        records=(
+            _record(
+                "dev-1",
+                split=DatasetSplit.DEVELOPMENT,
+                source_family="Paper-A",
+                source_hash="a" * 64,
+                content_hash="1" * 64,
+            ),
+        ),
+    )
+    confirmatory = DatasetManifest(
+        dataset_id="confirmatory",
+        split=DatasetSplit.CONFIRMATORY,
+        records=(
+            _record(
+                "conf-1",
+                split=DatasetSplit.CONFIRMATORY,
+                source_family="paper-a",
+                source_hash="b" * 64,
+                content_hash="2" * 64,
+            ),
+        ),
+    )
+
+    with pytest.raises(DatasetLeakageError, match="source family overlap"):
+        assert_confirmatory_isolation(development, confirmatory)
 
 
 def test_manifest_rejects_missing_hashes():

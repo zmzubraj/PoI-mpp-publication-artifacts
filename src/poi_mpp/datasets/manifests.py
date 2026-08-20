@@ -45,7 +45,7 @@ class DatasetRecord(_FrozenModel):
     def reject_blank_strings(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("dataset fields must not be blank")
-        return value
+        return value.strip().lower()
 
     @field_validator("source_hash", "content_hash")
     @classmethod
@@ -80,8 +80,14 @@ class DatasetManifest(_FrozenModel):
         if not self.records:
             raise ValueError("dataset manifests require at least one record")
         record_ids = [record.record_id for record in self.records]
+        content_hashes = [record.content_hash for record in self.records]
+        source_hashes = [record.source_hash for record in self.records]
         if len(set(record_ids)) != len(record_ids):
             raise ValueError("duplicate record_id in dataset manifest")
+        if len(set(content_hashes)) != len(content_hashes):
+            raise ValueError("duplicate content_hash in dataset manifest")
+        if len(set(source_hashes)) != len(source_hashes):
+            raise ValueError("duplicate source_hash in dataset manifest")
         if any(record.split is not self.split for record in self.records):
             raise ValueError("all records must match the manifest split")
         return self
@@ -122,6 +128,8 @@ def assert_confirmatory_isolation(
     confirmatory_ids = {record.record_id for record in confirmatory.records}
     development_content_hashes = {record.content_hash for record in development.records}
     confirmatory_content_hashes = {record.content_hash for record in confirmatory.records}
+    development_source_hashes = {record.source_hash for record in development.records}
+    confirmatory_source_hashes = {record.source_hash for record in confirmatory.records}
     development_source_families = {record.source_family for record in development.records}
     confirmatory_source_families = {record.source_family for record in confirmatory.records}
 
@@ -130,6 +138,8 @@ def assert_confirmatory_isolation(
         reasons.append(f"record id overlap: {record_id}")
     for content_hash in sorted(development_content_hashes & confirmatory_content_hashes):
         reasons.append(f"content hash overlap: {content_hash}")
+    for source_hash in sorted(development_source_hashes & confirmatory_source_hashes):
+        reasons.append(f"source hash overlap: {source_hash}")
     for source_family in sorted(development_source_families & confirmatory_source_families):
         reasons.append(f"source family overlap: {source_family}")
     if reasons:

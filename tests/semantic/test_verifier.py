@@ -10,6 +10,7 @@ from poi_mpp.auditor.semantic import (
     NumericExpectation,
     NumericFact,
     SemanticCalibrationArtifact,
+    SemanticLabelAuthority,
     VerificationMode,
     verify_grounded,
 )
@@ -31,6 +32,7 @@ def _evidence(
         citation_id=citation_id,
         source_family=source_family,
         origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        label_authority=SemanticLabelAuthority.TRUSTED_GROUNDED_ANNOTATOR,
         content=text,
         content_hash=digest(
             "SEMANTIC_EVIDENCE_CONTENT",
@@ -285,3 +287,35 @@ def test_unannotated_citation_is_unsupported():
     assert result.decision == "REJECT"
     assert result.outcomes[0].outcome == "UNSUPPORTED"
 
+
+def test_untrusted_caller_annotations_are_rejected_before_semantic_acceptance():
+    claim = _claim("claim-1", "cite-1")
+    text = "Totally unrelated text that does not support the claim."
+
+    with pytest.raises(ValueError, match="trusted label authority"):
+        verify_grounded(
+            response="claim::claim-1",
+            claims=(claim,),
+            evidence=(
+                EvidenceRecord(
+                    evidence_id="evidence-cite-1",
+                    citation_id="cite-1",
+                    source_family="paper-a",
+                    origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+                    label_authority=SemanticLabelAuthority.UNTRUSTED_CALLER,
+                    content=text,
+                    content_hash=digest(
+                        "SEMANTIC_EVIDENCE_CONTENT",
+                        {"citation_id": "cite-1", "content": text, "source_family": "paper-a"},
+                    ),
+                    annotations=(
+                        EvidenceAnnotation(
+                            claim_id="claim-1",
+                            kind=EvidenceAnnotationKind.SUPPORTS,
+                            reason="caller supplied support",
+                        ),
+                    ),
+                ),
+            ),
+            calibration=_calibration(),
+        )

@@ -4,12 +4,16 @@ import pytest
 
 from poi_mpp.auditor.semantic import (
     DevelopmentCalibrationExample,
+    EvidenceAnnotation,
+    EvidenceAnnotationKind,
+    EvidenceRecord,
+    GroundedClaim,
     SemanticCalibrationArtifact,
+    SemanticLabelAuthority,
     VerificationMode,
     fit_development_calibration,
     verify_grounded,
 )
-from poi_mpp.auditor.semantic import EvidenceAnnotation, EvidenceAnnotationKind, EvidenceRecord, GroundedClaim
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.models import EvidenceOrigin
 
@@ -21,6 +25,7 @@ def _evidence(citation_id: str) -> EvidenceRecord:
         citation_id=citation_id,
         source_family="paper-a",
         origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        label_authority=SemanticLabelAuthority.TRUSTED_GROUNDED_ANNOTATOR,
         content=text,
         content_hash=digest(
             "SEMANTIC_EVIDENCE_CONTENT",
@@ -80,4 +85,3 @@ def test_confirmatory_verification_uses_frozen_calibration_without_tuning():
 
     assert result.calibration_hash == calibration.content_hash
     assert calibration.minimum_support_fraction == 1.0
-
