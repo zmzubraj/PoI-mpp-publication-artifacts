@@ -1,0 +1,38 @@
+{
+  "format": "POI_MPP_V1_SHA256_HEX",
+  "vectors": [
+    {
+      "canonical_utf8": "POI_MPP_V1|TASK|{\"a\":1,\"b\":2}",
+      "domain": "TASK",
+      "sha256": "98ab62cce1fe0f619af83118c5129820b230ba66505550015db71a7bb5aa0766",
+      "value": {
+        "a": 1,
+        "b": 2
+      }
+    },
+    {
+      "canonical_utf8": "POI_MPP_V1|MODEL|{\"a\":1}",
+      "domain": "MODEL",
+      "sha256": "814bf92808d6d6815c9a8518e44c599e2cc0d0fe5b848940b732ccaf79daccde",
+      "value": {
+        "a": 1
+      }
+    },
+    {
+      "canonical_utf8": "POI_MPP_V1|EVIDENCE|{\"items\":[true,null,\"μ\"],\"nested\":{\"a\":-1,\"z\":0}}",
+      "domain": "EVIDENCE",
+      "sha256": "7437d767c6758394368e73b101008810f3d66a43681474fdaaab1ddb5ee71ebc",
+      "value": {
+        "items": [
+          true,
+          null,
+          "μ"
+        ],
+        "nested": {
+          "a": -1,
+          "z": 0
+        }
+      }
+    }
+  ]
+}

@@ -7,6 +7,9 @@ name = "poi-mpp"
 version = "0.1.0"
 description = "Minimum Publishable Prototype for a verifiable Proof-of-Intelligence consensus architecture"
 requires-python = "==3.11.*"
+dependencies = [
+    "pydantic==2.12.5",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
