@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 import math
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
+from poi_mpp.evidence import ArtifactValidationError
+
 
 MIN_E2_SUPPORTED_DENOMINATOR = 2
 MIN_E2_UNIQUE_ATTACK_SEEDS = 2
+ReplayContextKey = tuple[str, str]
 
 
 class _FrozenModel(BaseModel):
@@ -120,26 +123,79 @@ def _wilson_interval(successes: int, trials: int, *, z: float = 1.95996398454005
     return (lower, upper)
 
 
+def _replay_context_key(row: object) -> ReplayContextKey:
+    attack_manifest = getattr(row, "attack_manifest", None)
+    observation_key = getattr(row, "observation_key", None)
+    attack_family = getattr(row, "attack_family", None)
+    if attack_manifest is None or observation_key is None:
+        raise ArtifactValidationError(("replay rows require attack_manifest and observation_key",))
+    replay_proof = getattr(attack_manifest, "replay_proof", None)
+    attack_instance_id = getattr(replay_proof, "attack_instance_id", None)
+    if attack_instance_id is None or not isinstance(attack_instance_id, str) or not attack_instance_id.strip():
+        raise ArtifactValidationError(("replay rows require canonical replay_proof.attack_instance_id",))
+    if not isinstance(observation_key, str) or not observation_key.strip():
+        raise ArtifactValidationError(("replay rows require canonical observation_key",))
+    return (attack_instance_id, observation_key)
+
+
+def _normalize_prior_nullifiers(value: Iterable[str]) -> frozenset[str]:
+    if isinstance(value, (str, bytes)):
+        raise ArtifactValidationError(("replay context prior_nullifiers must be an iterable of strings",))
+    normalized: set[str] = set()
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ArtifactValidationError(("replay context prior_nullifiers must contain non-blank strings",))
+        normalized.add(item)
+    return frozenset(normalized)
+
+
+def normalize_e2_rows(
+    rows: list[dict[str, object]] | list[Mapping[str, object]] | list[object],
+    *,
+    replay_context: Mapping[ReplayContextKey, Iterable[str]] | None = None,
+) -> list[object]:
+    from poi_mpp.attacks.execution import AttackFamily
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, validate_attack_receipt
+
+    canonical_rows: list[E2ReceiptRow] = []
+    for row in rows:
+        candidate = E2ReceiptRow.model_validate(
+            row.model_dump(mode="python") if isinstance(row, E2ReceiptRow) else row
+        )
+        if candidate.attack_family is AttackFamily.REPLAY_NULLIFIER:
+            if replay_context is None:
+                raise ArtifactValidationError(
+                    ("replay rows require explicit replay context keyed by attack_instance_id and observation_key",)
+                )
+            context_key = _replay_context_key(candidate)
+            if context_key not in replay_context:
+                raise ArtifactValidationError(
+                    ("replay rows require matching replay context keyed by attack_instance_id and observation_key",)
+                )
+            canonical_rows.append(
+                validate_attack_receipt(
+                    candidate,
+                    prior_nullifiers=_normalize_prior_nullifiers(replay_context[context_key]),
+                    require_replay_validation=True,
+                )
+            )
+            continue
+        canonical_rows.append(validate_attack_receipt(candidate, require_replay_validation=True))
+    return canonical_rows
+
+
 def summarize_e2_rows(
     rows: list[dict[str, object]] | list[Mapping[str, object]],
     *,
     claim_id: str = "C2",
+    replay_context: Mapping[ReplayContextKey, Iterable[str]] | None = None,
 ) -> E2Summary:
     from poi_mpp.attacks.execution import AttackAnalysisSurface, AttackFamily
-    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, validate_attack_receipt
 
     if not rows:
         raise ValueError("E2 summary requires receipt rows")
 
-    canonical_rows = [
-        validate_attack_receipt(
-            E2ReceiptRow.model_validate(
-                row.model_dump(mode="python") if isinstance(row, E2ReceiptRow) else row
-            ),
-            require_replay_validation=True,
-        )
-        for row in rows
-    ]
+    canonical_rows = normalize_e2_rows(rows, replay_context=replay_context)
     run_ids = {row.run_id for row in canonical_rows}
     experiment_ids = {row.experiment_id for row in canonical_rows}
     if len(run_ids) != 1 or len(experiment_ids) != 1:

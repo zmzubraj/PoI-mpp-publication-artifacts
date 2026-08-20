@@ -137,6 +137,62 @@ exit 0
   and frozen minimum denominator/seed gates, but no authorized real execution
   has exercised those freeze paths yet.
 
+## Fix Round 5 — replay context required at aggregation and publication
+
+### Review finding addressed
+
+- Replay validation is no longer trusted from an in-memory row state alone
+  during aggregation or publication-record construction.
+- `summarize_e2_rows(...)` and `build_publication_record(...)` now require an
+  explicit replay-context mapping keyed by canonical
+  `(attack_instance_id, observation_key)` for `REPLAY_NULLIFIER` rows.
+- Reloaded or in-memory replay rows only aggregate when the supplied external
+  prior-nullifier set reproduces the canonical replay disposition; mismatched
+  context fails closed, and publication building rejects summary bypass by
+  recomputing the canonical summary from the same replay context.
+
+### Additional RED coverage
+
+- already-validated in-memory replay rows are rejected by summary without
+  explicit replay context
+- reloaded replay rows aggregate again with matching replay context
+- confirmed replay rows fail closed when the supplied replay context disagrees
+- publication records require both matching replay context and a summary that
+  exactly matches canonical row aggregation
+
+### Fix-round verification
+
+Focused suite:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py
+27 passed in 0.42s
+```
+
+Adjacent regression slice:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py tests/experiments/test_e1_cost.py tests/auditor/test_exact.py tests/auditor/test_floating_point.py tests/auditor/test_finite_field.py
+58 passed in 0.75s
+```
+
+Full Python suite:
+
+```text
+./.venv/bin/python -m pytest
+254 passed in 2.46s
+```
+
+Static and diff hygiene:
+
+```text
+./.venv/bin/python -m compileall -q src experiments tests/experiments/test_e2_tamper.py
+exit 0
+
+git diff --check -- src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py
+exit 0
+```
+
 ## Fix Round 1 — canonical surface binding, duplicate-observation guards, and publication minimums
 
 ### Review findings addressed

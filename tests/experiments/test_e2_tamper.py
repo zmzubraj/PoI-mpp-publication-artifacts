@@ -42,6 +42,15 @@ def _forged_seed_payload(row, *, new_seed: int) -> dict[str, object]:
     return payload
 
 
+def _replay_context(row, *prior_nullifiers: str) -> dict[tuple[str, str], frozenset[str]]:
+    manifest = row.attack_manifest
+    assert manifest is not None
+    assert row.observation_key is not None
+    return {
+        (manifest.replay_proof.attack_instance_id, row.observation_key): frozenset(prior_nullifiers)
+    }
+
+
 def test_attack_changes_target_but_not_original_commitment() -> None:
     from poi_mpp.attacks.execution import corrupt_trace_node
     from poi_mpp.experiments.e2_tamper import build_fixture_bundle
@@ -409,6 +418,112 @@ def test_summary_rejects_reloaded_replay_row_without_context_validation() -> Non
         summarize_e2_rows([reloaded])
 
 
+def test_summary_rejects_in_memory_validated_replay_row_without_explicit_context() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle, evaluate_receipt
+    from poi_mpp.reporting.e2 import summarize_e2_rows
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=57,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+
+    with pytest.raises(ArtifactValidationError):
+        summarize_e2_rows([validated])
+
+
+def test_summary_revalidates_reloaded_replay_row_with_matching_context() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, build_fixture_bundle, evaluate_receipt
+    from poi_mpp.reporting.e2 import summarize_e2_rows
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=59,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+    reloaded = E2ReceiptRow.model_validate_json(validated.model_dump_json())
+
+    summary = summarize_e2_rows(
+        [reloaded],
+        replay_context=_replay_context(reloaded, peer_bundle.nullifier),
+    )
+
+    assert summary.denominator == 1
+    assert summary.exact_detected == 1
+    assert summary.claim_disposition == "INCONCLUSIVE"
+
+
+def test_summary_rejects_confirmed_replay_row_when_context_disagrees() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle, evaluate_receipt
+    from poi_mpp.reporting.e2 import summarize_e2_rows
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=61,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+
+    with pytest.raises(ArtifactValidationError):
+        summarize_e2_rows([validated], replay_context=_replay_context(validated))
+
+
 def test_publication_record_rejects_reloaded_replay_row_without_context_validation() -> None:
     from poi_mpp.attacks.execution import apply_attack, AttackFamily
     from poi_mpp.experiments.e2_tamper import (
@@ -468,6 +583,63 @@ def test_publication_record_rejects_reloaded_replay_row_without_context_validati
 
     with pytest.raises(ArtifactValidationError):
         build_publication_record(summary=summary, rows=[reloaded], run_config=honest_bundle.run_config)
+
+
+def test_publication_record_requires_matching_replay_context_and_summary() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle, build_publication_record, evaluate_receipt
+    from poi_mpp.reporting.e2 import summarize_e2_rows
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=63,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+    replay_context = _replay_context(validated, peer_bundle.nullifier)
+    summary = summarize_e2_rows([validated], replay_context=replay_context)
+
+    with pytest.raises(ArtifactValidationError):
+        build_publication_record(
+            summary=summary,
+            rows=[validated],
+            run_config=honest_bundle.run_config,
+        )
+
+    forged_summary = summary.model_copy(update={"exact_detected": 0})
+    with pytest.raises(ArtifactValidationError):
+        build_publication_record(
+            summary=forged_summary,
+            rows=[validated],
+            run_config=honest_bundle.run_config,
+            replay_context=replay_context,
+        )
+
+    record = build_publication_record(
+        summary=summary,
+        rows=[validated],
+        run_config=honest_bundle.run_config,
+        replay_context=replay_context,
+    )
+
+    assert record["payload"]["exact_detected"] == 1
 
 
 def test_unsupported_kernel_abstains_and_stays_out_of_detection_denominator() -> None:

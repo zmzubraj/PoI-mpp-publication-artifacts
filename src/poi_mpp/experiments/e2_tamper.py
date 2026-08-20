@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from enum import StrEnum
 from pathlib import Path
 
@@ -747,8 +747,19 @@ def build_publication_record(
     rows: list[E2ReceiptRow],
     run_config: RunConfig,
     provenance_bundle: ProvenanceBundle | None = None,
+    replay_context: Mapping[tuple[str, str], Iterable[str]] | None = None,
 ) -> dict[str, object]:
-    canonical_rows = [validate_attack_receipt(row, require_replay_validation=True) for row in rows]
+    from poi_mpp.reporting.e2 import normalize_e2_rows, summarize_e2_rows
+
+    canonical_rows = normalize_e2_rows(rows, replay_context=replay_context)
+    canonical_summary = summarize_e2_rows(
+        canonical_rows,
+        claim_id=summary.claim_id,
+        replay_context=replay_context,
+    )
+    if summary.model_dump(mode="python") != canonical_summary.model_dump(mode="python"):
+        raise ArtifactValidationError(("summary does not match canonical E2 row aggregation",))
+    summary = canonical_summary
     origins = {row.origin.value for row in canonical_rows}
     origin = next(iter(origins)) if len(origins) == 1 else "MIXED_ROW_ORIGINS"
     publication_reasons = _publication_precheck_reasons(
