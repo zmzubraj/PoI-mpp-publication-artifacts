@@ -238,6 +238,143 @@ def test_replay_attack_requires_prior_nullifier_membership() -> None:
     assert any("not replay" in reason for reason in row.residual_risk)
 
 
+def test_validate_attack_receipt_confirms_replay_atomically_from_unvalidated_row() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import (
+        ReplayValidationDisposition,
+        build_fixture_bundle,
+        evaluate_receipt,
+        validate_attack_receipt,
+    )
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=43,
+        peer_bundle=peer_bundle,
+    )
+    unvalidated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+    )
+
+    validated = validate_attack_receipt(
+        unvalidated,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+
+    assert unvalidated.replay_validation == ReplayValidationDisposition.UNVALIDATED
+    assert unvalidated.detected is False
+    assert validated.replay_validation == ReplayValidationDisposition.CONFIRMED_REPLAY
+    assert validated.detected is True
+    assert validated.accepted is False
+    assert validated.row_hash != unvalidated.row_hash
+    assert any("already appeared" in reason for reason in validated.residual_risk)
+
+
+def test_validate_attack_receipt_marks_nonmember_replay_atomically() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import (
+        ReplayValidationDisposition,
+        build_fixture_bundle,
+        evaluate_receipt,
+        validate_attack_receipt,
+    )
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=47,
+        peer_bundle=peer_bundle,
+    )
+    unvalidated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+    )
+
+    validated = validate_attack_receipt(
+        unvalidated,
+        prior_nullifiers=frozenset(),
+    )
+
+    assert validated.replay_validation == ReplayValidationDisposition.VERIFIED_NOT_REPLAY
+    assert validated.detected is False
+    assert validated.accepted is True
+    assert validated.row_hash != unvalidated.row_hash
+    assert any("not replay" in reason for reason in validated.residual_risk)
+
+
+def test_reloaded_replay_row_requires_explicit_prior_context_to_self_authorize() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import (
+        E2ReceiptRow,
+        build_fixture_bundle,
+        evaluate_receipt,
+        validate_attack_receipt,
+    )
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=51,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+    reloaded = E2ReceiptRow.model_validate_json(validated.model_dump_json())
+
+    with pytest.raises(ArtifactValidationError):
+        validate_attack_receipt(reloaded)
+
+    revalidated = validate_attack_receipt(
+        reloaded,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+
+    assert revalidated.detected is True
+    assert revalidated.accepted is False
+    assert revalidated.row_hash == validated.row_hash
+
+
 def test_summary_rejects_reloaded_replay_row_without_context_validation() -> None:
     from poi_mpp.attacks.execution import apply_attack, AttackFamily
     from poi_mpp.experiments.e2_tamper import E2ReceiptRow, build_fixture_bundle, evaluate_receipt

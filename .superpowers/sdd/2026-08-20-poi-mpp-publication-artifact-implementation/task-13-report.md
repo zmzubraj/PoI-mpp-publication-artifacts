@@ -297,3 +297,60 @@ exit 0
 git diff --check -- src/poi_mpp/attacks/__init__.py src/poi_mpp/attacks/execution.py src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py
 exit 0
 ```
+
+## Fix Round 4 — atomic replay-row validation from explicit prior context
+
+### Review finding addressed
+
+- `validate_attack_receipt(...)` no longer attempts a partial `model_copy(...)`
+  update when an initially `UNVALIDATED` replay row receives explicit
+  `prior_nullifiers` context.
+- Replay rows now rebuild a full canonical payload in one validation step,
+  recomputing `replay_validation`, `detected`, `accepted`, `residual_risk`, and
+  `row_hash` from the supplied prior-nullifier set before final validation.
+- Matching prior-nullifier membership produces a canonical
+  `CONFIRMED_REPLAY` row; non-matching membership produces a canonical
+  `VERIFIED_NOT_REPLAY` row.
+- Serialized or reloaded replay rows still fail closed without explicit prior
+  context and cannot self-authorize from persisted terminal fields alone.
+
+### Additional RED coverage
+
+- explicit prior-nullifier validation upgrades an unvalidated replay row into a
+  canonical detected replay row
+- explicit empty prior-nullifier validation upgrades an unvalidated replay row
+  into a canonical non-replay accepted row
+- reloaded replay rows still require explicit prior context before reuse
+
+### Fix-round verification
+
+Focused suite:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py -q
+23 passed
+```
+
+Adjacent regression slice:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py tests/experiments/test_e1_cost.py tests/auditor/test_exact.py tests/auditor/test_floating_point.py tests/auditor/test_finite_field.py -q
+54 passed
+```
+
+Full Python suite:
+
+```text
+./.venv/bin/python -m pytest
+250 passed in 2.73s
+```
+
+Static and diff hygiene:
+
+```text
+./.venv/bin/python -m compileall src tests experiments
+exit 0
+
+git diff --check -- src/poi_mpp/experiments/e2_tamper.py tests/experiments/test_e2_tamper.py
+exit 0
+```

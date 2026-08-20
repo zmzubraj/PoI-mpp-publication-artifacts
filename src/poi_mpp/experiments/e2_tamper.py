@@ -318,6 +318,33 @@ def _word(label: str, payload: object) -> str:
     return "0x" + digest(label, payload)
 
 
+def _canonicalize_replay_row(
+    row: E2ReceiptRow,
+    *,
+    replay_validation: ReplayValidationDisposition,
+) -> E2ReceiptRow:
+    payload = {
+        field_name: getattr(row, field_name)
+        for field_name in type(row).model_fields
+    }
+    payload["replay_validation"] = replay_validation
+    payload.pop("row_hash", None)
+    skeleton = E2ReceiptRow.model_construct(
+        **payload,
+        row_hash="0x" + ("0" * 64),
+    )
+    payload.update(_expected_row_fields(skeleton))
+    payload["row_hash"] = _row_hash_material(
+        E2ReceiptRow.model_construct(
+            **payload,
+            row_hash="0x" + ("0" * 64),
+        )
+    )
+    validated = E2ReceiptRow.model_validate(payload)
+    object.__setattr__(validated, "_replay_disposition_validated", True)
+    return validated
+
+
 def _field_product(
     left: tuple[tuple[int, ...], ...],
     right: tuple[tuple[int, ...], ...],
@@ -487,9 +514,7 @@ def validate_attack_receipt(
             reasons.append("replay_validation does not match explicit prior-nullifier validation")
         if reasons:
             raise ArtifactValidationError(tuple(dict.fromkeys(reasons)))
-        validated = row.model_copy(update={"replay_validation": replay_validation})
-        object.__setattr__(validated, "_replay_disposition_validated", True)
-        return validated
+        return _canonicalize_replay_row(row, replay_validation=replay_validation)
     if row.replay_validation != ReplayValidationDisposition.NOT_APPLICABLE:
         reasons.append("non-replay rows must use NOT_APPLICABLE replay_validation")
     if reasons:
