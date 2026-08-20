@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://poi-mpp.local/schema/run-config-v1.json",
+  "title": "POI MPP frozen run configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "experiment_id",
+    "origin",
+    "authorization_scope",
+    "model_hash",
+    "dataset_hash",
+    "data_availability"
+  ],
+  "properties": {
+    "schema_version": {"const": "POI_MPP_RUN_CONFIG_V1"},
+    "schema_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "experiment_id": {"type": "string", "minLength": 1},
+    "origin": {
+      "enum": [
+        "REAL_MODEL_EXECUTION",
+        "FOUNDRY_MEASUREMENT",
+        "REPRODUCIBLE_SIMULATION",
+        "SYNTHETIC_NON_EVIDENCE"
+      ]
+    },
+    "authorization_scope": {"type": "string", "minLength": 1},
+    "model_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "dataset_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "parent_hashes": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "data_availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_shards", "samples", "replacement"],
+      "properties": {
+        "total_shards": {"type": "integer", "minimum": 1},
+        "samples": {"type": "integer", "minimum": 1},
+        "replacement": {"type": "boolean"}
+      }
+    }
+  }
+}

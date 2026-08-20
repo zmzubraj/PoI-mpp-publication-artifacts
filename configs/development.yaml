@@ -1,0 +1,12 @@
+schema_version: POI_MPP_RUN_CONFIG_V1
+run_id: development-e1-simulation
+experiment_id: E1
+origin: REPRODUCIBLE_SIMULATION
+authorization_scope: LOCAL_DEVELOPMENT_ONLY
+model_hash: 1e810e5d1f5281c3d230b8d0ce2378f1e16239dc55ba0f4dba77a1d0051c388e
+dataset_hash: d00413b5994f13e8a8984dc9b2bdaf7a0c71a47f3fa4d2cd7266598cb2cb1bd5
+parent_hashes: []
+data_availability:
+  total_shards: 16
+  samples: 8
+  replacement: false
