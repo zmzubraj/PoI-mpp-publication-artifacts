@@ -38,3 +38,76 @@ def test_artifact_record_is_immutable_and_uses_ordered_transitions():
     assert record.advance_to(ArtifactStage.SCHEMA_VALID).stage is ArtifactStage.SCHEMA_VALID
     with pytest.raises(ValueError, match="invalid lifecycle transition"):
         record.advance_to(ArtifactStage.FROZEN)
+
+
+@pytest.mark.parametrize("terminal_stage", [ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE])
+def test_normal_construction_cannot_mint_terminal_artifacts(terminal_stage):
+    with pytest.raises(ValueError, match="terminal stages must be obtained through advance_to"):
+        ArtifactRecord(
+            artifact_id="artifact-1",
+            run_id="run-1",
+            experiment_id="experiment-1",
+            origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+            stage=terminal_stage,
+            content_hash="a" * 64,
+        )
+
+
+@pytest.mark.parametrize("terminal_stage", [ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE])
+def test_direct_terminal_construction_requires_a_content_hash(terminal_stage):
+    with pytest.raises(ValueError, match="terminal artifacts require a lowercase SHA-256 content_hash"):
+        ArtifactRecord(
+            artifact_id="artifact-1",
+            run_id="run-1",
+            experiment_id="experiment-1",
+            origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+            stage=terminal_stage,
+        )
+
+
+@pytest.mark.parametrize("field", ["artifact_id", "run_id", "experiment_id"])
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_record_identifiers_cannot_be_blank(field, blank):
+    values = {
+        "artifact_id": "artifact-1",
+        "run_id": "run-1",
+        "experiment_id": "experiment-1",
+        "origin": EvidenceOrigin.REAL_MODEL_EXECUTION,
+        "stage": ArtifactStage.GENERATED,
+    }
+    values[field] = blank
+
+    with pytest.raises(ValueError, match=f"{field} must not be blank"):
+        ArtifactRecord(**values)
+
+
+@pytest.mark.parametrize("terminal_stage", [ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE])
+def test_trusted_terminal_loading_requires_complete_identity_and_content_hash(terminal_stage):
+    values = {
+        "artifact_id": "artifact-1",
+        "run_id": "run-1",
+        "experiment_id": "experiment-1",
+        "origin": EvidenceOrigin.REAL_MODEL_EXECUTION,
+        "stage": terminal_stage,
+    }
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        ArtifactRecord.trusted_load(values)
+
+    values["content_hash"] = "A" * 64
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        ArtifactRecord.trusted_load(values)
+
+
+def test_advance_to_terminal_stage_requires_content_hash_and_allows_a_complete_record():
+    record = ArtifactRecord(
+        artifact_id="artifact-1",
+        run_id="run-1",
+        experiment_id="experiment-1",
+        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        stage=ArtifactStage.GENERATED,
+        content_hash="a" * 64,
+    )
+
+    schema_valid = record.advance_to(ArtifactStage.SCHEMA_VALID)
+    semantic_valid = schema_valid.advance_to(ArtifactStage.SEMANTICALLY_VALID)
+    assert semantic_valid.advance_to(ArtifactStage.FROZEN).stage is ArtifactStage.FROZEN

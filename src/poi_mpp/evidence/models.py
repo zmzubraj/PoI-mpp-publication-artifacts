@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+import re
+from typing import Any, Literal, Mapping
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
 
 class EvidenceOrigin(StrEnum):
@@ -29,6 +30,8 @@ class ArtifactStage(StrEnum):
 
 _STAGE_ORDER = tuple(ArtifactStage)
 _STAGE_INDEX = {stage: index for index, stage in enumerate(_STAGE_ORDER)}
+_TERMINAL_STAGES = frozenset({ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE})
+_LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
 class _FrozenEvidenceModel(BaseModel):
@@ -54,13 +57,43 @@ class ArtifactRecord(_FrozenEvidenceModel):
     content_hash: str | None = None
     parent_hashes: tuple[str, ...] = ()
 
+    @field_validator("artifact_id", "run_id", "experiment_id")
+    @classmethod
+    def reject_blank_identifiers(cls, value: str, info: ValidationInfo) -> str:
+        if not value.strip():
+            raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @field_validator("content_hash")
+    @classmethod
+    def validate_content_hash(cls, value: str | None) -> str | None:
+        if value is not None and not _LOWERCASE_SHA256.fullmatch(value):
+            raise ValueError("content_hash must be a lowercase SHA-256 hex digest")
+        return value
+
+    @field_validator("parent_hashes")
+    @classmethod
+    def validate_parent_hashes(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        for value in values:
+            if not _LOWERCASE_SHA256.fullmatch(value):
+                raise ValueError("parent_hashes must contain lowercase SHA-256 hex digests")
+        return values
+
     @model_validator(mode="after")
-    def reject_synthetic_freeze(self) -> "ArtifactRecord":
+    def validate_lifecycle(self, info: ValidationInfo) -> "ArtifactRecord":
         if (
             self.origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE
-            and _STAGE_INDEX[self.stage] >= _STAGE_INDEX[ArtifactStage.FROZEN]
+            and self.stage in _TERMINAL_STAGES
         ):
             raise ValueError("synthetic evidence cannot be frozen or publication eligible")
+        if self.stage in _TERMINAL_STAGES:
+            if self.content_hash is None:
+                raise ValueError("terminal artifacts require a lowercase SHA-256 content_hash")
+            trusted_restore = isinstance(info.context, dict) and info.context.get(
+                "_poi_mpp_trusted_restore"
+            ) is True
+            if not trusted_restore:
+                raise ValueError("terminal stages must be obtained through advance_to")
         return self
 
     @classmethod
@@ -100,8 +133,21 @@ class ArtifactRecord(_FrozenEvidenceModel):
                 f"invalid lifecycle transition: {self.stage.value} -> {target.value}"
             )
         return type(self).model_validate(
-            {**self.model_dump(mode="json"), "stage": target.value}
+            {**self.model_dump(mode="json"), "stage": target.value},
+            context={"_poi_mpp_trusted_restore": True},
         )
+
+    @classmethod
+    def trusted_load(cls, data: Mapping[str, Any]) -> "ArtifactRecord":
+        """Restore a persisted record after validation of all current invariants.
+
+        This is intentionally distinct from normal construction. It is the sole
+        supported route for loading a previously persisted terminal artifact;
+        it still enforces nonblank identities, hash syntax, provenance origin,
+        and the synthetic-evidence prohibition.
+        """
+
+        return cls.model_validate(data, context={"_poi_mpp_trusted_restore": True})
 
 
 class RunManifest(_FrozenEvidenceModel):
