@@ -34,6 +34,8 @@ def build_iec(
     response_hash: str | None = None,
     claim_texts: tuple[str, ...] | None = None,
 ) -> IntelligenceEvidenceCapsule:
+    if claim_texts is not None and not claim_texts:
+        raise ValueError("claim_texts must not be explicitly empty")
     claims_source = claim_texts if claim_texts is not None else _split_claims(response)
     claims = tuple(
         ClaimNode(
@@ -43,6 +45,8 @@ def build_iec(
         )
         for index, text in enumerate(claims_source)
     )
+    if not claims:
+        raise ValueError("claim_texts must yield at least one claim node")
     resolved_response_hash = response_hash or bytes32_word("WORKER_RESPONSE_TEXT", {"response": response})
     evidence_root = bytes32_word(
         "WORKER_IEC_ROOT",

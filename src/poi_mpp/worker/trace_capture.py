@@ -18,6 +18,10 @@ class TraceSidecar(_FrozenWorkerModel):
     def require_consistent_root(self) -> "TraceSidecar":
         if not self.events:
             raise ValueError("trace sidecar must contain at least one event")
+        expected_indices = tuple(range(len(self.events)))
+        actual_indices = tuple(event.event_index for event in self.events)
+        if actual_indices != expected_indices:
+            raise ValueError("trace sidecar event_index values must be contiguous and start at 0")
         expected = trace_root(self.events)
         if self.trace_root != expected:
             raise ValueError("trace_root does not match events")

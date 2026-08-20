@@ -39,3 +39,14 @@ def test_evidence_item_rejects_nonfinite_confidence() -> None:
             origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
             confidence=float("nan"),
         )
+
+
+def test_iec_rejects_explicit_empty_claim_texts(
+    evidence_items: tuple[EvidenceItem, ...],
+) -> None:
+    with pytest.raises(ValueError, match="claim_texts"):
+        build_iec(
+            response="Sample answer. Citation one supports it.",
+            evidence_items=evidence_items,
+            claim_texts=(),
+        )

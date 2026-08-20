@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from poi_mpp.evidence.models import ArtifactStage, EvidenceOrigin
+from poi_mpp.protocol.types import ModelManifest as ProtocolModelManifest
 from poi_mpp.worker.deterministic_decode import DeterministicDecodePolicy
 from poi_mpp.worker.inference import FixtureInferenceAdapter, TransformersCausalLMAdapter, execute_once
 from poi_mpp.worker.model_manifest import PinnedModelManifest
@@ -73,6 +74,40 @@ def test_execute_once_rejects_model_revision_mismatch(
         execute_once(task, manifest, policy, adapter=adapter)
 
 
+def test_execute_once_rejects_model_id_mismatch(
+    task,
+    manifest: PinnedModelManifest,
+    policy: DeterministicDecodePolicy,
+) -> None:
+    loaded_manifest = manifest.model_copy(update={"model_id": "other-model"})
+    adapter = FixtureInferenceAdapter.synthetic(
+        response="Mismatch",
+        trace_token_ids=(1,),
+        evidence_texts=("Mismatch evidence.",),
+        loaded_manifest=loaded_manifest,
+    )
+
+    with pytest.raises(ValueError, match="model_id"):
+        execute_once(task, manifest, policy, adapter=adapter)
+
+
+def test_execute_once_rejects_assurance_class_mismatch(
+    task,
+    manifest: PinnedModelManifest,
+    policy: DeterministicDecodePolicy,
+) -> None:
+    loaded_manifest = manifest.model_copy(update={"assurance_class": 7})
+    adapter = FixtureInferenceAdapter.synthetic(
+        response="Mismatch",
+        trace_token_ids=(1,),
+        evidence_texts=("Mismatch evidence.",),
+        loaded_manifest=loaded_manifest,
+    )
+
+    with pytest.raises(ValueError, match="assurance_class"):
+        execute_once(task, manifest, policy, adapter=adapter)
+
+
 def test_execute_once_rejects_nondeterministic_decode_policy(
     task,
     manifest: PinnedModelManifest,
@@ -95,3 +130,19 @@ def test_execute_once_rejects_nondeterministic_decode_policy(
 def test_transformers_adapter_refuses_implicit_network_download() -> None:
     with pytest.raises(ValueError, match="local_files_only"):
         TransformersCausalLMAdapter(model_path="fixtures/model", local_files_only=False)
+
+
+def test_execution_bundle_uses_typed_protocol_manifest(
+    task,
+    manifest: PinnedModelManifest,
+    policy: DeterministicDecodePolicy,
+) -> None:
+    adapter = FixtureInferenceAdapter.synthetic(
+        response="Typed answer. Evidence sentence.",
+        trace_token_ids=(11, 12),
+        evidence_texts=("Evidence sentence.",),
+    )
+
+    bundle = execute_once(task, manifest, policy, adapter=adapter)
+
+    assert isinstance(bundle.protocol_model_manifest, ProtocolModelManifest)

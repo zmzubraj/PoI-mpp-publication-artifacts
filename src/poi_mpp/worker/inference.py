@@ -9,7 +9,7 @@ from pydantic import ValidationInfo, field_validator
 
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigin
-from poi_mpp.protocol.types import TaskSpec
+from poi_mpp.protocol.types import ModelManifest as ProtocolModelManifest, TaskSpec
 from poi_mpp.worker.deterministic_decode import DeterministicDecodePolicy
 from poi_mpp.worker.iec_builder import build_iec
 from poi_mpp.worker.iec_schema import EvidenceItem, IntelligenceEvidenceCapsule
@@ -52,7 +52,7 @@ class ExecutionBundle(_FrozenWorkerModel):
     retained_artifacts: tuple[ArtifactRef, ...]
     trace_sidecar: TraceSidecar
     iec: IntelligenceEvidenceCapsule
-    protocol_model_manifest: Any
+    protocol_model_manifest: ProtocolModelManifest
 
 
 class AdapterRunResult(_FrozenWorkerModel):
@@ -73,6 +73,16 @@ class AdapterRunResult(_FrozenWorkerModel):
             raise ValueError("response must not be blank")
         return value
 
+    @field_validator("claim_texts")
+    @classmethod
+    def require_nonempty_explicit_claims(
+        cls,
+        value: tuple[str, ...] | None,
+    ) -> tuple[str, ...] | None:
+        if value is not None and not value:
+            raise ValueError("claim_texts must not be explicitly empty")
+        return value
+
 
 class InferenceAdapter(Protocol):
     def run(
@@ -90,6 +100,7 @@ class FixtureInferenceAdapter:
     trace_token_ids: tuple[int, ...]
     evidence_texts: tuple[str, ...]
     loaded_revision: str | None = None
+    loaded_manifest: PinnedModelManifest | None = None
 
     @classmethod
     def synthetic(
@@ -99,12 +110,14 @@ class FixtureInferenceAdapter:
         trace_token_ids: tuple[int, ...],
         evidence_texts: tuple[str, ...],
         loaded_revision: str | None = None,
+        loaded_manifest: PinnedModelManifest | None = None,
     ) -> "FixtureInferenceAdapter":
         return cls(
             response=response,
             trace_token_ids=trace_token_ids,
             evidence_texts=evidence_texts,
             loaded_revision=loaded_revision,
+            loaded_manifest=loaded_manifest,
         )
 
     def run(
@@ -114,9 +127,10 @@ class FixtureInferenceAdapter:
         manifest: PinnedModelManifest,
         policy: DeterministicDecodePolicy,
     ) -> AdapterRunResult:
-        loaded = manifest.model_copy(
+        loaded_source = self.loaded_manifest or manifest.model_copy(
             update={"revision": self.loaded_revision or manifest.revision}
         )
+        loaded = PinnedModelManifest.model_validate(loaded_source.model_dump(mode="json"))
         trace_events = tuple(
             TraceEvent(
                 event_index=index,
@@ -238,23 +252,28 @@ def execute_once(
 ) -> ExecutionBundle:
     """Execute one deterministic worker run behind an explicit adapter boundary."""
 
-    run_result = adapter.run(task=task, manifest=model_manifest, policy=policy)
-    model_manifest.assert_matches_loaded(run_result.loaded_manifest)
+    validated_task = TaskSpec.model_validate(task.model_dump(mode="json"))
+    validated_manifest = PinnedModelManifest.model_validate(model_manifest.model_dump(mode="json"))
+    validated_policy = DeterministicDecodePolicy.model_validate(policy.model_dump(mode="json"))
 
-    trace_sidecar = build_trace_sidecar(run_result.trace_events)
-    response_hash = _response_hash(run_result.response)
+    run_result = adapter.run(task=validated_task, manifest=validated_manifest, policy=validated_policy)
+    validated_run_result = AdapterRunResult.model_validate(run_result.model_dump(mode="json"))
+    validated_manifest.assert_matches_loaded(validated_run_result.loaded_manifest)
+
+    trace_sidecar = build_trace_sidecar(validated_run_result.trace_events)
+    response_hash = _response_hash(validated_run_result.response)
     iec = build_iec(
-        response=run_result.response,
+        response=validated_run_result.response,
         response_hash=response_hash,
-        evidence_items=run_result.evidence_items,
-        task_requirements=run_result.task_requirements,
-        claim_texts=run_result.claim_texts,
+        evidence_items=validated_run_result.evidence_items,
+        task_requirements=validated_run_result.task_requirements,
+        claim_texts=validated_run_result.claim_texts,
     )
-    origins = {item.origin for item in run_result.evidence_items}
+    origins = {item.origin for item in validated_run_result.evidence_items}
     if len(origins) != 1:
         raise ValueError("evidence items must share one origin per execution")
     origin = next(iter(origins))
-    response_content_hash = digest("WORKER_RESPONSE_ARTIFACT", {"response": run_result.response})
+    response_content_hash = digest("WORKER_RESPONSE_ARTIFACT", {"response": validated_run_result.response})
     trace_content_hash = digest(
         "WORKER_TRACE_ARTIFACT",
         {"trace_root": trace_sidecar.trace_root, "events": [event.model_dump(mode="json") for event in trace_sidecar.events]},
@@ -266,8 +285,8 @@ def execute_once(
         root=response_hash,
         record=_artifact_record(
             artifact_id=f"TASK-{task.task_id:06d}-RESPONSE",
-            run_id=f"TASK-{task.task_id:06d}",
-            experiment_id=f"TASK-{task.task_id:06d}",
+            run_id=f"TASK-{validated_task.task_id:06d}",
+            experiment_id=f"TASK-{validated_task.task_id:06d}",
             origin=origin,
             content_hash=response_content_hash,
         ),
@@ -277,8 +296,8 @@ def execute_once(
         root=trace_sidecar.trace_root,
         record=_artifact_record(
             artifact_id=f"TASK-{task.task_id:06d}-TRACE",
-            run_id=f"TASK-{task.task_id:06d}",
-            experiment_id=f"TASK-{task.task_id:06d}",
+            run_id=f"TASK-{validated_task.task_id:06d}",
+            experiment_id=f"TASK-{validated_task.task_id:06d}",
             origin=origin,
             content_hash=trace_content_hash,
             parent_hashes=(response_content_hash,),
@@ -289,8 +308,8 @@ def execute_once(
         root=iec.evidence_root,
         record=_artifact_record(
             artifact_id=f"TASK-{task.task_id:06d}-IEC",
-            run_id=f"TASK-{task.task_id:06d}",
-            experiment_id=f"TASK-{task.task_id:06d}",
+            run_id=f"TASK-{validated_task.task_id:06d}",
+            experiment_id=f"TASK-{validated_task.task_id:06d}",
             origin=origin,
             content_hash=iec_content_hash,
             parent_hashes=(response_content_hash, trace_content_hash),
@@ -299,13 +318,13 @@ def execute_once(
     retained_artifacts = (response_ref, trace_ref, iec_ref)
     artifact_root = _artifact_root(retained_artifacts)
     timings = ExecutionTimings(
-        warmup_ms=run_result.warmup_ms,
-        inference_ms=run_result.inference_ms,
-        total_ms=run_result.warmup_ms + run_result.inference_ms,
+        warmup_ms=validated_run_result.warmup_ms,
+        inference_ms=validated_run_result.inference_ms,
+        total_ms=validated_run_result.warmup_ms + validated_run_result.inference_ms,
     )
-    protocol_model_manifest = model_manifest.to_protocol_manifest(policy)
+    protocol_model_manifest = validated_manifest.to_protocol_manifest(validated_policy)
     return ExecutionBundle(
-        response=run_result.response,
+        response=validated_run_result.response,
         response_hash=response_hash,
         trace_root=trace_sidecar.trace_root,
         evidence_root=iec.evidence_root,

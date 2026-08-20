@@ -204,6 +204,8 @@ class PinnedModelManifest(_FrozenWorkerModel):
 
     def assert_matches_loaded(self, loaded: "PinnedModelManifest") -> None:
         comparisons = (
+            "schema_version",
+            "model_id",
             "repository",
             "revision",
             "tokenizer_id",
@@ -216,6 +218,7 @@ class PinnedModelManifest(_FrozenWorkerModel):
             "runtime_version",
             "model_file_hashes",
             "tokenizer_file_hashes",
+            "assurance_class",
         )
         for field_name in comparisons:
             if getattr(self, field_name) != getattr(loaded, field_name):

@@ -6,7 +6,7 @@ import re
 
 from pydantic import ValidationInfo, field_validator
 
-from poi_mpp.worker.model_manifest import _FrozenWorkerModel, validate_public_json
+from poi_mpp.worker.model_manifest import _FrozenWorkerModel, _require_safe_text, validate_public_json
 
 
 _WORD_HEX = re.compile(r"0x[0-9a-f]{64}\Z")
@@ -30,9 +30,7 @@ class TraceEvent(_FrozenWorkerModel):
     @field_validator("op_name")
     @classmethod
     def require_op_name(cls, value: str) -> str:
-        if not value or not value.strip():
-            raise ValueError("op_name must not be blank")
-        return value.strip()
+        return _require_safe_text(value, "op_name")
 
     @field_validator("input_hashes")
     @classmethod

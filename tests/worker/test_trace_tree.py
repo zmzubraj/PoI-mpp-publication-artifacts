@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from poi_mpp.worker.trace_capture import build_trace_sidecar
 from poi_mpp.worker.trace_schema import TraceEvent
 from poi_mpp.worker.trace_tree import trace_root
 
@@ -42,4 +43,35 @@ def test_trace_event_rejects_private_metadata() -> None:
             input_hashes=("0x" + "11" * 32,),
             output_hash="0x" + "12" * 32,
             metadata={"debug_path": "/Users/rainbow/private/model.bin"},
+        )
+
+
+def test_trace_event_rejects_private_op_name() -> None:
+    with pytest.raises(ValueError, match="op_name"):
+        TraceEvent(
+            event_index=0,
+            op_name="/Users/rainbow/private/bin",
+            input_hashes=("0x" + "11" * 32,),
+            output_hash="0x" + "12" * 32,
+            metadata={"surface": "SYNTHETIC_NON_EVIDENCE"},
+        )
+
+
+def test_trace_sidecar_rejects_noncontiguous_indices() -> None:
+    with pytest.raises(ValueError, match="contiguous"):
+        build_trace_sidecar(
+            [
+                _event(index=0, output_hash="0x" + "12" * 32),
+                _event(index=2, output_hash="0x" + "13" * 32),
+            ]
+        )
+
+
+def test_trace_sidecar_rejects_out_of_order_indices() -> None:
+    with pytest.raises(ValueError, match="contiguous"):
+        build_trace_sidecar(
+            [
+                _event(index=1, output_hash="0x" + "12" * 32),
+                _event(index=0, output_hash="0x" + "13" * 32),
+            ]
         )
