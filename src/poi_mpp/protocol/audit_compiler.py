@@ -8,7 +8,13 @@ from pydantic import field_validator
 
 from poi_mpp.evidence import digest
 from poi_mpp.protocol.reference_machine import InvalidTransition
-from poi_mpp.protocol.types import AuditPlan, ResponseCommitment, TaskSpec, _FrozenProtocolModel
+from poi_mpp.protocol.types import (
+    AuditPlan,
+    ResponseCommitment,
+    TaskSpec,
+    trusted_response_commitment,
+    _FrozenProtocolModel,
+)
 
 
 class AuditPolicy(_FrozenProtocolModel):
@@ -42,22 +48,50 @@ def compile_audit(
     epoch_beacon: bytes,
     round_index: int,
 ) -> AuditPlan:
-    if finalized_commitment.finalized_height is None:
+    try:
+        commitment = trusted_response_commitment(finalized_commitment)
+    except ValueError as error:
+        raise InvalidTransition("commitment is invalid") from error
+    if commitment.finalized_height is None:
         raise InvalidTransition("commitment is not finalized")
-    if finalized_commitment.task_id != task.task_id:
-        raise InvalidTransition("commitment task does not match task specification")
+    if round_index < 0:
+        raise InvalidTransition("round_index must be non-negative")
+    expected_task_root = digest("TASK_SPEC", task)
+    if (
+        commitment.task_id != task.task_id
+        or commitment.worker_id != task.worker_id
+        or commitment.task_class is not task.task_class
+        or commitment.task_epoch != task.epoch
+        or commitment.task_root != expected_task_root
+        or commitment.commitment_height != task.commitment_height
+        or commitment.commitment_finality_depth != task.commitment_finality_depth
+        or commitment.finalized_height
+        != task.commitment_height + task.commitment_finality_depth
+    ):
+        raise InvalidTransition("commitment does not match task specification")
     if round_index < 0:
         raise InvalidTransition("round_index must be non-negative")
     if not task.registered:
         raise InvalidTransition("unregistered tasks cannot derive audit plans")
     if not policy.replacement and policy.sample_count > task.audit_domain_size:
         raise InvalidTransition("sample_count exceeds audit domain without replacement")
+    policy_hash = digest("AUDIT_POLICY", policy)
     seed_material = {
         "task_id": task.task_id,
-        "commitment_hash": finalized_commitment.commitment_hash,
+        "worker_id": commitment.worker_id,
+        "task_class": commitment.task_class.value,
+        "task_epoch": commitment.task_epoch,
+        "task_root": commitment.task_root,
+        "commitment_hash": commitment.commitment_hash,
+        "response_hash": commitment.response_hash,
+        "trace_root": commitment.trace_root,
+        "evidence_root": commitment.evidence_root,
+        "artifact_root": commitment.artifact_root,
+        "model_manifest_hash": commitment.model_manifest_hash,
+        "policy_hash": policy_hash,
         "epoch_beacon": epoch_beacon.hex(),
         "round_index": round_index,
-        "finalized_height": finalized_commitment.finalized_height,
+        "finalized_height": commitment.finalized_height,
     }
     seed_hash = digest("AUDIT_SEED", seed_material)
     sample_indices = _sample_indices(
@@ -69,16 +103,18 @@ def compile_audit(
     audit_id = digest(
         "AUDIT_PLAN",
         {
-            "commitment_hash": finalized_commitment.commitment_hash,
+            "commitment_hash": commitment.commitment_hash,
             "seed_hash": seed_hash,
+            "policy_hash": policy_hash,
             "round_index": round_index,
             "sample_indices": sample_indices,
         },
     )
     return AuditPlan(
         audit_id=audit_id,
-        commitment_hash=finalized_commitment.commitment_hash,
+        commitment_hash=commitment.commitment_hash,
         seed_hash=seed_hash,
+        policy_hash=policy_hash,
         round_index=round_index,
         sample_count=policy.sample_count,
         sample_indices=sample_indices,

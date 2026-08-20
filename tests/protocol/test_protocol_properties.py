@@ -4,7 +4,7 @@ from itertools import permutations
 
 import pytest
 
-from poi_mpp.protocol.receipt import ActivateReceipt, RecordAudit, RecordDataAvailability, SlashReceipt
+from poi_mpp.protocol.receipt import ActivateReceipt, OpenChallenge, RecordAudit, RecordDataAvailability, SlashReceipt
 from poi_mpp.protocol.reference_machine import InvalidTransition, transition
 from poi_mpp.protocol.types import ReceiptState
 
@@ -31,7 +31,16 @@ def test_no_event_order_activates_without_all_gates(receipt, mature_context, con
 
 
 def test_slashed_receipt_never_returns_active(receipt, mature_context):
-    slashed = transition(receipt, SlashReceipt(reason="challenge"), mature_context)
+    challenged = transition(
+        transition(
+            transition(receipt, RecordAudit(decision="ACCEPT"), mature_context),
+            RecordDataAvailability(available=True),
+            mature_context,
+        ),
+        OpenChallenge(reason="challenge"),
+        mature_context,
+    )
+    slashed = transition(challenged, SlashReceipt(reason="challenge"), mature_context)
     for event in (
         RecordAudit(decision="ACCEPT"),
         RecordDataAvailability(available=True),

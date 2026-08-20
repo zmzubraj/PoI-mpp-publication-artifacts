@@ -17,7 +17,22 @@ class RecordDataAvailability(_FrozenProtocolModel):
     available: bool
 
 
+class OpenChallenge(_FrozenProtocolModel):
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def require_reason(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("reason must not be blank")
+        return value
+
+
 class ActivateReceipt(_FrozenProtocolModel):
+    pass
+
+
+class ExpireReceipt(_FrozenProtocolModel):
     pass
 
 
@@ -32,4 +47,11 @@ class SlashReceipt(_FrozenProtocolModel):
         return value
 
 
-ProtocolEvent = RecordAudit | RecordDataAvailability | ActivateReceipt | SlashReceipt
+ProtocolEvent = (
+    RecordAudit
+    | RecordDataAvailability
+    | OpenChallenge
+    | ActivateReceipt
+    | ExpireReceipt
+    | SlashReceipt
+)
