@@ -44,6 +44,7 @@ from poi_mpp.reporting.e1 import E1Summary, E1Variant, summarize_e1_rows
 
 
 MIN_E1_SUPPORTED_PAIRS = 2
+PUBLICATION_EVIDENCE_AUTHORIZED = "PUBLICATION_EVIDENCE_AUTHORIZED"
 
 
 class _FrozenModel(BaseModel):
@@ -377,22 +378,67 @@ def _write_rows_parquet_atomic(rows: list[E1MeasurementRow], path: Path) -> Path
     return path
 
 
+def _record_origin(rows: list[E1MeasurementRow]) -> str:
+    origins = {row.origin.value for row in rows}
+    if len(origins) == 1:
+        return next(iter(origins))
+    return "MIXED_ROW_ORIGINS"
+
+
+def _publication_precheck_reasons(
+    *,
+    rows: list[E1MeasurementRow],
+    run_config: RunConfig,
+    task: TaskSpec,
+    provenance_bundle: ProvenanceBundle | None,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    row_run_ids = {row.run_id for row in rows}
+    row_experiment_ids = {row.experiment_id for row in rows}
+    row_task_ids = {row.task_id for row in rows}
+    row_origins = {row.origin.value for row in rows}
+    if row_run_ids != {run_config.run_id}:
+        reasons.append("rows.run_id must equal run_config.run_id")
+    if row_experiment_ids != {run_config.experiment_id}:
+        reasons.append("rows.experiment_id must equal run_config.experiment_id")
+    if row_task_ids != {task.task_id}:
+        reasons.append("rows.task_id must equal task.task_id")
+    if row_origins != {run_config.origin.value}:
+        reasons.append("rows.origin must equal run_config.origin")
+    if provenance_bundle is None:
+        return tuple(reasons)
+    manifest = provenance_bundle.manifest
+    if run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+        reasons.append(
+            f"run_config.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+        )
+    if manifest.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+        reasons.append(
+            f"provenance.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+        )
+    if manifest.run_id != run_config.run_id:
+        reasons.append("provenance.run_id must equal run_config.run_id")
+    if manifest.experiment_id != run_config.experiment_id:
+        reasons.append("provenance.experiment_id must equal run_config.experiment_id")
+    if manifest.origin.value != run_config.origin.value:
+        reasons.append("provenance.origin must equal run_config.origin")
+    if row_origins != {manifest.origin.value}:
+        reasons.append("rows.origin must equal provenance.origin")
+    return tuple(dict.fromkeys(reasons))
+
+
 def _publication_record(
     *,
     summary: E1Summary,
     rows: list[E1MeasurementRow],
     run_config: RunConfig,
     provenance_bundle: ProvenanceBundle | None,
+    publication_authorized: bool,
 ) -> dict[str, object]:
-    synthetic = any(row.origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE for row in rows)
-    origin = (
-        EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value
-        if synthetic
-        else run_config.origin.value
-    )
+    origin = _record_origin(rows)
     stage = (
         ArtifactStage.SEMANTICALLY_VALID.value
-        if synthetic or provenance_bundle is None
+        if provenance_bundle is None or not publication_authorized
         else ArtifactStage.FROZEN.value
     )
     payload = {
@@ -520,15 +566,23 @@ def run_e1_cost_experiment(
         Path(output_dir) / f"{run_config.experiment_id.lower()}_cost_rows.parquet",
     )
     measured_json = [row.model_dump(mode="json") for row in rows if not row.is_warmup]
+    measured_rows = [row for row in rows if not row.is_warmup]
     summary = summarize_e1_rows(
         measured_json,
         minimum_pairs_required=MIN_E1_SUPPORTED_PAIRS,
     )
+    precheck_reasons = _publication_precheck_reasons(
+        rows=measured_rows,
+        run_config=run_config,
+        task=task,
+        provenance_bundle=provenance_bundle,
+    )
     record = _publication_record(
         summary=summary,
-        rows=rows,
+        rows=measured_rows,
         run_config=run_config,
         provenance_bundle=provenance_bundle,
+        publication_authorized=provenance_bundle is not None and not precheck_reasons,
     )
     bundles = [provenance_bundle] if provenance_bundle is not None else None
     publication_decision = evaluate_publication_gate(
@@ -536,16 +590,24 @@ def run_e1_cost_experiment(
         [record],
         provenance_bundles=bundles,
     )
+    if precheck_reasons:
+        publication_decision = GateDecision(
+            publication_decision.claim_id,
+            "INCOMPLETE",
+            "INCONCLUSIVE",
+            tuple(dict.fromkeys((*precheck_reasons, *publication_decision.reasons))),
+        )
     frozen_artifact_path: Path | None = None
     if (
         registry is not None
         and provenance_bundle is not None
+        and not precheck_reasons
         and publication_decision.completeness == "COMPLETE"
     ):
         frozen_artifact_path = registry.write_atomic(record, provenance_bundle=provenance_bundle)
     return E1ExperimentResult(
         raw_rows_path=raw_rows_path,
-        measured_rows=tuple(row for row in rows if not row.is_warmup),
+        measured_rows=tuple(measured_rows),
         summary=summary,
         publication_record=record,
         publication_decision=publication_decision,

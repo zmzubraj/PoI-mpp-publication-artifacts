@@ -44,8 +44,14 @@ def _run_config(*, run_id: str = "run-e1", origin: str = "REPRODUCIBLE_SIMULATIO
     )
 
 
-def _bundle(*, run_id: str = "run-e1", samples: int = 2) -> ProvenanceBundle:
+def _bundle(
+    *,
+    run_id: str = "run-e1",
+    samples: int = 2,
+    authorization_scope: str = "LOCAL_TEST_ONLY",
+) -> ProvenanceBundle:
     config = _run_config(run_id=run_id, origin="REAL_MODEL_EXECUTION", samples=samples)
+    config = config.model_copy(update={"authorization_scope": authorization_scope})
     environment = EnvironmentManifest(
         python_implementation="CPython",
         python_version="3.11.15",
@@ -332,7 +338,7 @@ def test_summary_rejects_duplicate_missing_and_mismatched_rows(rows: list[dict[s
         summarize_e1_rows(rows)
 
 
-def test_publication_record_uses_exact_artifact_material_and_complete_round_trip(
+def test_local_test_authority_stays_nonterminal_even_with_real_provenance(
     task: TaskSpec,
     protocol_model: ModelManifest,
     tmp_path: Path,
@@ -369,9 +375,102 @@ def test_publication_record_uses_exact_artifact_material_and_complete_round_trip
         "ARTIFACT_CONTENT",
         artifact_content_material(result.publication_record),
     )
+    assert result.publication_record["stage"] == "SEMANTICALLY_VALID"
+    assert result.publication_decision.completeness == "INCOMPLETE"
+    assert result.frozen_artifact_path is None
+    assert "PUBLICATION_EVIDENCE_AUTHORIZED" in " ".join(result.publication_decision.reasons)
+
+
+def test_publication_record_complete_round_trip_requires_explicit_publication_authority(
+    task: TaskSpec,
+    protocol_model: ModelManifest,
+    tmp_path: Path,
+):
+    from poi_mpp.experiments.e1_cost import (
+        PUBLICATION_EVIDENCE_AUTHORIZED,
+        run_e1_cost_experiment,
+    )
+
+    class RealRunner:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def run(self, task: TaskSpec):
+            self.calls += 1
+            total = 0
+            for value in range(50_000):
+                total += value
+            return _sample(
+                protocol_model=protocol_model,
+                origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+                seed=self.calls + total % 3,
+            )
+
+    bundle = _bundle(
+        run_id="run-publication",
+        samples=2,
+        authorization_scope=PUBLICATION_EVIDENCE_AUTHORIZED,
+    )
+    registry = ArtifactRegistry(tmp_path / "registry")
+    result = run_e1_cost_experiment(
+        runner=RealRunner(),
+        run_config=bundle.config,
+        task=task,
+        output_dir=tmp_path / "raw",
+        provenance_bundle=bundle,
+        registry=registry,
+    )
+
     assert result.publication_decision.completeness == "COMPLETE"
+    assert result.publication_record["stage"] == "FROZEN"
     assert result.frozen_artifact_path is not None
     assert result.frozen_artifact_path.exists()
+
+
+def test_origin_mismatch_fails_closed_before_publication_gate(
+    task: TaskSpec,
+    protocol_model: ModelManifest,
+    tmp_path: Path,
+):
+    from poi_mpp.experiments.e1_cost import (
+        PUBLICATION_EVIDENCE_AUTHORIZED,
+        run_e1_cost_experiment,
+    )
+
+    class SimulationRunner:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def run(self, task: TaskSpec):
+            self.calls += 1
+            return _sample(
+                protocol_model=protocol_model,
+                origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+                seed=self.calls,
+            )
+
+    bundle = _bundle(
+        run_id="run-real",
+        samples=2,
+        authorization_scope=PUBLICATION_EVIDENCE_AUTHORIZED,
+    )
+    registry = ArtifactRegistry(tmp_path / "registry")
+    result = run_e1_cost_experiment(
+        runner=SimulationRunner(),
+        run_config=bundle.config,
+        task=task,
+        output_dir=tmp_path / "raw",
+        provenance_bundle=bundle,
+        registry=registry,
+    )
+
+    assert result.publication_decision.completeness == "INCOMPLETE"
+    assert result.publication_record["origin"] == "REPRODUCIBLE_SIMULATION"
+    assert result.publication_record["stage"] == "SEMANTICALLY_VALID"
+    assert result.frozen_artifact_path is None
+    reasons = " ".join(result.publication_decision.reasons)
+    assert "rows.origin must equal run_config.origin" in reasons
+    assert "rows.origin must equal provenance.origin" in reasons
 
 
 def test_synthetic_fixture_rows_are_blocked_from_publication(
