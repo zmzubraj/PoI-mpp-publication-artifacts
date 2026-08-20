@@ -102,3 +102,41 @@ $ git diff --check
 
 - The trusted issuance helper is intentionally module-private because the current evidence kernel does not yet expose an independently verified public semantic-label artifact surface. A later task may replace this with a stronger first-class verified issuer.
 - The trusted binding currently uses `artifact.parent_hashes` for label-payload commitment because Task 11 does not yet own a dedicated semantic-label artifact schema in the evidence kernel.
+
+## Fix Round 3 — fail-closed fallback for semantic authority
+
+**Status:** DONE_WITH_CONCERNS
+
+### Delivered
+
+- Removed the Task 11 accepting trust path entirely. `verify_grounded()` no longer accepts annotation-driven `SUPPORTED`, `PARTIAL`, `CONTRADICTORY`, or numeric outcomes as authoritative in this task.
+- `EvidenceRecord` now strips all caller-supplied trust fields during validation and disables `model_construct()` so unchecked instantiation cannot mint trusted authority.
+- Public/serialized trust bindings, stale artifact references, synthetic origins, and raw forged terminal-record metadata now all degrade to the same fail-closed behavior: `ABSTAIN` when semantic assertions are present.
+- Kept Unicode `source_family` normalization from round 2.
+
+### Focused verification
+
+```text
+$ ./.venv/bin/python -m pytest tests/semantic tests/datasets/test_split_isolation.py -v
+29 passed in 0.11s
+
+$ ./.venv/bin/python -m pytest tests -v
+218 passed in 4.47s
+
+$ PYTHONPATH=src ./.venv/bin/python -m compileall -q src tests
+$ git diff --check
+```
+
+### Additional regressions covered
+
+- `EvidenceRecord.model_construct(...)` is disabled.
+- The private `_issue_trusted_evidence` helper is absent from the models module.
+- Constructor / `model_validate` / `model_copy` self-asserted trust is stripped and still yields `ABSTAIN`.
+- Serialized/reloaded trust bindings cannot be revived into authority.
+- Stale registry-reference fields are ignored and still yield `ABSTAIN`.
+- Synthetic annotated records cannot become trusted publication evidence.
+
+### Residual concerns
+
+- This round intentionally chooses the explicit Task 11 fallback because the current evidence kernel does not yet provide a defensible non-serializable, registry-backed semantic authority capability for acceptance.
+- `ACCEPT` for annotation-driven grounded support is therefore deferred to a later task that can prove registry lookup, graph validation, canonical artifact identity, provenance validation, and publication-gate freshness at verification time.

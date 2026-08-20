@@ -6,87 +6,37 @@ from poi_mpp.auditor.semantic import (
     DevelopmentCalibrationExample,
     EvidenceAnnotation,
     EvidenceAnnotationKind,
-    EvidenceRecord,
     GroundedClaim,
     SemanticCalibrationArtifact,
     VerificationMode,
     fit_development_calibration,
     verify_grounded,
 )
-from poi_mpp.auditor.semantic.models import (
-    _issue_trusted_evidence,
-    semantic_annotation_payload_hash,
-    semantic_evidence_content_hash,
-)
-from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigin, RunManifest
+from poi_mpp.auditor.semantic.models import semantic_evidence_content_hash
+from poi_mpp.auditor.semantic.models import EvidenceRecord
+from poi_mpp.evidence.models import EvidenceOrigin
 
 
-def _provenance(origin: EvidenceOrigin) -> RunManifest:
-    return RunManifest(
-        run_id="run-1",
-        experiment_id="experiment-1",
-        config_hash="a" * 64,
-        environment_hash="b" * 64,
-        code_revision="c" * 40,
-        origin=origin,
-        authorization_scope="semantic-fixture",
-    )
-
-
-def _trusted_artifact(citation_id: str) -> ArtifactRecord:
+def _evidence(citation_id: str) -> EvidenceRecord:
     text = f"evidence::{citation_id}"
-    support = (
-        EvidenceAnnotation(
-            claim_id="claim-1",
-            kind=EvidenceAnnotationKind.SUPPORTS,
-            reason="supported by the citation",
-        ),
-    )
-    record = ArtifactRecord(
-        artifact_id=f"artifact-evidence-{citation_id}",
-        run_id="run-1",
-        experiment_id="experiment-1",
+    return EvidenceRecord(
+        evidence_id=f"evidence-{citation_id}",
+        citation_id=citation_id,
+        source_family="paper-a",
         origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-        stage=ArtifactStage.GENERATED,
+        content=text,
         content_hash=semantic_evidence_content_hash(
             citation_id=citation_id,
             content=text,
             source_family="paper-a",
         ),
-        parent_hashes=(
-            semantic_annotation_payload_hash(
-                evidence_id=f"evidence-{citation_id}",
-                citation_id=citation_id,
-                source_family="paper-a",
-                annotations=support,
-                numeric_facts=(),
+        annotations=(
+            EvidenceAnnotation(
+                claim_id="claim-1",
+                kind=EvidenceAnnotationKind.SUPPORTS,
+                reason="support remains untrusted in Task11",
             ),
         ),
-    )
-    return (
-        record.advance_to(ArtifactStage.SCHEMA_VALID)
-        .advance_to(ArtifactStage.SEMANTICALLY_VALID)
-        .advance_to(ArtifactStage.FROZEN)
-    )
-
-
-def _evidence(citation_id: str) -> EvidenceRecord:
-    text = f"evidence::{citation_id}"
-    support = (
-        EvidenceAnnotation(
-            claim_id="claim-1",
-            kind=EvidenceAnnotationKind.SUPPORTS,
-            reason="supported by the citation",
-        ),
-    )
-    return _issue_trusted_evidence(
-        artifact=_trusted_artifact(citation_id),
-        provenance=_provenance(EvidenceOrigin.REAL_MODEL_EXECUTION),
-        evidence_id=f"evidence-{citation_id}",
-        citation_id=citation_id,
-        source_family="paper-a",
-        content=text,
-        annotations=support,
     )
 
 
@@ -113,7 +63,7 @@ def test_development_calibration_is_frozen_and_tie_breaks_fail_closed():
         artifact.minimum_support_fraction = 0.5
 
 
-def test_confirmatory_verification_uses_frozen_calibration_without_tuning():
+def test_confirmatory_verification_uses_frozen_calibration_but_still_abstains_without_capability():
     calibration = SemanticCalibrationArtifact.create(
         dataset_label="development-fixture",
         minimum_support_fraction=1.0,
@@ -134,3 +84,4 @@ def test_confirmatory_verification_uses_frozen_calibration_without_tuning():
 
     assert result.calibration_hash == calibration.content_hash
     assert calibration.minimum_support_fraction == 1.0
+    assert result.decision == "ABSTAIN"

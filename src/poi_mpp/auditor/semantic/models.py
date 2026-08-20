@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 import re
@@ -12,23 +11,11 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigin, RunManifest
+from poi_mpp.evidence.models import EvidenceOrigin
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _BOUNDED_DECIMAL = re.compile(r"-?(0|[1-9][0-9]{0,11})(\.[0-9]{1,12})?\Z")
-_TRUSTED_TERMINAL_STAGES = frozenset({ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE})
-_TRUSTED_EVIDENCE_ORIGINS = frozenset(
-    {
-        EvidenceOrigin.REAL_MODEL_EXECUTION,
-        EvidenceOrigin.FOUNDRY_MEASUREMENT,
-        EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-    }
-)
-_TRUSTED_SEMANTIC_SENTINEL = object()
-_trusted_semantic_binding: ContextVar[dict[str, Any] | None] = ContextVar(
-    "poi_mpp_trusted_semantic_binding", default=None
-)
 
 
 class VerificationMode(StrEnum):
@@ -193,10 +180,6 @@ def semantic_annotation_payload_hash(
     )
 
 
-def _semantic_provenance_hash(provenance: RunManifest) -> str:
-    return digest("TRUSTED_GROUNDED_PROVENANCE", provenance.model_dump(mode="json"))
-
-
 class EvidenceRecord(_FrozenModel):
     evidence_id: str
     citation_id: str
@@ -219,17 +202,10 @@ class EvidenceRecord(_FrozenModel):
         normalized = dict(value)
         if isinstance(normalized.get("source_family"), str):
             normalized["source_family"] = normalize_source_family(normalized["source_family"])
-        binding = _trusted_semantic_binding.get()
-        if binding is None or binding.get("capability") is not _TRUSTED_SEMANTIC_SENTINEL:
-            normalized["label_authority"] = SemanticLabelAuthority.UNTRUSTED_CALLER
-            normalized["trusted_artifact_id"] = None
-            normalized["trusted_provenance_hash"] = None
-            normalized["trusted_annotation_hash"] = None
-            return normalized
-        normalized["label_authority"] = SemanticLabelAuthority.TRUSTED_GROUNDED_ANNOTATOR
-        normalized["trusted_artifact_id"] = binding["artifact"].artifact_id
-        normalized["trusted_provenance_hash"] = _semantic_provenance_hash(binding["provenance"])
-        normalized["trusted_annotation_hash"] = binding["annotation_hash"]
+        normalized["label_authority"] = SemanticLabelAuthority.UNTRUSTED_CALLER
+        normalized["trusted_artifact_id"] = None
+        normalized["trusted_provenance_hash"] = None
+        normalized["trusted_annotation_hash"] = None
         return normalized
 
     @field_validator("evidence_id", "citation_id", "content")
@@ -267,24 +243,6 @@ class EvidenceRecord(_FrozenModel):
         )
         if self.content_hash != expected:
             raise ValueError("content_hash must match canonical evidence content")
-        if self.label_authority is SemanticLabelAuthority.TRUSTED_GROUNDED_ANNOTATOR:
-            binding = _trusted_semantic_binding.get()
-            if binding is None or binding.get("capability") is not _TRUSTED_SEMANTIC_SENTINEL:
-                raise ValueError("trusted semantic labels require an internal issuance context")
-            expected_annotation_hash = semantic_annotation_payload_hash(
-                evidence_id=self.evidence_id,
-                citation_id=self.citation_id,
-                source_family=self.source_family,
-                annotations=self.annotations,
-                numeric_facts=self.numeric_facts,
-            )
-            if self.trusted_annotation_hash != expected_annotation_hash:
-                raise ValueError("trusted_annotation_hash must bind the issued label payload")
-            if self.trusted_artifact_id != binding["artifact"].artifact_id:
-                raise ValueError("trusted_artifact_id must match the issued artifact")
-            expected_provenance_hash = _semantic_provenance_hash(binding["provenance"])
-            if self.trusted_provenance_hash != expected_provenance_hash:
-                raise ValueError("trusted_provenance_hash must match the issued provenance")
         return self
 
     def model_copy(self, *, update: dict[str, Any] | None = None, deep: bool = False) -> "EvidenceRecord":
@@ -293,6 +251,10 @@ class EvidenceRecord(_FrozenModel):
         merged = self.model_dump(mode="python")
         merged.update(update)
         return type(self).model_validate(merged)
+
+    @classmethod
+    def model_construct(cls, _fields_set: set[str] | None = None, **values: Any) -> "EvidenceRecord":
+        raise TypeError("EvidenceRecord.model_construct is disabled; use model_validate")
 
 
 class GroundedClaim(_FrozenModel):
@@ -420,86 +382,3 @@ class SemanticCalibrationArtifact(_FrozenModel):
             example_count=example_count,
             content_hash=digest("SEMANTIC_CALIBRATION", material),
         )
-
-
-def _trusted_semantic_issue_binding(
-    *,
-    artifact: ArtifactRecord,
-    provenance: RunManifest,
-    evidence_id: str,
-    citation_id: str,
-    source_family: str,
-    content: str,
-    annotations: tuple[EvidenceAnnotation, ...],
-    numeric_facts: tuple[NumericFact, ...],
-) -> dict[str, Any]:
-    normalized_source_family = normalize_source_family(source_family)
-    if artifact.stage not in _TRUSTED_TERMINAL_STAGES:
-        raise ValueError("trusted semantic issuance requires a terminal artifact stage")
-    if artifact.origin not in _TRUSTED_EVIDENCE_ORIGINS:
-        raise ValueError("trusted semantic issuance requires a non-synthetic publication evidence origin")
-    if provenance.origin != artifact.origin:
-        raise ValueError("trusted semantic issuance requires matching artifact/provenance origins")
-    if provenance.run_id != artifact.run_id or provenance.experiment_id != artifact.experiment_id:
-        raise ValueError("trusted semantic issuance requires matching artifact/provenance identity")
-    expected_content_hash = semantic_evidence_content_hash(
-        citation_id=citation_id,
-        content=content,
-        source_family=normalized_source_family,
-    )
-    if artifact.content_hash != expected_content_hash:
-        raise ValueError("trusted semantic issuance requires artifact content_hash to match evidence content")
-    annotation_hash = semantic_annotation_payload_hash(
-        evidence_id=evidence_id,
-        citation_id=citation_id,
-        source_family=normalized_source_family,
-        annotations=annotations,
-        numeric_facts=numeric_facts,
-    )
-    if annotation_hash not in artifact.parent_hashes:
-        raise ValueError("trusted semantic issuance requires artifact parent_hashes to bind the label payload")
-    return {
-        "capability": _TRUSTED_SEMANTIC_SENTINEL,
-        "artifact": artifact,
-        "provenance": provenance,
-        "annotation_hash": annotation_hash,
-    }
-
-
-def _issue_trusted_evidence(
-    *,
-    artifact: ArtifactRecord,
-    provenance: RunManifest,
-    evidence_id: str,
-    citation_id: str,
-    source_family: str,
-    content: str,
-    annotations: tuple[EvidenceAnnotation, ...] = (),
-    numeric_facts: tuple[NumericFact, ...] = (),
-) -> EvidenceRecord:
-    """Issue a trusted semantic record via a module-private evidence-kernel binding."""
-
-    binding = _trusted_semantic_issue_binding(
-        artifact=artifact,
-        provenance=provenance,
-        evidence_id=evidence_id,
-        citation_id=citation_id,
-        source_family=source_family,
-        content=content,
-        annotations=annotations,
-        numeric_facts=numeric_facts,
-    )
-    token = _trusted_semantic_binding.set(binding)
-    try:
-        return EvidenceRecord(
-            evidence_id=evidence_id,
-            citation_id=citation_id,
-            source_family=source_family,
-            origin=artifact.origin,
-            content=content,
-            content_hash=artifact.content_hash or "",
-            annotations=annotations,
-            numeric_facts=numeric_facts,
-        )
-    finally:
-        _trusted_semantic_binding.reset(token)
