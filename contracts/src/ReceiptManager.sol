@@ -9,9 +9,12 @@ import "./AuditManager.sol";
 contract ReceiptManager {
     error ReceiptManager__ActivationNotReady();
     error ReceiptManager__AuditMissing();
+    error ReceiptManager__ChallengeNotConfirmed();
     error ReceiptManager__InvalidNullifier();
     error ReceiptManager__InvalidState();
+    error ReceiptManager__NullifierAlreadyReserved();
     error ReceiptManager__NullifierAlreadyUsed();
+    error ReceiptManager__SlashNotConfirmed();
     error ReceiptManager__Unauthorized();
 
     uint16 public constant EVENT_VERSION = 1;
@@ -48,6 +51,7 @@ contract ReceiptManager {
     uint256 public nextReceiptId = 1;
     mapping(uint256 => Receipt) public receipts;
 
+    mapping(bytes32 => bool) public reservedNullifiers;
     mapping(bytes32 => bool) public usedNullifiers;
     mapping(uint256 => mapping(address => uint256)) public activeReceiptCount;
 
@@ -89,6 +93,9 @@ contract ReceiptManager {
         if (nullifier == bytes32(0)) {
             revert ReceiptManager__InvalidNullifier();
         }
+        if (reservedNullifiers[nullifier]) {
+            revert ReceiptManager__NullifierAlreadyReserved();
+        }
 
         TaskManager.Task memory task = taskManager.getTask(taskId);
         CommitmentHub.Commitment memory committed = commitmentHub.getCommitment(taskId);
@@ -98,6 +105,7 @@ contract ReceiptManager {
         }
 
         id = nextReceiptId++;
+        reservedNullifiers[nullifier] = true;
         receipts[id] = Receipt(
             taskId,
             task.worker,
@@ -121,7 +129,7 @@ contract ReceiptManager {
             revert ReceiptManager__NullifierAlreadyUsed();
         }
         if (
-            block.number <= receipt.epochIssued || block.number < receipt.challengeDeadline
+            block.number <= receipt.epochIssued || block.number != receipt.challengeDeadline
                 || !auditManager.isReceiptActivatable(receipt.taskId)
         ) {
             revert ReceiptManager__ActivationNotReady();
@@ -129,7 +137,7 @@ contract ReceiptManager {
 
         usedNullifiers[receipt.nullifier] = true;
         receipt.state = State.ACTIVE;
-        receipt.activatedEpoch = uint64(block.number);
+        receipt.activatedEpoch = receipt.epochIssued + 1;
         activeReceiptCount[receipt.taskId][receipt.worker] += 1;
         emit ReceiptActivatedV1(
             EVENT_VERSION, receiptId, receipt.taskId, receipt.worker, receipt.nullifier, receipt.activatedEpoch
@@ -141,6 +149,9 @@ contract ReceiptManager {
         if (receipt.state != State.PENDING) {
             revert ReceiptManager__InvalidState();
         }
+        if (!auditManager.isTaskChallenged(receipt.taskId)) {
+            revert ReceiptManager__ChallengeNotConfirmed();
+        }
         receipt.state = State.CHALLENGED;
         emit ReceiptChallengedV1(EVENT_VERSION, receiptId);
     }
@@ -149,6 +160,9 @@ contract ReceiptManager {
         Receipt storage receipt = receipts[receiptId];
         if (receipt.state != State.CHALLENGED) {
             revert ReceiptManager__InvalidState();
+        }
+        if (!auditManager.isTaskSlashed(receipt.taskId)) {
+            revert ReceiptManager__SlashNotConfirmed();
         }
         receipt.state = State.SLASHED;
         emit ReceiptSlashedV1(EVENT_VERSION, receiptId);

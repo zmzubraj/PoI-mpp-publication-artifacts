@@ -14,15 +14,9 @@ contract ReplayInvariantTest is ProtocolKernelBase {
     }
 
     function testNullifierReuseIsRejected() public {
-        _matureReceiptWindow(consensusTaskId);
-        _activatePendingReceipt(pendingReceiptId);
-
         vm.prank(RECEIPT_OPERATOR);
-        uint256 duplicateReceiptId = receiptManager.mintPending(consensusTaskId, NULLIFIER);
-
-        vm.prank(RECEIPT_OPERATOR);
-        vm.expectRevert(ReceiptManager.ReceiptManager__NullifierAlreadyUsed.selector);
-        receiptManager.activate(duplicateReceiptId);
+        vm.expectRevert(ReceiptManager.ReceiptManager__NullifierAlreadyReserved.selector);
+        receiptManager.mintPending(consensusTaskId, NULLIFIER);
     }
 
     function invariant_ConsumedNullifierStaysMarked() public view {

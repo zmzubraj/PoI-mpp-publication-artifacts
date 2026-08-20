@@ -21,7 +21,65 @@ interface Vm {
 }
 
 abstract contract MinimalTest {
+    struct FuzzSelector {
+        address addr;
+        bytes4[] selectors;
+    }
+
+    struct FuzzArtifactSelector {
+        string artifact;
+        bytes4[] selectors;
+    }
+
+    struct FuzzInterface {
+        address addr;
+        string[] artifacts;
+    }
+
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    fallback() external payable {}
+    receive() external payable {}
+
+    function excludeArtifacts() public pure returns (string[] memory excludedArtifacts_) {
+        excludedArtifacts_ = new string[](0);
+    }
+
+    function excludeContracts() public pure returns (address[] memory excludedContracts_) {
+        excludedContracts_ = new address[](0);
+    }
+
+    function excludeSelectors() public pure returns (FuzzSelector[] memory excludedSelectors_) {
+        excludedSelectors_ = new FuzzSelector[](0);
+    }
+
+    function excludeSenders() public pure returns (address[] memory excludedSenders_) {
+        excludedSenders_ = new address[](0);
+    }
+
+    function targetArtifacts() public pure returns (string[] memory targetedArtifacts_) {
+        targetedArtifacts_ = new string[](0);
+    }
+
+    function targetArtifactSelectors() public pure returns (FuzzArtifactSelector[] memory targetedArtifactSelectors_) {
+        targetedArtifactSelectors_ = new FuzzArtifactSelector[](0);
+    }
+
+    function targetContracts() public pure returns (address[] memory targetedContracts_) {
+        targetedContracts_ = new address[](0);
+    }
+
+    function targetSelectors() public pure returns (FuzzSelector[] memory targetedSelectors_) {
+        targetedSelectors_ = new FuzzSelector[](0);
+    }
+
+    function targetSenders() public pure returns (address[] memory targetedSenders_) {
+        targetedSenders_ = new address[](0);
+    }
+
+    function targetInterfaces() public pure returns (FuzzInterface[] memory targetedInterfaces_) {
+        targetedInterfaces_ = new FuzzInterface[](0);
+    }
 
     function assertTrue(bool condition, string memory message) internal pure {
         require(condition, message);
@@ -146,13 +204,18 @@ abstract contract ProtocolKernelBase is MinimalTest {
         vm.prank(RECEIPT_OPERATOR);
         receiptManager.activate(receiptId);
     }
+
+    function _mintPendingReceipt(bytes32 nullifier) internal returns (uint256 receiptId) {
+        vm.prank(RECEIPT_OPERATOR);
+        receiptId = receiptManager.mintPending(consensusTaskId, nullifier);
+    }
 }
 
 contract ProtocolRolesTest is ProtocolKernelBase {
     function testUnauthorizedCallerCannotAddCredit() public {
         vm.prank(ATTACKER);
         vm.expectRevert(CreditEngine.CreditEngine__Unauthorized.selector);
-        creditEngine.addCredit(consensusTaskId, WORKER, 10);
+        creditEngine.addCredit(consensusTaskId, pendingReceiptId, WORKER, 10);
     }
 
     function testOnlyRegisteredWorkerCanCommitTask() public {

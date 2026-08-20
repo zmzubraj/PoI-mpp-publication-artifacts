@@ -167,6 +167,16 @@ contract AuditManager {
         emit ReceiptSlashedV1(EVENT_VERSION, taskId);
     }
 
+    function isTaskChallenged(uint256 taskId) external view returns (bool) {
+        AuditRound memory round = rounds[taskId];
+        return round.exists && round.challenged;
+    }
+
+    function isTaskSlashed(uint256 taskId) external view returns (bool) {
+        AuditRound memory round = rounds[taskId];
+        return round.exists && round.slashed;
+    }
+
     function isReceiptActivatable(uint256 taskId) external view returns (bool) {
         AuditRound memory round = rounds[taskId];
         return round.exists && round.decision == AuditDecision.ACCEPT && round.daRecorded && round.daPassed

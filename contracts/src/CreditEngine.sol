@@ -8,6 +8,11 @@ import "./ReceiptManager.sol";
 contract CreditEngine {
     error CreditEngine__BudgetExceeded();
     error CreditEngine__NoActiveReceipt();
+    error CreditEngine__ReceiptAlreadyCredited();
+    error CreditEngine__ReceiptMissing();
+    error CreditEngine__ReceiptNotActive();
+    error CreditEngine__ReceiptTaskMismatch();
+    error CreditEngine__ReceiptWrongEpoch();
     error CreditEngine__TaskNotCreditable();
     error CreditEngine__Unauthorized();
     error CreditEngine__WorkerMismatch();
@@ -22,12 +27,14 @@ contract CreditEngine {
     mapping(address => uint256) public collateral;
 
     mapping(uint256 => uint256) public taskAllocated;
+    mapping(uint256 => bool) public creditedReceipts;
 
     event CollateralSetV1(uint16 indexed version, address indexed worker, uint256 amount);
     event CreditAddedV1(
         uint16 indexed version,
         uint256 indexed taskId,
         uint64 indexed epoch,
+        uint256 receiptId,
         address worker,
         uint256 credit,
         uint256 cumulativeTaskCredit
@@ -51,13 +58,30 @@ contract CreditEngine {
         emit CollateralSetV1(EVENT_VERSION, worker, amount);
     }
 
-    function addCredit(uint256 taskId, address worker, uint256 credit) external onlyCreditOperator {
+    function addCredit(uint256 taskId, uint256 receiptId, address worker, uint256 credit) external onlyCreditOperator {
         TaskManager.Task memory task = taskManager.getTask(taskId);
         if (!task.active || !task.registered || task.taskClass != TaskManager.TaskClass.CONSENSUS) {
             revert CreditEngine__TaskNotCreditable();
         }
-        if (worker != task.worker || !taskManager.isRegisteredWorker(worker)) {
+
+        ReceiptManager.Receipt memory receipt = receiptManager.getReceipt(receiptId);
+        if (receipt.taskId == 0 || receipt.worker == address(0)) {
+            revert CreditEngine__ReceiptMissing();
+        }
+        if (receipt.taskId != taskId) {
+            revert CreditEngine__ReceiptTaskMismatch();
+        }
+        if (worker != task.worker || worker != receipt.worker || !taskManager.isRegisteredWorker(worker)) {
             revert CreditEngine__WorkerMismatch();
+        }
+        if (receipt.state != ReceiptManager.State.ACTIVE) {
+            revert CreditEngine__ReceiptNotActive();
+        }
+        if (receipt.activatedEpoch != task.epoch + 1) {
+            revert CreditEngine__ReceiptWrongEpoch();
+        }
+        if (creditedReceipts[receiptId]) {
+            revert CreditEngine__ReceiptAlreadyCredited();
         }
         if (receiptManager.activeReceiptCount(taskId, worker) == 0) {
             revert CreditEngine__NoActiveReceipt();
@@ -67,10 +91,11 @@ contract CreditEngine {
         if (nextAllocated > task.creditBudget) {
             revert CreditEngine__BudgetExceeded();
         }
+        creditedReceipts[receiptId] = true;
         taskAllocated[taskId] = nextAllocated;
         uint64 creditEpoch = task.epoch + 1;
         rawCredit[creditEpoch][worker] += credit;
-        emit CreditAddedV1(EVENT_VERSION, taskId, creditEpoch, worker, credit, nextAllocated);
+        emit CreditAddedV1(EVENT_VERSION, taskId, creditEpoch, receiptId, worker, credit, nextAllocated);
     }
 
     function activeWeight(uint64 epoch, address worker) external view returns (uint256) {
