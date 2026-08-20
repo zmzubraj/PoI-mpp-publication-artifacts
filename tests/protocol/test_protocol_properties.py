@@ -1,0 +1,41 @@
+from __future__ import annotations
+
+from itertools import permutations
+
+import pytest
+
+from poi_mpp.protocol.receipt import ActivateReceipt, RecordAudit, RecordDataAvailability, SlashReceipt
+from poi_mpp.protocol.reference_machine import InvalidTransition, transition
+from poi_mpp.protocol.types import ReceiptState
+
+
+def test_no_event_order_activates_without_all_gates(receipt, mature_context, context_without_gates):
+    events = (
+        RecordAudit(decision="ACCEPT"),
+        RecordDataAvailability(available=True),
+        ActivateReceipt(),
+    )
+    successes = 0
+    for ordered in permutations(events):
+        current = receipt
+        for event in ordered:
+            context = mature_context if not isinstance(event, ActivateReceipt) else context_without_gates
+            try:
+                current = transition(current, event, context)
+            except InvalidTransition:
+                break
+        else:
+            if current.state is ReceiptState.ACTIVE:
+                successes += 1
+    assert successes == 0
+
+
+def test_slashed_receipt_never_returns_active(receipt, mature_context):
+    slashed = transition(receipt, SlashReceipt(reason="challenge"), mature_context)
+    for event in (
+        RecordAudit(decision="ACCEPT"),
+        RecordDataAvailability(available=True),
+        ActivateReceipt(),
+    ):
+        with pytest.raises(InvalidTransition):
+            transition(slashed, event, mature_context)
