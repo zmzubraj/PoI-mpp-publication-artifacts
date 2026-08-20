@@ -31,8 +31,8 @@ class ArtifactRegistry:
     def __init__(self, root: str | Path):
         self.root = Path(root)
         self._dir_fd = self._open_root_no_symlinks(self.root)
-        self._recover_temps()
         self._entries = self._load_entries()
+        self._recover_temps()
 
     @staticmethod
     def _open_root_no_symlinks(root: Path) -> int:
@@ -70,8 +70,14 @@ class ArtifactRegistry:
                     raise ArtifactValidationError(("artifact registry root could not be opened without following symlinks",)) from error
                 os.close(descriptor)
                 descriptor = child
-                if not stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                details = os.fstat(descriptor)
+                if not stat.S_ISDIR(details.st_mode):
                     raise ArtifactValidationError(("artifact registry root is not a directory",))
+                if final and (
+                    details.st_uid != os.geteuid()
+                    or details.st_mode & (stat.S_IWGRP | stat.S_IWOTH)
+                ):
+                    raise ArtifactValidationError(("artifact registry root must be private and owned by the current user",))
             return descriptor
         except BaseException:
             os.close(descriptor)
@@ -149,14 +155,35 @@ class ArtifactRegistry:
             try:
                 envelope = self._decode_envelope(target_name)
                 bundle = provenance_bundle_from_json(envelope["provenance_bundle"])
+                known_hashes = {
+                    entry["record"].get("content_hash")
+                    for entry in self._entries.values()
+                    if isinstance(entry["record"].get("content_hash"), str)
+                }
+                own_hash = envelope["record"].get("content_hash")
                 validate_artifact(
                     envelope["record"],
                     provenance_bundle=bundle,
-                    known_parent_hashes=set(envelope["record"].get("parent_hashes", [])),
+                    known_parent_hashes=known_hashes - ({own_hash} if isinstance(own_hash, str) else set()),
                 )
             except ArtifactValidationError as error:
                 raise ArtifactValidationError((f"orphan registry temporary file: {name}", *error.reasons)) from error
             if envelope["record"].get("artifact_id") != artifact_id or self._read_name(name) != self._read_name(target_name):
+                raise ArtifactValidationError((f"orphan registry temporary file: {name}",))
+            try:
+                current_temp = os.lstat(name, dir_fd=self._dir_fd)
+                current_target = os.lstat(target_name, dir_fd=self._dir_fd)
+            except FileNotFoundError as error:
+                raise ArtifactValidationError((f"orphan registry temporary file: {name}",)) from error
+            if (
+                stat.S_ISLNK(current_temp.st_mode)
+                or stat.S_ISLNK(current_target.st_mode)
+                or not stat.S_ISREG(current_temp.st_mode)
+                or not stat.S_ISREG(current_target.st_mode)
+                or current_temp.st_dev != current_target.st_dev
+                or current_temp.st_ino != current_target.st_ino
+                or current_target.st_nlink < 2
+            ):
                 raise ArtifactValidationError((f"orphan registry temporary file: {name}",))
             os.unlink(name, dir_fd=self._dir_fd)
             recovered = True
@@ -297,6 +324,9 @@ class ArtifactRegistry:
         except BaseException as error:
             # ``os.link`` can succeed and an interrupt can arrive before Python
             # observes its return.  The anchored target is authoritative then.
+            if not link_attempted:
+                self._cleanup_owned_temp(temp_name, content)
+                raise
             if link_attempted and self._target_matches(filename, content):
                 self._entries[filename] = envelope
                 return self.root / filename

@@ -111,6 +111,24 @@ def test_prelink_failure_leaves_no_target_or_temp(tmp_path: Path, monkeypatch: p
     assert not list(tmp_path.glob(".*.tmp"))
 
 
+@pytest.mark.parametrize("interrupt", [KeyboardInterrupt, SystemExit])
+def test_prelink_base_exception_is_re_raised_after_owned_temp_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interrupt: type[BaseException]
+):
+    registry = ArtifactRegistry(tmp_path)
+    original_write_temp = registry._write_temp
+
+    def interrupt_after_temp(name: str, content: bytes) -> None:
+        original_write_temp(name, content)
+        raise interrupt("before link")
+
+    monkeypatch.setattr(registry, "_write_temp", interrupt_after_temp)
+    with pytest.raises(interrupt, match="before link"):
+        registry.write_atomic(_record(), provenance_bundle=_bundle())
+    assert not list(tmp_path.glob("*.frozen.json"))
+    assert not list(tmp_path.glob(".*.tmp"))
+
+
 def test_postlink_unlink_and_directory_fsync_failure_return_success_and_recover_temp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     registry = ArtifactRegistry(tmp_path)
     original_unlink = os.unlink
@@ -159,3 +177,32 @@ def test_temp_recovery_preserves_different_inode_matching_target(tmp_path: Path)
     with pytest.raises(ArtifactValidationError, match="orphan registry temporary"):
         ArtifactRegistry(tmp_path)
     assert temp.exists()
+
+
+def test_temp_recovery_preserves_residue_when_registered_parent_is_missing(tmp_path: Path):
+    registry = ArtifactRegistry(tmp_path)
+    parent = _record()
+    parent_path = registry.write_atomic(parent, provenance_bundle=_bundle())
+    child_bundle = _bundle(parents=[parent["content_hash"]])
+    child = _record(bundle=child_bundle, artifact_id="artifact-2", parent_hashes=[parent["content_hash"]])
+    child_path = registry.write_atomic(child, provenance_bundle=child_bundle)
+    temp = tmp_path / f".artifact-2.{'c' * 32}.tmp"
+    os.link(child_path, temp)
+    parent_path.unlink()
+    with pytest.raises(ArtifactValidationError, match="parent"):
+        ArtifactRegistry(tmp_path)
+    assert temp.exists()
+
+
+def test_recovery_rejects_nonprivate_registry_before_temp_unlink(tmp_path: Path):
+    registry = ArtifactRegistry(tmp_path)
+    path = registry.write_atomic(_record(), provenance_bundle=_bundle())
+    temp = tmp_path / f".artifact-1.{'d' * 32}.tmp"
+    os.link(path, temp)
+    os.chmod(tmp_path, 0o777)
+    try:
+        with pytest.raises(ArtifactValidationError, match="private"):
+            ArtifactRegistry(tmp_path)
+        assert temp.exists()
+    finally:
+        os.chmod(tmp_path, 0o700)
