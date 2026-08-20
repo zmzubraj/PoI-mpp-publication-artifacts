@@ -1,5 +1,6 @@
 import pytest
 
+from poi_mpp.auditor.reports import AssuranceClass, AuditDisposition, AuditResult
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.auditor import verify_freivalds_float
 
@@ -93,3 +94,68 @@ def test_float_audit_rejects_overflowing_intermediates():
             atol=1e-6,
             rtol=1e-6,
         )
+
+
+def test_float_audit_zero_reference_metrics_remain_finite_and_tolerance_controls_acceptance():
+    zero_product = ((0.0,),)
+    small_observed = ((1e-9,),)
+
+    accepted = verify_freivalds_float(
+        ((0.0, 0.0),),
+        ((0.0,), (0.0,)),
+        zero_product,
+        rounds=2,
+        seed=1,
+        atol=0.0,
+        rtol=0.0,
+    )
+    rejected = verify_freivalds_float(
+        ((0.0, 0.0),),
+        ((0.0,), (0.0,)),
+        small_observed,
+        rounds=2,
+        seed=1,
+        atol=0.0,
+        rtol=0.0,
+    )
+    tolerated = verify_freivalds_float(
+        ((0.0, 0.0),),
+        ((0.0,), (0.0,)),
+        small_observed,
+        rounds=2,
+        seed=1,
+        atol=1e-8,
+        rtol=1.0,
+    )
+
+    assert accepted.accepted is True
+    assert rejected.accepted is False
+    assert tolerated.accepted is True
+    for result in (accepted, rejected, tolerated):
+        assert result.assurance_class is AssuranceClass.EMPIRICAL_FLOAT_APPROXIMATION
+        assert result.max_abs_error is not None
+        assert result.max_rel_error is not None
+        assert result.max_rel_error < float("inf")
+
+
+def test_audit_result_model_copy_forbids_provenance_and_assurance_promotion_and_revalidates_updates():
+    result = AuditResult(
+        evidence_origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        assurance_class=AssuranceClass.EXACT_MATCH,
+        accepted=True,
+        disposition=AuditDisposition.ACCEPTED,
+        dimensions=(1, 1),
+        residual_risk=("exact equality only",),
+    )
+
+    with pytest.raises(ValueError, match="model_copy updates cannot change evidence_origin"):
+        result.model_copy(update={"evidence_origin": EvidenceOrigin.REAL_MODEL_EXECUTION})
+
+    with pytest.raises(ValueError, match="model_copy updates cannot change assurance_class"):
+        result.model_copy(update={"assurance_class": AssuranceClass.EXACT_FIELD_SOUNDNESS})
+
+    with pytest.raises(ValueError, match="exact-match audits do not expose randomized soundness bounds"):
+        result.model_copy(update={"soundness_error_bound": 0.5})
+
+    with pytest.raises(ValueError, match="rounds must equal the number of challenge vectors"):
+        result.model_copy(update={"rounds": 2})

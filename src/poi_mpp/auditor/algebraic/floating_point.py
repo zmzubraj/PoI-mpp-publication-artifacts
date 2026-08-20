@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import math
 import random
+import sys
 from typing import Any
 
 from poi_mpp.auditor.reports import AssuranceClass, AuditDisposition, AuditResult
 from poi_mpp.evidence.models import EvidenceOrigin
+
+_RELATIVE_ERROR_FLOOR = sys.float_info.min
 
 
 def verify_freivalds_float(
@@ -209,11 +212,7 @@ def _error_metrics(
         for expected_value, observed_value in zip(expected_row, observed_row, strict=True):
             abs_error = abs(expected_value - observed_value)
             max_abs_error = max(max_abs_error, abs_error)
-            denominator = abs(expected_value)
-            rel_error = 0.0 if denominator == 0.0 and abs_error == 0.0 else (
-                float("inf") if denominator == 0.0 else abs_error / denominator
-            )
+            denominator = max(abs(expected_value), abs(observed_value), _RELATIVE_ERROR_FLOOR)
+            rel_error = abs_error / denominator
             max_rel_error = max(max_rel_error, rel_error)
-    if not math.isfinite(max_rel_error):
-        raise ValueError("non-finite intermediate during floating-point error analysis")
     return max_abs_error, max_rel_error

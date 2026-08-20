@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 import math
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -47,6 +48,18 @@ class AuditResult(BaseModel):
     soundness_error_bound: float | None = None
     max_abs_error: float | None = None
     max_rel_error: float | None = None
+
+    def model_copy(self, *, update: dict[str, Any] | None = None, deep: bool = False) -> "AuditResult":
+        """Return a safe copy that preserves provenance/assurance immutability."""
+
+        if not update:
+            return super().model_copy(deep=deep)
+        for field_name in ("evidence_origin", "assurance_class"):
+            if field_name in update and update[field_name] != getattr(self, field_name):
+                raise ValueError(f"model_copy updates cannot change {field_name}")
+        merged = self.model_dump(mode="python")
+        merged.update(update)
+        return type(self).model_validate(merged)
 
     @model_validator(mode="after")
     def validate_consistency(self) -> "AuditResult":

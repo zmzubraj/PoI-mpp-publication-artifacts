@@ -9,6 +9,8 @@ from typing import Any
 from poi_mpp.auditor.reports import AssuranceClass, AuditDisposition, AuditResult
 from poi_mpp.evidence.models import EvidenceOrigin
 
+_MAX_MPP_FIELD_BITS = 31
+
 
 def verify_freivalds_field(
     matrix_a: Any,
@@ -86,6 +88,10 @@ def _validate_seed(seed: int) -> None:
 def _validate_modulus(modulus: int, declared_modulus_only: bool) -> None:
     if isinstance(modulus, bool) or not isinstance(modulus, int) or modulus <= 1:
         raise ValueError("modulus must be an integer greater than 1")
+    if modulus.bit_length() > _MAX_MPP_FIELD_BITS:
+        raise ValueError(
+            f"modulus exceeds the {_MAX_MPP_FIELD_BITS}-bit MPP field limit"
+        )
     if not declared_modulus_only and not _is_prime(modulus):
         raise ValueError("prime modulus required unless declared_modulus_only=True")
 

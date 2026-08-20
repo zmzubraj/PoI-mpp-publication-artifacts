@@ -82,6 +82,16 @@ def test_field_audit_rejects_invalid_rounds_and_non_prime_modulus_without_declar
             modulus=15,
         )
 
+    with pytest.raises(ValueError, match="modulus exceeds the 31-bit MPP field limit"):
+        verify_freivalds_field(
+            matrix_a,
+            matrix_b,
+            exact_product,
+            rounds=2,
+            seed=3,
+            modulus=1 << 127,
+        )
+
 
 def test_field_audit_allows_declared_non_prime_modulus_with_bounded_residual_risk():
     matrix_a = ((1, 2), (3, 4))
