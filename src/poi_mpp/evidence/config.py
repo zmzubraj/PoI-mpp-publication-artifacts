@@ -89,6 +89,8 @@ class RunConfig(_FrozenConfigModel):
     def require_sha256(cls, value: str, info: ValidationInfo) -> str:
         if not isinstance(value, str) or not _SHA256.fullmatch(value):
             raise ValueError(f"{info.field_name} must be a lowercase SHA-256 hex digest")
+        if info.field_name == "schema_hash" and value != approved_schema_hash():
+            raise ValueError("schema_hash must match the approved run configuration schema")
         return value
 
     @field_validator("parent_hashes")
@@ -112,7 +114,12 @@ def _schema_path() -> Path:
 
 
 def schema_hash(schema_path: str | Path | None = None) -> str:
-    """Return the semantic canonical digest of the approved JSON schema."""
+    """Return a schema digest for diagnostics, not freeze authorization.
+
+    Passing a path is intentionally limited to diagnostics and tests.  Only
+    :func:`approved_schema_hash` identifies the bundled v1 schema accepted by
+    ``RunConfig`` and the public ``freeze_run`` authority path.
+    """
 
     path = Path(schema_path) if schema_path is not None else _schema_path()
     try:
@@ -122,6 +129,29 @@ def schema_hash(schema_path: str | Path | None = None) -> str:
     if not isinstance(loaded, dict):
         raise ValueError("run configuration schema must be a JSON object")
     return digest("RUN_CONFIG_SCHEMA", loaded)
+
+
+def approved_schema_hash() -> str:
+    """Return the sole schema digest authorized for v1 frozen runs."""
+
+    return schema_hash(_schema_path())
+
+
+def require_approved_run_config(config: RunConfig) -> None:
+    """Recheck schema authority at public freeze boundaries.
+
+    ``BaseModel.model_construct`` deliberately bypasses Pydantic validation;
+    this defense-in-depth check ensures such an unsafe in-memory object cannot
+    acquire a frozen run manifest.
+    """
+
+    if not isinstance(config, RunConfig):
+        raise ValueError("freeze_run requires a RunConfig")
+    if (
+        config.schema_version != RUN_CONFIG_SCHEMA_VERSION
+        or config.schema_hash != approved_schema_hash()
+    ):
+        raise ValueError("RunConfig must bind the approved run configuration schema")
 
 
 def config_hash(config: RunConfig) -> str:
@@ -143,9 +173,7 @@ def _reject_unknown_fields(raw: dict[str, Any]) -> None:
         raise ValueError(f"unknown configuration fields: {', '.join(locations)}")
 
 
-def load_run_config(
-    path: str | Path, *, schema_path: str | Path | None = None
-) -> RunConfig:
+def load_run_config(path: str | Path) -> RunConfig:
     """Load one YAML/JSON config and bind it to the exact approved schema.
 
     This function never merges a base profile or writes a normalized copy.  The
@@ -162,7 +190,7 @@ def load_run_config(
         raise ValueError("run configuration must be a mapping")
 
     _reject_unknown_fields(raw)
-    actual_schema_hash = schema_hash(schema_path)
+    actual_schema_hash = approved_schema_hash()
     supplied_schema_hash = raw.get("schema_hash")
     if supplied_schema_hash is not None and supplied_schema_hash != actual_schema_hash:
         raise ValueError("schema_hash does not match the approved run configuration schema")

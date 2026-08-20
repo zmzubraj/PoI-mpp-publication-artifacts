@@ -1,7 +1,13 @@
 """Shared evidence models and deterministic hash primitives."""
 
 from poi_mpp.evidence.canonical import canonical_bytes, digest
-from poi_mpp.evidence.config import DataAvailabilityConfig, RunConfig, config_hash, load_run_config
+from poi_mpp.evidence.config import (
+    DataAvailabilityConfig,
+    RunConfig,
+    approved_schema_hash,
+    config_hash,
+    load_run_config,
+)
 from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigin, RunManifest
 from poi_mpp.evidence.provenance import (
     UNVERSIONED_BLOCKED,
@@ -20,6 +26,7 @@ __all__ = [
     "RunManifest",
     "RunConfig",
     "UNVERSIONED_BLOCKED",
+    "approved_schema_hash",
     "canonical_bytes",
     "collect_environment",
     "config_hash",

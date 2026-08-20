@@ -4,11 +4,13 @@ import subprocess
 import pytest
 from pydantic import ValidationError
 
-from poi_mpp.evidence.config import RunConfig
+from poi_mpp.evidence.config import RunConfig, schema_hash
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.evidence.provenance import (
     UNVERSIONED_BLOCKED,
     EnvironmentManifest,
+    _collect_cpu_model,
+    _collect_gpu_model,
     collect_environment,
     freeze_run,
 )
@@ -21,7 +23,7 @@ def _config() -> RunConfig:
     return RunConfig.model_validate(
         {
             "schema_version": "POI_MPP_RUN_CONFIG_V1",
-            "schema_hash": _HASH,
+            "schema_hash": schema_hash(),
             "run_id": "run-001",
             "experiment_id": "E1",
             "origin": "REPRODUCIBLE_SIMULATION",
@@ -87,6 +89,31 @@ def test_freeze_run_binds_config_environment_and_provenance_deterministically():
     assert first.origin is EvidenceOrigin.REPRODUCIBLE_SIMULATION
     assert first.authorization_scope == "LOCAL_TEST_ONLY"
     assert first.parent_hashes == config.parent_hashes
+
+
+def test_freeze_run_rechecks_approved_schema_after_unsafe_model_construction():
+    unsafe = RunConfig.model_construct(
+        **{
+            **_config().model_dump(),
+            "schema_hash": _HASH,
+        }
+    )
+    environment = EnvironmentManifest(
+        python_implementation="CPython",
+        python_version="3.11.0",
+        os_name="Linux",
+        os_release="test",
+        machine="x86_64",
+        cpu_model=None,
+        gpu_model=None,
+        package_lock_hash=None,
+        compiler_version=None,
+        foundry_version=None,
+        code_revision="f" * 40,
+    )
+
+    with pytest.raises(ValueError, match="approved run configuration schema"):
+        freeze_run(unsafe, environment)
 
 
 def test_collect_environment_binds_clean_git_revision(tmp_path: Path):
@@ -174,6 +201,70 @@ def test_environment_manifest_rejects_unknown_fields():
             code_revision="f" * 40,
             secret_environment_value="must-not-be-recorded",
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "unsafe"),
+    [
+        ("cpu_model", "/Users/test/private-cpu"),
+        ("gpu_model", "gpu\ncredential=secret"),
+        ("compiler_version", "~/.keys/compiler"),
+        ("foundry_version", "-----BEGIN PRIVATE KEY-----"),
+    ],
+)
+def test_environment_manifest_rejects_private_or_credential_like_public_facts(field: str, unsafe: str):
+    values = {
+        "python_implementation": "CPython",
+        "python_version": "3.11.0",
+        "os_name": "Linux",
+        "os_release": "test",
+        "machine": "x86_64",
+        "cpu_model": None,
+        "gpu_model": None,
+        "package_lock_hash": None,
+        "compiler_version": None,
+        "foundry_version": None,
+        "code_revision": "f" * 40,
+    }
+    values[field] = unsafe
+
+    with pytest.raises(ValueError, match="safe public fact"):
+        EnvironmentManifest(**values)
+
+
+def test_cpu_collector_normalizes_allowlisted_mac_output(monkeypatch: pytest.MonkeyPatch):
+    class Completed:
+        stdout = "Apple   M2  Pro\n"
+
+    monkeypatch.setattr("poi_mpp.evidence.provenance.subprocess.run", lambda *args, **kwargs: Completed())
+
+    assert _collect_cpu_model("Darwin") == "Apple M2 Pro"
+
+
+def test_cpu_collector_returns_none_when_command_is_unavailable(monkeypatch: pytest.MonkeyPatch):
+    def unavailable(*args: object, **kwargs: object) -> object:
+        raise FileNotFoundError
+
+    monkeypatch.setattr("poi_mpp.evidence.provenance.subprocess.run", unavailable)
+
+    assert _collect_cpu_model("Darwin") is None
+
+
+def test_gpu_collector_sorts_deduplicates_and_rejects_malformed_output(monkeypatch: pytest.MonkeyPatch):
+    class Completed:
+        stdout = (
+            '{"SPDisplaysDataType":[{"sppci_model":"Zeta GPU"},'
+            '{"spdisplays_chipset_model":"Alpha GPU"},{"sppci_model":"Zeta GPU"}]}'
+        )
+
+    monkeypatch.setattr("poi_mpp.evidence.provenance.subprocess.run", lambda *args, **kwargs: Completed())
+    assert _collect_gpu_model("Darwin") == "Alpha GPU; Zeta GPU"
+
+    class Malformed:
+        stdout = "not-json"
+
+    monkeypatch.setattr("poi_mpp.evidence.provenance.subprocess.run", lambda *args, **kwargs: Malformed())
+    assert _collect_gpu_model("Darwin") is None
 
 
 def test_collection_does_not_serialize_environment_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

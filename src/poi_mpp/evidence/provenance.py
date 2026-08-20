@@ -7,6 +7,7 @@ working directories, usernames, or credentials.
 
 from __future__ import annotations
 
+import json
 import platform
 from pathlib import Path
 import re
@@ -16,13 +17,22 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
 from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence.config import RunConfig, config_hash
+from poi_mpp.evidence.config import RunConfig, config_hash, require_approved_run_config
 from poi_mpp.evidence.models import RunManifest
 
 
 UNVERSIONED_BLOCKED = "UNVERSIONED_BLOCKED"
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _GIT_REVISION = re.compile(r"[0-9a-f]{40}\Z")
+_PRIVATE_PATH = re.compile(r"(?:^|\s)(?:/|~(?:/|$)|[A-Za-z]:[\\/])")
+_CREDENTIAL_MARKER = re.compile(
+    r"(?:credential|secret|token|password|passwd|api[ _-]?key|private[ _-]?key|begin .*private key)",
+    re.IGNORECASE,
+)
+_MAX_PUBLIC_FACT_LENGTH = 160
+_CPU_BRAND_COMMAND = ("sysctl", "-n", "machdep.cpu.brand_string")
+_GPU_DETAILS_COMMAND = ("system_profiler", "SPDisplaysDataType", "-json")
+_GPU_FIELDS = ("sppci_model", "spdisplays_chipset_model")
 
 
 class EnvironmentManifest(BaseModel):
@@ -66,8 +76,8 @@ class EnvironmentManifest(BaseModel):
     @field_validator("cpu_model", "gpu_model", "compiler_version", "foundry_version")
     @classmethod
     def validate_optional_public_fact(cls, value: str | None, info: ValidationInfo) -> str | None:
-        if value is not None and (not isinstance(value, str) or not value.strip()):
-            raise ValueError(f"{info.field_name} must be nonblank when present")
+        if value is not None and not _is_safe_public_fact(value):
+            raise ValueError(f"{info.field_name} must be a safe public fact")
         return value
 
     @field_validator("code_revision")
@@ -124,6 +134,74 @@ def _lock_hash(lock_path: Path) -> str | None:
     return digest("PACKAGE_LOCK", {"content": contents})
 
 
+def _is_safe_public_fact(value: object) -> bool:
+    """Allow only short normalized hardware/tool labels safe for publication."""
+
+    if not isinstance(value, str) or not value or len(value) > _MAX_PUBLIC_FACT_LENGTH:
+        return False
+    if value != " ".join(value.split()) or not all(character.isprintable() for character in value):
+        return False
+    return not _PRIVATE_PATH.search(value) and not _CREDENTIAL_MARKER.search(value)
+
+
+def _normalize_collected_public_fact(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = " ".join(value.split())
+    return normalized if _is_safe_public_fact(normalized) else None
+
+
+def _run_public_collector(argv: tuple[str, ...]) -> str | None:
+    """Run a fixed local metadata command and return only its text output."""
+
+    try:
+        completed = subprocess.run(
+            list(argv),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return completed.stdout if isinstance(completed.stdout, str) else None
+
+
+def _collect_cpu_model(os_name: str) -> str | None:
+    """Collect a normalized macOS CPU brand only from its fixed system field."""
+
+    if os_name != "Darwin":
+        return None
+    output = _run_public_collector(_CPU_BRAND_COMMAND)
+    return _normalize_collected_public_fact(output)
+
+
+def _collect_gpu_model(os_name: str) -> str | None:
+    """Collect sorted, deduplicated macOS GPU model labels from allowlisted keys."""
+
+    if os_name != "Darwin":
+        return None
+    output = _run_public_collector(_GPU_DETAILS_COMMAND)
+    if output is None:
+        return None
+    try:
+        document = json.loads(output)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    displays = document.get("SPDisplaysDataType") if isinstance(document, dict) else None
+    if not isinstance(displays, list):
+        return None
+    models: set[str] = set()
+    for display in displays:
+        if not isinstance(display, dict):
+            return None
+        for field in _GPU_FIELDS:
+            model = _normalize_collected_public_fact(display.get(field))
+            if model is not None:
+                models.add(model)
+    return "; ".join(sorted(models)) if models else None
+
+
 def collect_environment(
     *, repo_root: str | Path | None = None, lock_path: str | Path | None = None
 ) -> EnvironmentManifest:
@@ -136,14 +214,15 @@ def collect_environment(
 
     root = Path(repo_root) if repo_root is not None else _default_repo_root()
     lock = Path(lock_path) if lock_path is not None else root / "requirements.lock"
+    os_name = platform.system()
     return EnvironmentManifest(
         python_implementation=platform.python_implementation(),
         python_version=platform.python_version(),
-        os_name=platform.system(),
+        os_name=os_name,
         os_release=platform.release(),
         machine=platform.machine(),
-        cpu_model=None,
-        gpu_model=None,
+        cpu_model=_collect_cpu_model(os_name),
+        gpu_model=_collect_gpu_model(os_name),
         package_lock_hash=_lock_hash(lock),
         compiler_version=None,
         foundry_version=None,
@@ -159,6 +238,7 @@ def freeze_run(config: RunConfig, environment: EnvironmentManifest) -> RunManife
     blocked or synthetic run to publication eligibility.
     """
 
+    require_approved_run_config(config)
     return RunManifest(
         run_id=config.run_id,
         experiment_id=config.experiment_id,
