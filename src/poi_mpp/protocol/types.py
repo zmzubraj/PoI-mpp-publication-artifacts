@@ -39,6 +39,7 @@ class TaskSpec(_FrozenProtocolModel):
     commitment_finality_depth: int
     challenge_window_blocks: int
     audit_domain_size: int
+    credit_budget: int = 0
 
     @field_validator("task_id", "worker_id")
     @classmethod
@@ -53,6 +54,7 @@ class TaskSpec(_FrozenProtocolModel):
         "commitment_finality_depth",
         "challenge_window_blocks",
         "audit_domain_size",
+        "credit_budget",
     )
     @classmethod
     def require_nonnegative_integer(cls, value: int, info: ValidationInfo) -> int:
