@@ -28,6 +28,8 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
         _require_pending(receipt, "RecordAudit")
         if receipt.audit_decision is not None:
             raise InvalidTransition("audit decision is already recorded")
+        if receipt.da_decision is not None:
+            raise InvalidTransition("audit decision cannot be recorded after data availability")
         if event.decision == "ACCEPT":
             return receipt.model_copy(
                 update={"audit_decision": "ACCEPT", "audit_accepted": True}
