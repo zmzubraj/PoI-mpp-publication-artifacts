@@ -1,0 +1,203 @@
+# SDD ledger — plan: /Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts/docs/superpowers/plans/2026-08-20-poi-mpp-publication-artifact-implementation.md
+
+Spec: `/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts/docs/superpowers/specs/2026-08-20-poi-mpp-publication-artifact-design.md`
+
+## Setup evidence
+
+- Static security preflight: reviewed manifests, Makefile, shell entrypoint, Foundry config, executable/binary surfaces, credential/network/destructive patterns, and DOCX package relationships. No credible malware, exfiltration, dynamic download-and-execute, macro, external DOCX relationship, privilege escalation, or broad destructive command found. Residual risk: dependency ranges were not locked at import; wheel-only isolated install was used for baseline tooling.
+- Imported baseline commit: `db31cc0`.
+- Isolated branch/worktree: `feature/poi-mpp-publication-artifacts` at `/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts`.
+- Baseline Python: `.venv/bin/python -m pytest -q` -> 2 passed.
+- Baseline Foundry: `forge test` -> contracts compile; no Solidity tests found.
+- Ruling: repository bootstrap occurred before Task 1 because the imported workspace had no Git history and a linked worktree cannot exist without a repository — preserve the import as its own baseline commit, then treat Task 1's `git init` command as already satisfied — cost if wrong: one extra baseline commit in history.
+- Ruling: Task 1 must use the existing Python 3.11 interpreter and isolated `.venv`; the machine default `python3` is 3.14 and outside the frozen runtime contract — cost if wrong: local command wrappers may need adjustment on another machine.
+- Ruling: Foundry's compile-only baseline with zero tests is a RED baseline, not verification of contract behavior — cost if wrong: none beyond requiring Task 7 to supply the missing behavioral tests.
+
+## Preflight self-consistency matrix
+
+| Task | Tests vs implementation and files | Finding |
+|---|---|---|
+| 1 | Repository-contract test matches lock, package root, Make targets, and modified build files. | Consistent; `git init` already satisfied by bootstrap ruling. |
+| 2 | Enum/lifecycle/hash tests match evidence models, canonical serialization, and vectors. | Consistent. |
+| 3 | Strict config/provenance tests match schema, config, and frozen manifest implementation. | Consistent. |
+| 4 | Validation/registry/gate tests match atomic writes and fail-closed dispositions. | Consistent. |
+| 5 | Commitment/compiler/state/property tests match the Python protocol machine. | Consistent. |
+| 6 | Conservation/weight/committee tests match credit and selection APIs. | Consistent. |
+| 7 | Role, lifecycle, invariant, and replay tests match the seven Solidity contract surfaces. | Consistent. |
+| 8 | Cross-language vector and integration tests match exporter and Solidity vector test. | Consistent. |
+| 9 | Worker tests match pinned execution, trace, tree, IEC, and inference modules. | Consistent. |
+| 10 | Exact/field/float tests match three deliberately separate auditor families. | Consistent. |
+| 11 | Semantic and split-isolation tests match verifier, calibration, and dataset manifests. | Consistent. |
+| 12 | E1 test/config/CLI/reporting files produce paired receipt cost artifacts. | Consistent; real model authorization remains an execution gate. |
+| 13 | E2 tests bind attacks to receipts and detection/residual outputs. | Consistent. |
+| 14 | E3 tests enforce calibration/confirmatory separation and semantic outputs. | Consistent; generated datasets remain plumbing-only. |
+| 15 | E4 tests match exact DA sampling variants and reconstruction records. | Consistent. |
+| 16 | E5 tests match correlated watcher/dispute economics and assumptions. | Consistent. |
+| 17 | E6 tests match Sybil/task-budget invariants and boundary ledger. | Consistent. |
+| 18 | E7 tests match Foundry JSON parsing, gas/state outputs, and compiler manifest. | Consistent. |
+| 19 | E8 tests match next-epoch committee simulation and assumption ledger. | Consistent. |
+| 20 | Reporting tests match validated-input-only tables, figures, statistics, and manifest. | Consistent. |
+| 21 | E2E tests match real happy path and explicit rejected/abstained/slashed paths. | Consistent. |
+| 22 | Clean replay test matches verifier, docs updates, frozen bundle, and completion marker. | Consistent. |
+
+## Preflight shared-interface matrix
+
+| Producer | Consumer | Contract checked | Finding |
+|---|---|---|---|
+| 1 | 2 | Package root and deterministic test commands. | Compatible. |
+| 1 | 3 | Package root and lock surface. | Compatible. |
+| 1 | 4 | Package root and test commands. | Compatible. |
+| 1 | 5 | Package root and test commands. | Compatible. |
+| 1 | 6 | Package root and test commands. | Compatible. |
+| 1 | 7 | Contract test command. | Compatible. |
+| 1 | 8 | Integration and contract commands. | Compatible. |
+| 1 | 9 | Package root and lock surface. | Compatible. |
+| 1 | 10 | Package root and test commands. | Compatible. |
+| 1 | 11 | Package root and test commands. | Compatible. |
+| 1 | 12 | Package root, lock, and experiment command surface. | Compatible. |
+| 1 | 13 | Package root, lock, and experiment command surface. | Compatible. |
+| 1 | 14 | Package root, lock, and experiment command surface. | Compatible. |
+| 1 | 15 | Package root and experiment command surface. | Compatible. |
+| 1 | 16 | Package root and experiment command surface. | Compatible. |
+| 1 | 17 | Package root and experiment command surface. | Compatible. |
+| 1 | 18 | Python/Foundry command surface. | Compatible. |
+| 1 | 19 | Package root and experiment command surface. | Compatible. |
+| 1 | 20 | Package root and reporting/reproduce commands. | Compatible. |
+| 1 | 21 | Package root and `reproduce` orchestration hook. | Compatible. |
+| 1 | 22 | Clean-environment and `reproduce` contract. | Compatible. |
+| 2 | 3 | Canonical hashing and `RunManifest`. | Compatible. |
+| 2 | 4 | Artifact models, stages, and hashes. | Compatible. |
+| 2 | 5 | Domain-separated protocol object hashing. | Compatible. |
+| 2 | 6 | Canonical credit/committee records. | Compatible. |
+| 2 | 7 | Cross-language object/event hash semantics. | Compatible. |
+| 2 | 8 | Fixed hash vectors. | Compatible. |
+| 2 | 9 | Model, trace, IEC, and execution bundle hashes. | Compatible. |
+| 2 | 10 | Typed audit artifact hashes. | Compatible. |
+| 2 | 11 | Semantic result and dataset-manifest hashes. | Compatible. |
+| 2 | 12 | E1 receipt/result records. | Compatible. |
+| 2 | 13 | E2 attack and result records. | Compatible. |
+| 2 | 14 | E3 semantic/result records. | Compatible. |
+| 2 | 15 | E4 availability/result records. | Compatible. |
+| 2 | 16 | E5 economics/result records. | Compatible. |
+| 2 | 17 | E6 Sybil/result records. | Compatible. |
+| 2 | 18 | E7 Foundry measurement records. | Compatible. |
+| 2 | 19 | E8 simulation/result records. | Compatible. |
+| 2 | 20 | Validated input hashes and output manifest. | Compatible. |
+| 2 | 21 | End-to-end artifact-chain hashes. | Compatible. |
+| 2 | 22 | Frozen bundle and verification hashes. | Compatible. |
+| 3 | 4 | Frozen run provenance enters validation/gating. | Compatible. |
+| 3 | 9 | Pinned model/environment/run manifest. | Compatible. |
+| 3 | 12 | Frozen E1 run specification. | Compatible. |
+| 3 | 14 | Frozen confirmatory E3 specification. | Compatible. |
+| 3 | 18 | Compiler/environment provenance. | Compatible. |
+| 3 | 20 | Environment/config/model/dataset hashes. | Compatible. |
+| 3 | 21 | Authorized local E2E run configuration. | Compatible. |
+| 3 | 22 | Clean replay and frozen manifest. | Compatible. |
+| 4 | 12 | Validated E1 artifacts and separate claim decision. | Compatible. |
+| 4 | 13 | Validated E2 artifacts and separate claim decision. | Compatible. |
+| 4 | 14 | Validated E3 artifacts and separate claim decision. | Compatible. |
+| 4 | 15 | Validated E4 artifacts and separate claim decision. | Compatible. |
+| 4 | 16 | Validated E5 artifacts and separate claim decision. | Compatible. |
+| 4 | 17 | Validated E6 artifacts and separate claim decision. | Compatible. |
+| 4 | 18 | Validated Foundry measurements. | Compatible. |
+| 4 | 19 | Validated simulation artifacts. | Compatible. |
+| 4 | 20 | Validated-input-only reporting gate. | Compatible. |
+| 4 | 21 | Atomic end-to-end registry and gate. | Compatible. |
+| 4 | 22 | Final fail-closed publication gate. | Compatible. |
+| 5 | 6 | Receipt and task state feed credit/committee logic. | Compatible. |
+| 5 | 7 | Python protocol state mirrored by Solidity. | Compatible. |
+| 5 | 8 | Protocol vectors for parity. | Compatible. |
+| 5 | 9 | Task/model/commitment inputs for worker execution. | Compatible. |
+| 5 | 10 | Audit plans and receipt audit results. | Compatible. |
+| 5 | 12 | Receipt-level E1 records. | Compatible. |
+| 5 | 13 | Receipt/attack lifecycle. | Compatible. |
+| 5 | 15 | DA/challenge lifecycle. | Compatible. |
+| 5 | 17 | Task-budget and credit lifecycle. | Compatible. |
+| 5 | 19 | Receipt-derived active weights. | Compatible. |
+| 5 | 21 | Full task-to-credit lifecycle. | Compatible. |
+| 6 | 7 | Credit and committee state contract. | Compatible. |
+| 6 | 8 | Credit/committee parity vectors. | Compatible. |
+| 6 | 17 | Credit conservation and Sybil budget analysis. | Compatible. |
+| 6 | 19 | Active weights and committee sampling. | Compatible. |
+| 6 | 21 | End-to-end credit/committee transition. | Compatible. |
+| 7 | 8 | Solidity state/hash implementation. | Compatible. |
+| 7 | 18 | Versioned events and gas/state behavior. | Compatible. |
+| 7 | 21 | Local-EVM protocol journey. | Compatible. |
+| 8 | 18 | Parity report required by E7. | Compatible. |
+| 8 | 22 | Parity report required by publication freeze. | Compatible. |
+| 9 | 10 | Execution bundle and trace inputs to auditors. | Compatible. |
+| 9 | 11 | Execution output for semantic verification. | Compatible. |
+| 9 | 12 | Real single-pass cost measurement. | Compatible. |
+| 9 | 13 | Baseline execution for tamper variants. | Compatible. |
+| 9 | 14 | Grounded execution outputs. | Compatible. |
+| 9 | 21 | Real worker leg of E2E journey. | Compatible. |
+| 10 | 12 | Audit-cost and receipt inputs. | Compatible. |
+| 10 | 13 | Attack-detection outcomes. | Compatible. |
+| 10 | 21 | Exact/algebraic audit leg. | Compatible. |
+| 11 | 14 | Semantic verification and calibration/isolation contract. | Compatible. |
+| 11 | 21 | Semantic audit leg. | Compatible. |
+| 12 | 20 | E1 validated rows to T6/F5. | Compatible. |
+| 13 | 20 | E2 validated rows to T7/F6. | Compatible. |
+| 14 | 20 | E3 validated rows to T4/T8/F7. | Compatible. |
+| 15 | 20 | E4 validated rows to T9/F8. | Compatible. |
+| 16 | 20 | E5 validated rows to T10. | Compatible. |
+| 17 | 20 | E6 validated rows to T11/F9/F10. | Compatible. |
+| 18 | 20 | E7 Foundry rows to T12/F12. | Compatible. |
+| 19 | 20 | E8 simulation rows to T13/F11. | Compatible. |
+| 12 | 21 | E1 real-execution orchestration path. | Compatible. |
+| 13 | 21 | E2 tamper/failure orchestration path. | Compatible. |
+| 14 | 21 | E3 semantic orchestration path. | Compatible. |
+| 15 | 21 | E4 DA/challenge orchestration path. | Compatible. |
+| 16 | 21 | E5 watcher/dispute orchestration path. | Compatible. |
+| 17 | 21 | E6 credit/Sybil orchestration path. | Compatible. |
+| 18 | 21 | E7 local-EVM orchestration path. | Compatible. |
+| 19 | 21 | E8 next-epoch orchestration path. | Compatible. |
+| 20 | 22 | Deterministic tables/figures/manifests enter frozen bundle. | Compatible. |
+| 21 | 22 | End-to-end artifact chain enters clean replay and freeze. | Compatible. |
+
+Preflight conflicts requiring changes: none beyond the recorded bootstrap and interpreter rulings.
+
+Task 1: review (spec needs changes; Important: build backend not exact-pinned; Important: `envs/README.md` exposes stale Python >=3.10 and `requirements.txt` install path; no Critical/Minor).
+Task 1: Ruling: expand the Task 1 fix scope to `envs/README.md` because it is the repository's existing public environment contract and directly contradicts the frozen CPython 3.11 / exact-lock baseline — cost if wrong: one documentation file is updated earlier than its original ownership map anticipated.
+Task 1: fix round 1/5 (2 addressed, 0 open — exact build-backend pin; exact Python/lock documentation; commits 8e29929..a29d84b).
+Task 1: complete (commits db31cc0..a29d84b, review clean).
+Task 2: Ruling: extend dependency ownership to `pyproject.toml` and `requirements.lock` because the plan mandates immutable Pydantic models but the imported manifest omits Pydantic; add one exact direct Pydantic pin and its exact wheel dependencies, preserving CPython 3.11 — cost if wrong: Task 2 touches two baseline files and may require later dependency-contract review.
+Task 2: fix round 1/5 (0 addressed, 1 open — public `trusted_load()` reintroduced arbitrary terminal minting; commits b44b9c7..607f514).
+Task 2: fix round 2/5 (1 addressed, 0 open — public restore/context bypass removed; commits 607f514..ac9868a).
+Task 2: minor (deferred): `ArtifactRecord.advance_to()` docstring still says direct construction supports frozen-record deserialization, but direct terminal construction is now rejected.
+Task 2: complete (commits a29d84b..ac9868a, review clean; 1 deferred minor).
+Task 3: review (spec needs changes; Critical: arbitrary schema hash/path can freeze; Important: CPU/GPU hard-coded absent; Minor: manually constructed environment facts lack path/credential-pattern rejection).
+Task 3: fix round 1/5 (2 addressed, 0 Critical/Important open — approved schema authority and allowlisted CPU/GPU collection; commits 377d82b..816e004).
+Task 3: minor (deferred): safe-public-fact path matcher does not reject embedded assignments such as `GPU=/Users/...` or `path=C:\\Users\\...`.
+Task 3: minor (deferred): `collect_environment()` docstring still says CPU/GPU are always absent although collectors now populate safe available facts.
+Task 3: complete (commits ac9868a..816e004, Critical/Important review clean; 2 deferred minors).
+Task 4: review (spec needs changes; Critical: forged/empty evidence can freeze; Critical: duplicate/cyclic graphs complete; Critical: failure can be raised after target publication; Important: nested states/CI/denominator bait fail open; Important: symlink-sensitive containment; Important: duplicate canonical serializer).
+Task 4: minor (deferred): publication gate catches every Exception and exposes raw error strings instead of only stable typed reason codes.
+Task 4: fix round 1/5 (3 addressed, 4 open — post-link interrupt ambiguity; lost failed-state validators; symlinked parent traversal; pattern-only temp deletion; commits fcdf2e2..f87723d).
+Task 4: fix round 2/5 (4 carried findings addressed in original form, 3 new Important findings open — pre-link BaseException swallowing; recovery self-authorizes missing parent closure; temp unlink remains TOCTOU; commits f87723d..8fa85fe).
+Task 4: fix round 3/5 (3 addressed, 0 Critical/Important open — pre-link BaseException re-raise with owned-temp cleanup; recovery validates against actual registered parent closure; private-directory + final identity recheck before temp unlink; commits 8fa85fe..eb7960d).
+Task 4: complete (commits fcdf2e2..eb7960d, Critical/Important review clean; 1 deferred minor remains; direct verification rerun: 6 targeted registry probes PASS, 54 protocol-gate tests PASS).
+Task 5: fix round 1/5 (3 carried blockers addressed, 1 new Important open — DA-before-terminal-audit emitted a receipt that failed canonical revalidation; commits 3c26a67..18c316f).
+Task 5: fix round 2/5 (1 addressed, 0 Critical/Important open — audit-after-DA now fails closed and emitted lifecycle states round-trip validate; commits 18c316f..eeb13a8).
+Task 5: complete (commits eb7960d..eeb13a8, independent review clean; 23 focused Task 5, 29 protocol, and 136 full Python tests reported PASS; event ordering freezes audit-before-DA as current protocol behavior).
+Task 6: implementation candidate pending Task 5 closure and independent review (commit 4acdf98; implementation was produced outside the assigned read-only review scope, so reported RED/GREEN evidence is non-authorizing until a fresh reviewer gates the diff).
+Task 6: fix round 1/5 (3 addressed, 0 Critical/Important open — canonical active-receipt revalidation; duplicate receipt/nullifier rejection; exact target epoch; negative/oversized committee inputs fail closed; commits 4acdf98..b80f10b).
+Task 6: complete (commits 3c26a67..b80f10b, independent review clean; 11 focused Task 6 and 34 protocol tests PASS; full Python suite reported 141 PASS).
+Task 7: review (CHANGES REQUIRED — late activation backfilled historical credit; receipt operator could slash without auditor challenge; slashed receipt nullifier could be reused; 14/14 baseline Foundry tests passed but adversarial repros succeeded).
+Task 7: fix round 1/5 (3 carried findings addressed, 2 new Important open — exact-deadline liveness failure and protocol epoch/block-height conflation; commits 4a1b46c..cdcd754).
+Task 7: fix round 2/5 (2 addressed, 0 Critical/Important open — immutable canonical block-derived epoch source, exact current-epoch task creation, >= deadline activation only in next epoch, late expiry, aligned activatability; commits cdcd754..ac9f04c).
+Task 7: minor (deferred): Foundry emits optional invariant-target discovery warnings because the current harness has no explicit target curation.
+Task 7: minor (deferred): CommitmentHub is payable without ETH accounting/withdrawal; accidental ETH can be stranded.
+Task 7: complete (commits b80f10b..ac9f04c, independent security review clean; forge fmt PASS and 22/22 Foundry tests PASS).
+Task 8: blocked (pre-alignment Python/Solidity commitment identities/hash algorithms and credit allocation semantics diverged; no fixtures fabricated).
+Task 8: Ruling: preserve evidence-kernel SHA-256 canonical JSON, but migrate the parity-critical protocol wire contract to typed EVM ABI + Keccak-256 with uint256 ids, address workers, bytes32 roots/nonces, aligned enum ordinals, validated envelope finality, and deterministic sorted receipt-batch credit — cost if wrong: breaking migration across Task 5-7 protocol APIs/tests and Solidity ABIs.
+Task 8: review (CHANGES REQUIRED — zero-budget and empty-batch credit semantics diverged; fixture was Python-generated rather than Solidity-derived).
+Task 8: fix round 1/5 (3 addressed, 0 Critical/Important open — matched no-op/fail-closed/replay semantics and fresh deterministic Solidity witness export; commits 8644b519..80e59b83).
+Task 8: minor (deferred): some non-behavioral fixture input fields are deterministically reconstructed in Python, while all asserted outputs/revert selectors are Solidity-witness-derived.
+Task 8: complete (commits ac9f04c..80e59b83, independent xhigh review clean; 39 protocol, 151 full Python, 38 Foundry tests reported PASS; 14 HashVectors PASS; two exports byte-stable).
+Task 9: review (CHANGES REQUIRED — incomplete model identity attestation; unsafe trace op names; noncanonical event ordering; empty IEC claim override; untyped protocol manifest).
+Task 9: fix round 1/5 (5 addressed, 0 Critical/Important open; commits 79670c1..0a11eee).
+Task 9: complete (commits 80e59b83..0a11eee, independent review clean; 16 worker and 167 full Python tests reported PASS; no real model execution claimed).
+Task 9: implementation candidate pending independent review (commit pending from 80e59b83 base; added pinned worker manifest, deterministic decode, trace/IEC bundle execution, and 9 new worker tests; direct verification: 9 focused worker tests PASS, 160 full Python tests PASS, compileall PASS, git diff --check PASS).
+Task 9: fix round 1/5 (5 addressed, 0 Critical/Important open in scoped fix set — manifest mismatch checks now include commitment-bearing identity fields; `TraceEvent.op_name` uses safe-public-text rules; trace sidecars require contiguous zero-based indices; explicit empty `claim_texts` now fail closed; `ExecutionBundle.protocol_model_manifest` is typed and execute-boundary objects are revalidated; commits 79670c1..0a11eee).
+Task 10: implementation candidate pending independent review (owned exact/algebraic auditor split under `src/poi_mpp/auditor`; direct verification: RED import failure for missing package, 17 focused Task 10 tests PASS, 17 `tests/auditor` PASS, 184 full Python tests PASS, compileall PASS, git diff --check PASS).
