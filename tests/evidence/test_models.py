@@ -81,21 +81,22 @@ def test_record_identifiers_cannot_be_blank(field, blank):
         ArtifactRecord(**values)
 
 
+def test_trusted_load_is_not_a_public_lifecycle_bypass():
+    assert not hasattr(ArtifactRecord, "trusted_load")
+
+
 @pytest.mark.parametrize("terminal_stage", [ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE])
-def test_trusted_terminal_loading_requires_complete_identity_and_content_hash(terminal_stage):
+def test_model_validate_context_cannot_mint_a_terminal_artifact(terminal_stage):
     values = {
         "artifact_id": "artifact-1",
         "run_id": "run-1",
         "experiment_id": "experiment-1",
         "origin": EvidenceOrigin.REAL_MODEL_EXECUTION,
         "stage": terminal_stage,
+        "content_hash": "a" * 64,
     }
-    with pytest.raises(ValueError, match="lowercase SHA-256"):
-        ArtifactRecord.trusted_load(values)
-
-    values["content_hash"] = "A" * 64
-    with pytest.raises(ValueError, match="lowercase SHA-256"):
-        ArtifactRecord.trusted_load(values)
+    with pytest.raises(ValueError, match="terminal stages must be obtained through advance_to"):
+        ArtifactRecord.model_validate(values, context={"_poi_mpp_trusted_restore": True})
 
 
 def test_advance_to_terminal_stage_requires_content_hash_and_allows_a_complete_record():

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from enum import StrEnum
 import re
-from typing import Any, Literal, Mapping
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
@@ -32,6 +33,10 @@ _STAGE_ORDER = tuple(ArtifactStage)
 _STAGE_INDEX = {stage: index for index, stage in enumerate(_STAGE_ORDER)}
 _TERMINAL_STAGES = frozenset({ArtifactStage.FROZEN, ArtifactStage.PUBLICATION_ELIGIBLE})
 _LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+_TRANSITION_SENTINEL = object()
+_transition_capability: ContextVar[object | None] = ContextVar(
+    "poi_mpp_artifact_transition_capability", default=None
+)
 
 
 class _FrozenEvidenceModel(BaseModel):
@@ -80,7 +85,7 @@ class ArtifactRecord(_FrozenEvidenceModel):
         return values
 
     @model_validator(mode="after")
-    def validate_lifecycle(self, info: ValidationInfo) -> "ArtifactRecord":
+    def validate_lifecycle(self) -> "ArtifactRecord":
         if (
             self.origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE
             and self.stage in _TERMINAL_STAGES
@@ -89,10 +94,7 @@ class ArtifactRecord(_FrozenEvidenceModel):
         if self.stage in _TERMINAL_STAGES:
             if self.content_hash is None:
                 raise ValueError("terminal artifacts require a lowercase SHA-256 content_hash")
-            trusted_restore = isinstance(info.context, dict) and info.context.get(
-                "_poi_mpp_trusted_restore"
-            ) is True
-            if not trusted_restore:
+            if _transition_capability.get() is not _TRANSITION_SENTINEL:
                 raise ValueError("terminal stages must be obtained through advance_to")
         return self
 
@@ -132,22 +134,13 @@ class ArtifactRecord(_FrozenEvidenceModel):
             raise ValueError(
                 f"invalid lifecycle transition: {self.stage.value} -> {target.value}"
             )
-        return type(self).model_validate(
-            {**self.model_dump(mode="json"), "stage": target.value},
-            context={"_poi_mpp_trusted_restore": True},
-        )
-
-    @classmethod
-    def trusted_load(cls, data: Mapping[str, Any]) -> "ArtifactRecord":
-        """Restore a persisted record after validation of all current invariants.
-
-        This is intentionally distinct from normal construction. It is the sole
-        supported route for loading a previously persisted terminal artifact;
-        it still enforces nonblank identities, hash syntax, provenance origin,
-        and the synthetic-evidence prohibition.
-        """
-
-        return cls.model_validate(data, context={"_poi_mpp_trusted_restore": True})
+        capability_token = _transition_capability.set(_TRANSITION_SENTINEL)
+        try:
+            return type(self).model_validate(
+                {**self.model_dump(mode="json"), "stage": target.value}
+            )
+        finally:
+            _transition_capability.reset(capability_token)
 
 
 class RunManifest(_FrozenEvidenceModel):
