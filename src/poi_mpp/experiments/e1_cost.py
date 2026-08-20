@@ -438,7 +438,11 @@ def _publication_record(
     origin = _record_origin(rows)
     stage = (
         ArtifactStage.SEMANTICALLY_VALID.value
-        if provenance_bundle is None or not publication_authorized
+        if (
+            provenance_bundle is None
+            or not publication_authorized
+            or origin == EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value
+        )
         else ArtifactStage.FROZEN.value
     )
     payload = {

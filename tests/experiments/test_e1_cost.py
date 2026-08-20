@@ -49,8 +49,9 @@ def _bundle(
     run_id: str = "run-e1",
     samples: int = 2,
     authorization_scope: str = "LOCAL_TEST_ONLY",
+    origin: str = "REAL_MODEL_EXECUTION",
 ) -> ProvenanceBundle:
-    config = _run_config(run_id=run_id, origin="REAL_MODEL_EXECUTION", samples=samples)
+    config = _run_config(run_id=run_id, origin=origin, samples=samples)
     config = config.model_copy(update={"authorization_scope": authorization_scope})
     environment = EnvironmentManifest(
         python_implementation="CPython",
@@ -501,6 +502,53 @@ def test_synthetic_fixture_rows_are_blocked_from_publication(
         clock_ns=lambda: next(ticks),
     )
 
+    assert result.publication_decision.completeness == "INCOMPLETE"
+    assert result.frozen_artifact_path is None
+    assert "synthetic" in " ".join(result.publication_decision.reasons).lower()
+
+
+def test_synthetic_rows_never_freeze_even_with_publication_scope(
+    task: TaskSpec,
+    protocol_model: ModelManifest,
+    tmp_path: Path,
+):
+    from poi_mpp.experiments.e1_cost import (
+        PUBLICATION_EVIDENCE_AUTHORIZED,
+        run_e1_cost_experiment,
+    )
+
+    class SyntheticRunner:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def run(self, task: TaskSpec):
+            self.calls += 1
+            return _sample(
+                protocol_model=protocol_model,
+                origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+                seed=self.calls,
+            )
+
+    ticks = _clock([step * 1_000_000 for step in range(12)])
+    bundle = _bundle(
+        run_id="run-synth",
+        samples=2,
+        authorization_scope=PUBLICATION_EVIDENCE_AUTHORIZED,
+        origin="SYNTHETIC_NON_EVIDENCE",
+    )
+    registry = ArtifactRegistry(tmp_path / "registry")
+    result = run_e1_cost_experiment(
+        runner=SyntheticRunner(),
+        run_config=bundle.config,
+        task=task,
+        output_dir=tmp_path / "raw",
+        provenance_bundle=bundle,
+        registry=registry,
+        clock_ns=lambda: next(ticks),
+    )
+
+    assert result.publication_record["origin"] == "SYNTHETIC_NON_EVIDENCE"
+    assert result.publication_record["stage"] == "SEMANTICALLY_VALID"
     assert result.publication_decision.completeness == "INCOMPLETE"
     assert result.frozen_artifact_path is None
     assert "synthetic" in " ".join(result.publication_decision.reasons).lower()
