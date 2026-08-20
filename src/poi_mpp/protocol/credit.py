@@ -18,24 +18,66 @@ class CreditAllocation(BaseModel):
     total_credit: int
 
 
-def _eligible_receipts(task: TaskSpec, receipts: Iterable[Receipt]) -> list[Receipt]:
+def _canonical_receipt(receipt: Receipt) -> Receipt:
+    try:
+        return Receipt.model_validate(receipt.model_dump(mode="json"))
+    except Exception as error:  # pragma: no cover - defensive boundary
+        raise ValueError("receipt is not canonically valid") from error
+
+
+def _eligible_receipts(
+    task: TaskSpec,
+    receipts: Iterable[Receipt],
+    *,
+    target_epoch: int,
+) -> list[Receipt]:
+    task_receipts: list[Receipt] = []
+    seen_receipt_ids: set[str] = set()
+    seen_nullifiers: set[str] = set()
+    for raw_receipt in receipts:
+        receipt = _canonical_receipt(raw_receipt)
+        if receipt.task_id != task.task_id:
+            continue
+        if receipt.state is not ReceiptState.ACTIVE:
+            continue
+        if receipt.receipt_id in seen_receipt_ids:
+            raise ValueError("duplicate receipt_id is not allowed")
+        if receipt.nullifier in seen_nullifiers:
+            raise ValueError("duplicate nullifier is not allowed")
+        seen_receipt_ids.add(receipt.receipt_id)
+        seen_nullifiers.add(receipt.nullifier)
+        if (
+            receipt.audit_decision != "ACCEPT"
+            or not receipt.audit_accepted
+            or receipt.da_decision is not True
+            or not receipt.data_availability_passed
+            or receipt.challenge_reason is not None
+            or receipt.slash_reason is not None
+        ):
+            raise ValueError("receipt is not canonically valid")
+        if receipt.epoch_issued != task.epoch or receipt.activated_epoch != target_epoch:
+            raise ValueError("active receipts must mature in the exact next epoch")
+        task_receipts.append(receipt)
     return sorted(
-        [
-            receipt
-            for receipt in receipts
-            if receipt.task_id == task.task_id
-            and receipt.state is ReceiptState.ACTIVE
-            and receipt.activated_epoch is not None
-            and receipt.activated_epoch > receipt.epoch_issued
-        ],
+        task_receipts,
         key=lambda receipt: (receipt.worker_id, receipt.receipt_id, receipt.commitment_hash),
     )
 
 
-def allocate_credit(task: TaskSpec, matured_receipts: Iterable[Receipt]) -> CreditAllocation:
+def allocate_credit(
+    task: TaskSpec,
+    matured_receipts: Iterable[Receipt],
+    *,
+    target_epoch: int | None = None,
+) -> CreditAllocation:
+    allocation_epoch = task.epoch + 1 if target_epoch is None else target_epoch
+    if allocation_epoch <= task.epoch:
+        raise ValueError("target_epoch must be the exact next epoch after the task epoch")
+    if allocation_epoch != task.epoch + 1:
+        raise ValueError("target_epoch must be the exact next epoch after the task epoch")
     if task.task_class is not TaskClass.CONSENSUS or not task.registered or task.credit_budget == 0:
         return CreditAllocation(task_id=task.task_id, by_worker={}, total_credit=0)
-    eligible = _eligible_receipts(task, matured_receipts)
+    eligible = _eligible_receipts(task, matured_receipts, target_epoch=allocation_epoch)
     if not eligible:
         return CreditAllocation(task_id=task.task_id, by_worker={}, total_credit=0)
     base_share, remainder = divmod(task.credit_budget, len(eligible))
