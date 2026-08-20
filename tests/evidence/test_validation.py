@@ -141,6 +141,45 @@ def test_nested_state_and_ci_declarations_are_fail_closed():
         validate_artifact(bad_nested_ci, provenance_bundle=_bundle())
 
 
+@pytest.mark.parametrize(
+    "state",
+    [
+        {"interrupted": True},
+        {"valid": False},
+        {"is_valid": False},
+        {"status": "FAILED"},
+        {"input_status": "INTERRUPTED"},
+        {"run_status": "PARTIAL"},
+        {"row_status": "OMITTED"},
+        {"invalid_rows": 1},
+        {"omitted_rows": 1},
+        {"missing_rows": 1},
+        {"omitted_input_ids": ["input-1"]},
+        {"missing_input_ids": ["input-1"]},
+    ],
+)
+def test_nested_list_failed_state_forms_are_incomplete(state: dict[str, object]):
+    record = _record(payload={"result": [{"nested": [state]}]})
+    with pytest.raises(ArtifactValidationError):
+        validate_artifact(record, provenance_bundle=_bundle())
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        {"interrupted": "false"},
+        {"valid": "true"},
+        {"status": False},
+        {"invalid_rows": True},
+        {"omitted_input_ids": "input-1"},
+    ],
+)
+def test_nested_list_failed_state_types_are_incomplete(state: dict[str, object]):
+    record = _record(payload={"result": [{"nested": [state]}]})
+    with pytest.raises(ArtifactValidationError):
+        validate_artifact(record, provenance_bundle=_bundle())
+
+
 def test_parent_hashes_and_claim_material_change_the_content_hash():
     base = _record()
     changed_parent = {**base, "parent_hashes": ["d" * 64]}

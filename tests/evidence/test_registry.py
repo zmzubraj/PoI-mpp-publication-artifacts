@@ -92,10 +92,20 @@ def test_registry_rejects_symlink_root_and_symlink_entry(tmp_path: Path):
         ArtifactRegistry(tmp_path / "registry")
 
 
+def test_registry_rejects_symlinked_parent_component(tmp_path: Path):
+    external = tmp_path / "external"
+    external.mkdir()
+    linked_parent = tmp_path / "linked-parent"
+    linked_parent.symlink_to(external, target_is_directory=True)
+    with pytest.raises(ArtifactValidationError, match="symlink"):
+        ArtifactRegistry(linked_parent / "registry")
+    assert not (external / "registry").exists()
+
+
 def test_prelink_failure_leaves_no_target_or_temp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     registry = ArtifactRegistry(tmp_path)
     monkeypatch.setattr("poi_mpp.evidence.registry.os.link", lambda *args, **kwargs: (_ for _ in ()).throw(OSError("pre-link failure")))
-    with pytest.raises(OSError, match="pre-link failure"):
+    with pytest.raises(ArtifactValidationError, match="before target was published"):
         registry.write_atomic(_record(), provenance_bundle=_bundle())
     assert not list(tmp_path.glob("*.frozen.json"))
     assert not list(tmp_path.glob(".*.tmp"))
@@ -117,3 +127,35 @@ def test_postlink_unlink_and_directory_fsync_failure_return_success_and_recover_
     retry = ArtifactRegistry(tmp_path)
     assert not list(tmp_path.glob(".*.tmp"))
     assert retry.read_frozen(path.name)["record"]["artifact_id"] == "artifact-1"
+
+
+def test_postlink_keyboard_interrupt_returns_published_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    registry = ArtifactRegistry(tmp_path)
+    original_link = os.link
+
+    def interrupt_after_link(*args: object, **kwargs: object) -> None:
+        original_link(*args, **kwargs)
+        raise KeyboardInterrupt("after link")
+
+    monkeypatch.setattr("poi_mpp.evidence.registry.os.link", interrupt_after_link)
+    path = registry.write_atomic(_record(), provenance_bundle=_bundle())
+    assert path.exists()
+    assert ArtifactRegistry(tmp_path).read_frozen(path.name)["record"]["artifact_id"] == "artifact-1"
+
+
+def test_temp_recovery_preserves_unrelated_matching_temp_and_fails_closed(tmp_path: Path):
+    temp = tmp_path / f".artifact-1.{'a' * 32}.tmp"
+    temp.write_bytes(b"unrelated")
+    with pytest.raises(ArtifactValidationError, match="orphan registry temporary"):
+        ArtifactRegistry(tmp_path)
+    assert temp.exists()
+
+
+def test_temp_recovery_preserves_different_inode_matching_target(tmp_path: Path):
+    registry = ArtifactRegistry(tmp_path)
+    path = registry.write_atomic(_record(), provenance_bundle=_bundle())
+    temp = tmp_path / f".artifact-1.{'b' * 32}.tmp"
+    temp.write_bytes(path.read_bytes())
+    with pytest.raises(ArtifactValidationError, match="orphan registry temporary"):
+        ArtifactRegistry(tmp_path)
+    assert temp.exists()

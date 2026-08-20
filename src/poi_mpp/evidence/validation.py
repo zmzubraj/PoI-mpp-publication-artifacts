@@ -23,6 +23,11 @@ _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _MISSING = object()
 _TERMINAL_STAGES = frozenset({ArtifactStage.FROZEN.value, ArtifactStage.PUBLICATION_ELIGIBLE.value})
 _STATE_FLAGS = frozenset({"interrupted", "partial", "silently_omitted_inputs", "omitted_inputs", "has_invalid_rows"})
+_VALIDITY_FLAGS = frozenset({"valid", "is_valid"})
+_STATUS_FIELDS = frozenset({"status", "input_status", "run_status", "row_status"})
+_INCOMPLETE_STATUSES = frozenset({"FAILED", "INTERRUPTED", "PARTIAL", "OMITTED", "INVALID"})
+_ROW_COUNT_FIELDS = frozenset({"invalid_rows", "omitted_rows", "missing_rows"})
+_INPUT_ID_FIELDS = frozenset({"omitted_input_ids", "missing_input_ids"})
 _CI_FLAGS = frozenset({"ci_required", "confidence_interval_required", "ci_applicable"})
 _ROOT_REQUIRED = frozenset({"schema_version", "artifact_id", "run_id", "experiment_id", "origin", "stage", "content_hash", "parent_hashes", "payload", "denominator", "ci_required", "provenance"})
 _ROOT_ALLOWED = _ROOT_REQUIRED | frozenset({"confidence_interval", "claim_id", "claim_disposition", "claim_dispositions"})
@@ -158,6 +163,22 @@ def _nested_semantic_reasons(value: Any, path: str = "record") -> list[str]:
                 reasons.append(f"state flag must be boolean at {item_path}")
             elif item:
                 reasons.append(f"incomplete state flag at {item_path}")
+        if key_name in _VALIDITY_FLAGS:
+            if not isinstance(item, bool):
+                reasons.append(f"validity flag must be boolean at {item_path}")
+            elif not item:
+                reasons.append(f"invalid state flag at {item_path}")
+        if key_name in _STATUS_FIELDS:
+            if not isinstance(item, str):
+                reasons.append(f"state status must be a string at {item_path}")
+            elif item.upper() in _INCOMPLETE_STATUSES:
+                reasons.append(f"incomplete state status at {item_path}")
+        if key_name in _ROW_COUNT_FIELDS:
+            if isinstance(item, bool) or not isinstance(item, int) or item != 0:
+                reasons.append(f"incomplete row count at {item_path}")
+        if key_name in _INPUT_ID_FIELDS:
+            if not isinstance(item, list) or item:
+                reasons.append(f"incomplete input identifiers at {item_path}")
         if key_name in _CI_FLAGS:
             if not isinstance(item, bool):
                 reasons.append(f"confidence interval applicability must be boolean at {item_path}")

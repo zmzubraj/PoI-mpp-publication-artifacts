@@ -22,7 +22,7 @@ from poi_mpp.evidence.validation import (
 
 _FROZEN_SCHEMA = "POI_MPP_FROZEN_ARTIFACT_V1"
 _SAFE_ARTIFACT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\Z")
-_TEMP_NAME = re.compile(r"\.[A-Za-z0-9][A-Za-z0-9_-]{0,127}\.[0-9a-f]{32}\.tmp\Z")
+_TEMP_NAME = re.compile(r"\.(?P<artifact_id>[A-Za-z0-9][A-Za-z0-9_-]{0,127})\.[0-9a-f]{32}\.tmp\Z")
 
 
 class ArtifactRegistry:
@@ -30,21 +30,52 @@ class ArtifactRegistry:
 
     def __init__(self, root: str | Path):
         self.root = Path(root)
-        if self.root.exists():
-            if self.root.is_symlink():
-                raise ArtifactValidationError(("artifact registry root must not be a symlink",))
-        else:
-            self.root.mkdir(parents=True, exist_ok=False)
-        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
-        try:
-            self._dir_fd = os.open(self.root, flags)
-        except OSError as error:
-            raise ArtifactValidationError(("artifact registry root could not be opened without following symlinks",)) from error
-        if not stat.S_ISDIR(os.fstat(self._dir_fd).st_mode):
-            self.close()
-            raise ArtifactValidationError(("artifact registry root is not a directory",))
+        self._dir_fd = self._open_root_no_symlinks(self.root)
         self._recover_temps()
         self._entries = self._load_entries()
+
+    @staticmethod
+    def _open_root_no_symlinks(root: Path) -> int:
+        """Open every existing root component with openat/O_NOFOLLOW.
+
+        The registry may create its final directory, but never follows a
+        symlink in any parent component while doing so.
+        """
+
+        path = root if root.is_absolute() else Path.cwd() / root
+        if ".." in path.parts:
+            raise ArtifactValidationError(("artifact registry root cannot contain parent traversal",))
+        components = [part for part in path.parts if part not in {path.anchor, "."}]
+        if not components:
+            raise ArtifactValidationError(("artifact registry root is invalid",))
+        flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(path.anchor, flags)
+        try:
+            for index, component in enumerate(components):
+                final = index == len(components) - 1
+                try:
+                    child = os.open(component, flags, dir_fd=descriptor)
+                except FileNotFoundError as error:
+                    if not final:
+                        raise ArtifactValidationError(("artifact registry parent directory is missing",)) from error
+                    try:
+                        os.mkdir(component, mode=0o700, dir_fd=descriptor)
+                    except FileExistsError:
+                        pass
+                    try:
+                        child = os.open(component, flags, dir_fd=descriptor)
+                    except OSError as open_error:
+                        raise ArtifactValidationError(("artifact registry root could not be opened without following symlinks",)) from open_error
+                except OSError as error:
+                    raise ArtifactValidationError(("artifact registry root could not be opened without following symlinks",)) from error
+                os.close(descriptor)
+                descriptor = child
+                if not stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                    raise ArtifactValidationError(("artifact registry root is not a directory",))
+            return descriptor
+        except BaseException:
+            os.close(descriptor)
+            raise
 
     def close(self) -> None:
         descriptor = getattr(self, "_dir_fd", None)
@@ -97,8 +128,36 @@ class ArtifactRegistry:
             if not name.endswith(".tmp"):
                 continue
             self._lstat_regular(name)
-            if not _TEMP_NAME.fullmatch(name):
+            match = _TEMP_NAME.fullmatch(name)
+            if match is None:
                 raise ArtifactValidationError((f"unrecognized registry temporary file: {name}",))
+            artifact_id = match.group("artifact_id")
+            target_name = self._safe_filename(artifact_id)
+            try:
+                target_details = os.lstat(target_name, dir_fd=self._dir_fd)
+                temp_details = os.lstat(name, dir_fd=self._dir_fd)
+            except FileNotFoundError as error:
+                raise ArtifactValidationError((f"orphan registry temporary file: {name}",)) from error
+            if (
+                stat.S_ISLNK(target_details.st_mode)
+                or not stat.S_ISREG(target_details.st_mode)
+                or temp_details.st_dev != target_details.st_dev
+                or temp_details.st_ino != target_details.st_ino
+                or target_details.st_nlink < 2
+            ):
+                raise ArtifactValidationError((f"orphan registry temporary file: {name}",))
+            try:
+                envelope = self._decode_envelope(target_name)
+                bundle = provenance_bundle_from_json(envelope["provenance_bundle"])
+                validate_artifact(
+                    envelope["record"],
+                    provenance_bundle=bundle,
+                    known_parent_hashes=set(envelope["record"].get("parent_hashes", [])),
+                )
+            except ArtifactValidationError as error:
+                raise ArtifactValidationError((f"orphan registry temporary file: {name}", *error.reasons)) from error
+            if envelope["record"].get("artifact_id") != artifact_id or self._read_name(name) != self._read_name(target_name):
+                raise ArtifactValidationError((f"orphan registry temporary file: {name}",))
             os.unlink(name, dir_fd=self._dir_fd)
             recovered = True
         if recovered:
@@ -168,6 +227,34 @@ class ArtifactRegistry:
         finally:
             os.close(descriptor)
 
+    def _target_matches(self, name: str, content: bytes) -> bool:
+        try:
+            details = os.lstat(name, dir_fd=self._dir_fd)
+            return not stat.S_ISLNK(details.st_mode) and stat.S_ISREG(details.st_mode) and self._read_name(name) == content
+        except (FileNotFoundError, ArtifactValidationError, OSError):
+            return False
+
+    def _cleanup_owned_temp(self, name: str, content: bytes) -> None:
+        """Only remove this call's temp after proving it still has our bytes."""
+
+        try:
+            if self._target_matches(name, content):
+                os.unlink(name, dir_fd=self._dir_fd)
+        except OSError:
+            pass
+
+    def _record_published(self, filename: str, envelope: dict[str, Any], temp_name: str) -> Path:
+        try:
+            os.unlink(temp_name, dir_fd=self._dir_fd)
+        except OSError:
+            pass
+        try:
+            self._fsync_directory()
+        except OSError:
+            pass
+        self._entries[filename] = envelope
+        return self.root / filename
+
     def write_atomic(self, record: object, *, provenance_bundle: ProvenanceBundle | None = None) -> Path:
         """Publish a fully valid artifact, never overwriting an existing target.
 
@@ -199,28 +286,23 @@ class ArtifactRegistry:
         }
         content = canonical_bytes("FROZEN_ARTIFACT", envelope)
         temp_name = f".{report.record['artifact_id']}.{secrets.token_hex(16)}.tmp"
-        published = False
+        link_attempted = False
         try:
             self._write_temp(temp_name, content)
+            link_attempted = True
             os.link(temp_name, filename, src_dir_fd=self._dir_fd, dst_dir_fd=self._dir_fd, follow_symlinks=False)
-            published = True
-        except FileExistsError as error:
-            raise ArtifactValidationError((f"artifact is already frozen: {filename}",)) from error
-        finally:
-            if not published:
-                try:
-                    os.unlink(temp_name, dir_fd=self._dir_fd)
-                except FileNotFoundError:
-                    pass
-        if published:
-            try:
-                os.unlink(temp_name, dir_fd=self._dir_fd)
-            except OSError:
-                pass
-            try:
-                self._fsync_directory()
-            except OSError:
-                pass
-            self._entries[filename] = envelope
-            return self.root / filename
-        raise ArtifactValidationError(("atomic publication did not complete",))
+            if not self._target_matches(filename, content):
+                raise ArtifactValidationError(("atomic publication target did not verify",))
+            return self._record_published(filename, envelope, temp_name)
+        except BaseException as error:
+            # ``os.link`` can succeed and an interrupt can arrive before Python
+            # observes its return.  The anchored target is authoritative then.
+            if link_attempted and self._target_matches(filename, content):
+                self._entries[filename] = envelope
+                return self.root / filename
+            self._cleanup_owned_temp(temp_name, content)
+            if isinstance(error, FileExistsError):
+                raise ArtifactValidationError((f"artifact is already frozen: {filename}",)) from error
+            if isinstance(error, ArtifactValidationError):
+                raise
+            raise ArtifactValidationError(("atomic publication failed before target was published",)) from error
