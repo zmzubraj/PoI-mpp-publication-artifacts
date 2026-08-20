@@ -18,6 +18,8 @@ interface Vm {
     function expectRevert(bytes calldata revertData) external;
     function roll(uint256 newHeight) external;
     function assume(bool condition) external;
+    function load(address target, bytes32 slot) external view returns (bytes32 data);
+    function store(address target, bytes32 slot, bytes32 value) external;
 }
 
 abstract contract MinimalTest {
@@ -156,6 +158,44 @@ abstract contract ProtocolKernelBase is MinimalTest {
     function _mintPendingReceipt(bytes32 nullifier) internal returns (uint256 receiptId) {
         vm.prank(RECEIPT_OPERATOR);
         receiptId = receiptManager.mintPending(consensusTaskId, nullifier);
+    }
+
+    function _createTask(bytes32 taskRoot, address worker, TaskManager.TaskClass taskClass, uint256 creditBudget)
+        internal
+        returns (uint256 taskId)
+    {
+        uint64 currentEpoch = policy.currentEpoch();
+        vm.prank(TASK_ADMIN);
+        taskId = taskManager.createTask(taskRoot, MODEL_ROOT, worker, taskClass, creditBudget, currentEpoch, 500);
+    }
+
+    function _prepareTaskWithActiveReceipt(uint256 taskId, address worker, bytes32 nullifier)
+        internal
+        returns (uint256)
+    {
+        _commit(taskId, worker);
+        _finalizeCommitment(taskId);
+        _openAcceptedAudit(taskId);
+        vm.prank(RECEIPT_OPERATOR);
+        uint256 receiptId = receiptManager.mintPending(taskId, nullifier);
+        _matureReceiptWindow(taskId);
+        _activatePendingReceipt(receiptId);
+        return receiptId;
+    }
+
+    function _setTaskActive(uint256 taskId, bool active_) internal {
+        bytes32 slot = bytes32(uint256(keccak256(abi.encode(taskId, uint256(1)))) + 4);
+        uint256 packed = uint256(vm.load(address(taskManager), slot));
+        uint256 activeMask = uint256(0xff) << 128;
+        uint256 nextPacked = active_ ? (packed | activeMask) : (packed & ~activeMask);
+        vm.store(address(taskManager), slot, bytes32(nextPacked));
+    }
+
+    function _setTaskEpoch(uint256 taskId, uint64 epoch) internal {
+        bytes32 slot = bytes32(uint256(keccak256(abi.encode(taskId, uint256(1)))) + 4);
+        uint256 packed = uint256(vm.load(address(taskManager), slot));
+        uint256 nextPacked = (packed & ~uint256(type(uint64).max)) | uint256(epoch);
+        vm.store(address(taskManager), slot, bytes32(nextPacked));
     }
 }
 

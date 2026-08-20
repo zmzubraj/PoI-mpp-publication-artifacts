@@ -63,8 +63,11 @@ contract CreditEngine {
 
     function allocateCredit(uint256 taskId, uint256[] calldata receiptIds) external onlyCreditOperator {
         TaskManager.Task memory task = taskManager.getTask(taskId);
-        if (!task.active || !task.registered || task.taskClass != TaskManager.TaskClass.CONSENSUS) {
-            revert CreditEngine__TaskNotCreditable();
+        if (
+            !task.active || !task.registered || task.taskClass != TaskManager.TaskClass.CONSENSUS
+                || task.creditBudget == 0
+        ) {
+            return;
         }
         if (receiptIds.length == 0) {
             revert CreditEngine__NoActiveReceipt();

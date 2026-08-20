@@ -124,6 +124,7 @@ class TaskSpec(_FrozenProtocolModel):
     task_root: str
     worker_id: str
     task_class: TaskClass
+    active: bool = True
     registered: bool
     credit_budget: int = 0
     epoch: int

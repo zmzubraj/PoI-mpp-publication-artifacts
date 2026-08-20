@@ -7,9 +7,12 @@ contract CreditInvariantTest is ProtocolKernelBase {
     function testServiceTaskCannotMintConsensusCredit() public {
         uint256[] memory receiptIds = new uint256[](1);
         receiptIds[0] = pendingReceiptId;
+        uint256 beforeAllocated = creditEngine.taskAllocated(serviceTaskId);
+        uint256 beforeReceiptCredit = creditEngine.receiptCredit(pendingReceiptId);
         vm.prank(CREDIT_OPERATOR);
-        vm.expectRevert(CreditEngine.CreditEngine__TaskNotCreditable.selector);
         creditEngine.allocateCredit(serviceTaskId, receiptIds);
+        assertEq(creditEngine.taskAllocated(serviceTaskId), beforeAllocated, "service task allocation");
+        assertEq(creditEngine.receiptCredit(pendingReceiptId), beforeReceiptCredit, "service task receipt credit");
     }
 
     function testZeroCreditProducesZeroWeight() public {
@@ -69,13 +72,13 @@ contract CreditInvariantTest is ProtocolKernelBase {
         _activatePendingReceipt(pendingReceiptId);
 
         vm.prank(CREDIT_OPERATOR);
-        vm.expectRevert(CreditEngine.CreditEngine__TaskNotCreditable.selector);
         creditEngine.allocateCredit(serviceTaskId, singleReceipt);
+        assertEq(creditEngine.taskAllocated(serviceTaskId), 0, "service task remains zero");
 
         singleReceipt[0] = pendingReceiptId;
         vm.prank(CREDIT_OPERATOR);
-        vm.expectRevert(CreditEngine.CreditEngine__TaskNotCreditable.selector);
         creditEngine.allocateCredit(serviceTaskId, singleReceipt);
+        assertEq(creditEngine.receiptCredit(pendingReceiptId), 0, "service task cannot consume receipt");
     }
 
     function testReceiptBatchMustCoverAllActiveReceipts() public {
@@ -90,6 +93,13 @@ contract CreditInvariantTest is ProtocolKernelBase {
         vm.prank(CREDIT_OPERATOR);
         vm.expectRevert(CreditEngine.CreditEngine__ActiveReceiptCountMismatch.selector);
         creditEngine.allocateCredit(consensusTaskId, subset);
+    }
+
+    function testCreditableConsensusTaskWithEmptyBatchFailsClosed() public {
+        uint256[] memory receiptIds = new uint256[](0);
+        vm.prank(CREDIT_OPERATOR);
+        vm.expectRevert(CreditEngine.CreditEngine__NoActiveReceipt.selector);
+        creditEngine.allocateCredit(consensusTaskId, receiptIds);
     }
 
     function invariant_TaskAllocationNeverExceedsBudget() public view {

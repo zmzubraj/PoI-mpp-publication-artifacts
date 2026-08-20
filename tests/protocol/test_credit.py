@@ -12,6 +12,7 @@ def _task(
     worker_id: str = "0x0000000000000000000000000000000000002001",
     epoch: int = 7,
     task_class: TaskClass = TaskClass.CONSENSUS,
+    active: bool = True,
     registered: bool = True,
     credit_budget: int = 90,
 ) -> TaskSpec:
@@ -20,6 +21,7 @@ def _task(
         task_root="0xaa" + "aa" * 31,
         worker_id=worker_id,
         task_class=task_class,
+        active=active,
         registered=registered,
         credit_budget=credit_budget,
         epoch=epoch,
@@ -85,6 +87,37 @@ def test_service_and_unregistered_tasks_do_not_mint_credit(receipt):
     assert allocate_credit(_task(registered=False), [active]).total_credit == 0
 
 
+def test_inactive_and_zero_budget_tasks_do_not_mutate_credit_allocation(receipt):
+    active = receipt.model_copy(
+        update={
+            "state": ReceiptState.ACTIVE,
+            "audit_decision": AuditDecision.ACCEPT,
+            "audit_accepted": True,
+            "da_decision": True,
+            "data_availability_passed": True,
+            "activated_epoch": receipt.epoch_issued + 1,
+        }
+    )
+    inactive = allocate_credit(_task(active=False), [active])
+    zero_budget = allocate_credit(_task(credit_budget=0), [active])
+
+    assert inactive.ordered_receipt_ids == ()
+    assert inactive.by_receipt == {}
+    assert inactive.by_worker == {}
+    assert inactive.total_credit == 0
+
+    assert zero_budget.ordered_receipt_ids == ()
+    assert zero_budget.by_receipt == {}
+    assert zero_budget.by_worker == {}
+    assert zero_budget.total_credit == 0
+
+
+def test_positive_budget_creditable_task_requires_nonempty_eligible_batch(receipt):
+    task = _task(task_id=receipt.task_id, worker_id=receipt.worker_id, epoch=receipt.epoch_issued)
+    with pytest.raises(ValueError, match="no active receipt eligible"):
+        allocate_credit(task, [])
+
+
 def test_forged_active_receipt_does_not_mint_credit(receipt):
     task = _task(task_id=receipt.task_id, worker_id=receipt.worker_id, epoch=receipt.epoch_issued)
     forged = receipt.model_copy(
@@ -120,6 +153,23 @@ def test_duplicate_receipt_id_and_nullifier_are_rejected(receipt):
             task,
             [active_one, active_one.model_copy(update={"receipt_id": 2})],
         )
+
+
+def test_previously_credited_receipt_is_rejected_as_replay(receipt):
+    task = _task(task_id=receipt.task_id, worker_id=receipt.worker_id, epoch=receipt.epoch_issued)
+    active = receipt.model_copy(
+        update={
+            "receipt_id": 1,
+            "state": ReceiptState.ACTIVE,
+            "audit_decision": AuditDecision.ACCEPT,
+            "audit_accepted": True,
+            "da_decision": True,
+            "data_availability_passed": True,
+            "activated_epoch": receipt.epoch_issued + 1,
+        }
+    )
+    with pytest.raises(ValueError, match="receipt already credited"):
+        allocate_credit(task, [active], previously_credited_receipt_ids={1})
 
 
 def test_receipts_must_mature_in_exact_next_epoch(receipt):

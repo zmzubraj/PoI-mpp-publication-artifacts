@@ -75,6 +75,8 @@ def test_protocol_vectors_fixture_exists():
 
 def test_protocol_vectors_include_commitment_state_and_credit_sections():
     payload = _load_vectors()
+    assert payload["artifact_origin"] == "TEST_VECTOR_NON_EVIDENCE"
+    assert payload["evidence_origin"] == "SYNTHETIC_NON_EVIDENCE"
     assert "commitment_vectors" in payload
     assert "state_vectors" in payload
     assert "credit_vectors" in payload
@@ -97,7 +99,8 @@ def test_python_commitment_vectors_match_foundry_verified_export():
         assert commitment.task_commitment == vector["expected"]["task_commitment"]
         assert commitment.model_commitment == vector["expected"]["model_commitment"]
         assert commitment.commitment_hash == vector["expected"]["commitment_hash"]
-        assert commitment.finalized_height == vector["expected"]["finalized_height"]
+        if "finalized_height" in vector["expected"]:
+            assert commitment.finalized_height == vector["expected"]["finalized_height"]
 
 
 def test_python_state_vectors_match_foundry_verified_export():
@@ -120,14 +123,27 @@ def test_python_state_vectors_match_foundry_verified_export():
 
 def test_python_credit_vectors_match_foundry_verified_export():
     payload = _load_vectors()
+    credit_case_names = {vector["name"] for vector in payload["credit_vectors"]}
+    assert {
+        "single_receipt_budget",
+        "two_receipt_even_split",
+        "service_task_noop",
+        "zero_budget_noop",
+        "inactive_task_noop",
+        "empty_batch_rejected",
+        "wrong_epoch_rejected",
+        "duplicate_receipt_id_rejected",
+        "replay_rejected",
+    }.issubset(credit_case_names)
     for vector in payload["credit_vectors"]:
         task = _task(vector["task"])
         receipts = [_receipt(item) for item in vector["receipts"]]
+        previously_credited_receipt_ids = set(vector.get("previously_credited_receipt_ids", []))
         if "expected_error" in vector:
             with pytest.raises(ValueError, match=vector["expected_error"]["python"]):
-                allocate_credit(task, receipts)
+                allocate_credit(task, receipts, previously_credited_receipt_ids=previously_credited_receipt_ids)
             continue
-        allocation = allocate_credit(task, receipts)
+        allocation = allocate_credit(task, receipts, previously_credited_receipt_ids=previously_credited_receipt_ids)
         assert list(allocation.ordered_receipt_ids) == vector["expected"]["ordered_receipt_ids"]
         assert allocation.by_receipt == {int(key): value for key, value in vector["expected"]["by_receipt"].items()}
         assert allocation.by_worker == vector["expected"]["by_worker"]

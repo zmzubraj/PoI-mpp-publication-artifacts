@@ -152,3 +152,62 @@ Residual risks:
 - Foundry invariant suites still emit harmless `target*` warning probes before execution; tests still pass and no behavior regressions were observed from them.
 - Credit parity is exact only for the current single-worker-per-task MPP; any future multi-worker task model will require a new canonical batch contract and fresh vectors.
 - The audit compiler remains a Python reference path and is not yet mirrored by a Solidity audit-seed implementation; Task 8 parity covers commitments, receipt state, and credit allocation exactly, not on-chain audit-plan derivation.
+
+---
+
+Round 1 fix on Thursday, August 20, 2026:
+
+Review findings were addressed without widening scope beyond Task 8A/8.
+
+Corrections implemented:
+- Non-creditable task semantics are now deterministic no-op in both kernels for `SERVICE`, inactive, unregistered, and zero-budget tasks.
+- Creditable `CONSENSUS` tasks with positive budget and an empty eligible batch now fail closed in both kernels.
+- Python credit parity now models replay explicitly through `previously_credited_receipt_ids`.
+- `HashVectors` now covers explicit zero-budget, service-task, inactive-task, empty-batch, wrong-epoch, duplicate-batch, and replay cases.
+- Solidity witness generation is now source-of-truth for fixture outputs:
+  - `contracts/script/ProtocolVectorWitness.s.sol`
+  - `contracts/foundry.toml` scoped `fs_permissions` for `./out`
+  - exporter runs `forge test` then `forge script --via-ir`, validates the witness JSON, and only then writes `tests/fixtures/protocol_vectors.json`
+- The exported fixture now includes the required no-op/fail-closed/replay cases and preserves:
+  - `artifact_origin=TEST_VECTOR_NON_EVIDENCE`
+  - `evidence_origin=SYNTHETIC_NON_EVIDENCE`
+  - `solidity_witness_source.contract=HashVectors`
+
+Additional files changed in this round:
+- `contracts/foundry.toml`
+- `contracts/script/ProtocolVectorWitness.s.sol`
+
+Verification results after the fix:
+- Focused RED:
+  - `PYTHONPATH=src ./.venv/bin/python -m pytest tests/protocol/test_credit.py tests/integration/test_python_solidity_parity.py -q`
+  - Result: failed before patching on missing `TaskSpec.active`, absent replay surface, and missing fixture cases.
+- Focused GREEN:
+  - `PYTHONPATH=src ./.venv/bin/python -m pytest tests/protocol/test_credit.py -q`
+  - Result: `10` tests passed.
+  - `cd contracts && forge test --match-contract HashVectors -vv`
+  - Result: `14` tests passed.
+  - `PYTHONPATH=src ./.venv/bin/python -m pytest tests/integration/test_python_solidity_parity.py`
+  - Result: `5` tests passed.
+- Final GREEN matrix:
+  - `cd contracts && forge fmt`
+  - Result: formatted touched Solidity files.
+  - `PYTHONPATH=src ./.venv/bin/python -m pytest tests/protocol`
+  - Result: `39 passed in 0.08s`
+  - `PYTHONPATH=src ./.venv/bin/python -m pytest`
+  - Result: `151 passed in 1.98s`
+  - `cd contracts && forge test -vv`
+  - Result: `38` tests passed across `5` suites.
+  - `PYTHONPATH=src ./.venv/bin/python scripts/export_solidity_vectors.py`
+  - Result: exporter succeeded from Solidity witnesses.
+  - Deterministic hash check:
+    - `9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4`
+    - `9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4`
+- Provenance inspection:
+  - `artifact_origin` = `TEST_VECTOR_NON_EVIDENCE`
+  - `evidence_origin` = `SYNTHETIC_NON_EVIDENCE`
+  - `solidity_witness_source.contract` = `HashVectors`
+
+Residual risks after the fix:
+- The witness script currently relies on `forge script --via-ir` because the JSON assembly function exceeds the direct stack limit under regular codegen.
+- Credit parity remains exact only for the current single-worker-per-task MPP.
+- Audit-plan derivation still remains Python-side reference logic rather than a Solidity witness surface.

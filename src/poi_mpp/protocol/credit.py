@@ -75,13 +75,14 @@ def allocate_credit(
     matured_receipts: Iterable[Receipt],
     *,
     target_epoch: int | None = None,
+    previously_credited_receipt_ids: Iterable[int] = (),
 ) -> CreditAllocation:
     allocation_epoch = task.epoch + 1 if target_epoch is None else target_epoch
     if allocation_epoch <= task.epoch:
         raise ValueError("target_epoch must be the exact next epoch after the task epoch")
     if allocation_epoch != task.epoch + 1:
         raise ValueError("target_epoch must be the exact next epoch after the task epoch")
-    if task.task_class is not TaskClass.CONSENSUS or not task.registered or task.credit_budget == 0:
+    if not task.active or task.task_class is not TaskClass.CONSENSUS or not task.registered or task.credit_budget == 0:
         return CreditAllocation(
             task_id=task.task_id,
             ordered_receipt_ids=(),
@@ -89,20 +90,17 @@ def allocate_credit(
             by_worker={},
             total_credit=0,
         )
+    prior_credited = set(previously_credited_receipt_ids)
     eligible = _eligible_receipts(task, matured_receipts, target_epoch=allocation_epoch)
     if not eligible:
-        return CreditAllocation(
-            task_id=task.task_id,
-            ordered_receipt_ids=(),
-            by_receipt={},
-            by_worker={},
-            total_credit=0,
-        )
+        raise ValueError("no active receipt eligible for allocation")
     base_share, remainder = divmod(task.credit_budget, len(eligible))
     by_receipt: dict[int, int] = {}
     by_worker: dict[str, int] = {}
     ordered_receipt_ids = tuple(receipt.receipt_id for receipt in eligible)
     for index, receipt in enumerate(eligible):
+        if receipt.receipt_id in prior_credited:
+            raise ValueError("receipt already credited")
         share = base_share + (1 if index < remainder else 0)
         by_receipt[receipt.receipt_id] = share
         if share == 0:

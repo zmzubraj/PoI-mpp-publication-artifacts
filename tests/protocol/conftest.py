@@ -22,6 +22,7 @@ def task() -> TaskSpec:
         task_root="0xaa" + "aa" * 31,
         worker_id="0x0000000000000000000000000000000000002001",
         task_class=TaskClass.CONSENSUS,
+        active=True,
         registered=True,
         credit_budget=90,
         epoch=7,
