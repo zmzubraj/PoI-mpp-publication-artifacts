@@ -1,0 +1,25 @@
+sequenceDiagram
+  participant U as Requester
+  participant W as Worker
+  participant C as Chain
+  participant A as Auditor
+  participant X as Watcher
+  participant DA as DA Layer
+  participant V as Consensus
+  U->>C: createTask(C_T)
+  C->>W: assign task
+  W->>W: ExecuteOnce(model, x)
+  W->>W: Build R_X + R_E + C_A
+  W->>C: commitResponse(C_R)
+  C-->>C: finalize commitment
+  C->>C: derive eta from epoch beacon
+  C->>A: publish audit seed/obligations
+  A->>W: request selected openings
+  W-->>A: trace/IEC openings
+  A->>C: audit result
+  W->>DA: publish coded artifact
+  DA->>C: availability certificate
+  X->>C: optional challenge
+  C->>C: dispute / bisection / slash
+  C->>C: receipt matures
+  C->>V: next-epoch PoI weight

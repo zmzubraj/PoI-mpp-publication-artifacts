@@ -1,0 +1,21 @@
+flowchart LR
+  U[Requester] --> T[Task Contract]
+  T --> M[Model Registry]
+  T --> W[Worker / Model Runtime]
+  W --> X[Trace Sidecar]
+  W --> E[IEC Builder]
+  X --> C[Commitment Hub]
+  E --> C
+  W --> A[Artifact Store / DA]
+  C --> R[Post-Commit Randomness]
+  R --> AU[Audit Compiler]
+  AU --> XA[Execution Audit]
+  AU --> SA[Semantic Audit]
+  XA --> D[Optional Dispute]
+  SA --> D
+  A --> RA[DA Gate]
+  D --> RM[Receipt Manager]
+  RA --> RM
+  RM --> CE[Credit Engine]
+  CE --> CA[Consensus Adapter]
+  CA --> BFT[VRF + BFT]

@@ -1,0 +1,7 @@
+flowchart LR
+  J[Consensus Task Budget D_j] --> C[Receipt Credit c_ij]
+  C --> Q[Epoch Credit Q_i]
+  Q --> B[Bond Cap B_i / beta]
+  B --> W[Active Weight W_i]
+  W --> V[VRF Committee]
+  V --> F[Weighted BFT]

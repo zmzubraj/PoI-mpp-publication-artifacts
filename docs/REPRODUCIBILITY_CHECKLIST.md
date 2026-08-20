@@ -1,0 +1,21 @@
+# Reproducibility Checklist
+
+- [ ] exact Git commit recorded
+- [ ] model identifier and checksum recorded
+- [ ] dataset generator version recorded
+- [ ] dataset manifest recorded
+- [ ] random seeds recorded
+- [ ] Python environment lock recorded
+- [ ] Foundry version recorded
+- [ ] Solidity compiler version recorded
+- [ ] CUDA/driver version recorded for GPU runs
+- [ ] hardware model recorded
+- [ ] all experiment configs frozen
+- [ ] raw logs stored
+- [ ] raw result tables stored
+- [ ] figure-generation scripts stored
+- [ ] paper artifact IDs linked to raw files
+- [ ] clean-environment replay tested
+- [ ] README contains one-command reproduction
+- [ ] no manually typed scientific results in paper tables
+- [ ] privacy-sensitive prompts/evidence redacted or hashed

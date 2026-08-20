@@ -1,0 +1,9 @@
+flowchart TD
+  P[C_P Policy Root] --> G[Audit Compiler]
+  T[C_T Task] --> G
+  R[C_R Finalized Response Commitment] --> G
+  B[Epoch Beacon] --> G
+  G --> SX[Execution Sample Set S_X]
+  G --> SS[Semantic Set S_S]
+  SX --> XA[Trace/Tensor Audit]
+  SS --> SA[IEC/Semantic Audit]

@@ -1,0 +1,14 @@
+flowchart LR
+  Y[Committed Response] --> IEC[IEC]
+  IEC --> O[Objective Checks]
+  IEC --> G[Grounded Evidence Checks]
+  IEC --> S[Semantic Verifiers]
+  IEC --> M[Metamorphic Checks]
+  O --> A[Aggregate]
+  G --> A
+  S --> A
+  M --> A
+  A --> L[LCB + Disagreement]
+  L -->|pass| ACC[ACCEPT]
+  L -->|uncertain| ABS[ABSTAIN]
+  L -->|fail| REJ[REJECT]

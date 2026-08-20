@@ -1,0 +1,16 @@
+# Foundry Test Plan
+
+1. registerModel_rejectsZeroRoot
+2. createTask_recordsClassBudgetDeadline
+3. serviceTaskCannotMintConsensusCredit
+4. commitResponse_bindsSingleWorker
+5. auditCannotBecomeActiveBeforeCommitFinality
+6. receiptCannotActivateBeforeConfiguredGate
+7. creditBudgetConservation
+8. activeWeightIsBondCapped
+9. zeroCreditProducesZeroWeight
+10. expiredReceiptCannotBecomeActive
+11. challengedReceiptEntersDisputeState
+12. replayedNullifierRejected
+13. gas_snapshot_normalPath
+14. gas_snapshot_disputePath

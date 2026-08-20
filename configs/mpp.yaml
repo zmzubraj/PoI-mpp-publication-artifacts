@@ -1,0 +1,29 @@
+model:
+  primary: Qwen/Qwen2.5-1.5B-Instruct
+  optional_scale: Qwen/Qwen2.5-7B-Instruct
+  max_new_tokens: 128
+  temperature: 0.0
+  seed: 42
+
+protocol:
+  challenge_window_blocks: 20
+  retention_epochs: 2
+  audit_rounds: 8
+  semantic_threshold: 0.80
+  disagreement_threshold: 0.20
+  credit_decay_lambda: 0.10
+  bond_beta: 10.0
+
+execution_audit:
+  linear_sample_fraction: 0.05
+  freivalds_rounds: 8
+  exact_ops: [tokenizer, argmax_decode, selected_layernorm]
+
+data_availability:
+  total_shards: 16
+  reconstruction_shards: 10
+  samples_per_receipt: 8
+
+datasets:
+  objective_examples: 2000
+  grounded_examples: 500
