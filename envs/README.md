@@ -2,9 +2,12 @@
 
 ## Python
 
-- Python >= 3.10
-- Dependencies: `../requirements.txt`
+- Python == 3.11.* (CPython)
+- Dependencies: `../requirements.lock`
 - Project metadata: `../pyproject.toml`
+
+Use the exact lockfile for a reviewed environment; `requirements.txt` is
+historical scaffolding and is not a reproducible installation path.
 
 ## EVM
 
