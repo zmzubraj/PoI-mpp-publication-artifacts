@@ -86,8 +86,8 @@ Adjacent regression slice:
 Full Python suite:
 
 ```text
-./.venv/bin/python -m pytest -q
-236 passed
+./.venv/bin/python -m pytest
+243 passed in 2.64s
 ```
 
 Static and diff hygiene:
@@ -133,6 +133,69 @@ exit 0
   inside `ExecutionAuditBundle` so post-commit mutation testing can keep the
   original commitment instance intact; reviewer scrutiny should confirm this is
   acceptable for the local experiment harness boundary.
-- The current summary emits rates without confidence intervals. That matches the
-  present test contract, but confirmatory publication reporting may later need
-  interval estimation before a real T7/F6 artifact is frozen.
+- The current E2 publication record now includes deterministic Wilson intervals
+  and frozen minimum denominator/seed gates, but no authorized real execution
+  has exercised those freeze paths yet.
+
+## Fix Round 1 — canonical surface binding, duplicate-observation guards, and publication minimums
+
+### Review findings addressed
+
+- Attack-family surface relabeling is no longer caller-controlled.
+- Replay attacks now require prior-nullifier membership to count as replay.
+- Duplicate receipt IDs and duplicate manifest observation keys now fail closed.
+- FROZEN publication records now require matching provenance, explicit
+  publication scope, minimum denominator and unique-seed counts, and
+  confidence-interval fields.
+
+### Additional files changed in fix round 1
+
+- `src/poi_mpp/attacks/__init__.py`
+- `src/poi_mpp/attacks/execution.py`
+- `src/poi_mpp/experiments/e2_tamper.py`
+- `src/poi_mpp/reporting/e2.py`
+- `tests/experiments/test_e2_tamper.py`
+
+### Added RED coverage
+
+- tensor corruption cannot be mislabeled to the wrong surface
+- supported exact attacks cannot be relabeled as unsupported
+- replay attacks require prior-nullifier membership
+- duplicate `receipt_id` rejection
+- duplicate `(family, seed, target, peer)` observation rejection
+- one supported row cannot freeze
+- reproducible simulation can freeze only with exact publication scope and
+  matching provenance
+
+### Fix-round verification
+
+Focused suite:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py -q
+16 passed
+```
+
+Adjacent regression slice:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py tests/experiments/test_e1_cost.py tests/auditor/test_exact.py tests/auditor/test_floating_point.py tests/auditor/test_finite_field.py -q
+47 passed
+```
+
+Full Python suite:
+
+```text
+./.venv/bin/python -m pytest
+243 passed in 2.64s
+```
+
+Static and diff hygiene:
+
+```text
+./.venv/bin/python -m compileall src experiments tests/experiments/test_e2_tamper.py
+exit 0
+
+git diff --check -- src/poi_mpp/attacks src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py src/poi_mpp/attacks/__init__.py
+exit 0
+```

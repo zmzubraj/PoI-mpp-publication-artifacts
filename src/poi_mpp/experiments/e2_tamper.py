@@ -11,7 +11,9 @@ from poi_mpp.attacks.execution import (
     AttackAnalysisSurface,
     AttackFamily,
     AttackManifest,
+    AttackNumericMode,
     ExecutionAuditBundle,
+    canonical_attack_surface,
     committed_target_hash,
     observed_target_hash,
 )
@@ -28,12 +30,15 @@ from poi_mpp.evidence import (
     artifact_content_material,
     digest,
 )
+from poi_mpp.evidence.validation import ProvenanceBundle
 from poi_mpp.protocol import ModelManifest, TaskClass, TaskSpec, commit_response
 from poi_mpp.reporting.e2 import E2Summary
 
 
 PUBLICATION_EVIDENCE_AUTHORIZED = "PUBLICATION_EVIDENCE_AUTHORIZED"
 _FIELD_MODULUS = 2_147_483_647
+MIN_E2_SUPPORTED_DENOMINATOR = 2
+MIN_E2_UNIQUE_ATTACK_SEEDS = 2
 
 
 class _FrozenModel(BaseModel):
@@ -51,6 +56,9 @@ class E2ReceiptRow(_FrozenModel):
     attack_manifest: AttackManifest | None = None
     analysis_surface: str
     assurance_class: str
+    attack_seed: int | None = Field(default=None, ge=0)
+    peer_receipt_id: str | None = None
+    observation_key: str | None = None
     audit_rate: float = Field(gt=0.0, le=1.0)
     freivalds_rounds: int = Field(gt=0)
     detected: bool
@@ -84,6 +92,8 @@ class E2ReceiptRow(_FrozenModel):
         "receipt_id",
         "analysis_surface",
         "assurance_class",
+        "peer_receipt_id",
+        "observation_key",
         "original_commitment",
         "original_target_hash",
         "observed_target_hash",
@@ -94,6 +104,8 @@ class E2ReceiptRow(_FrozenModel):
     )
     @classmethod
     def require_nonblank_text(cls, value: str) -> str:
+        if value is None:
+            return value
         if not isinstance(value, str) or not value.strip():
             raise ValueError("E2 row text fields must not be blank")
         return value
@@ -106,10 +118,18 @@ class E2ReceiptRow(_FrozenModel):
         else:
             if self.attack_manifest is not None and self.original_target_hash == self.observed_target_hash:
                 raise ValueError("attacked rows must change the targeted surface")
+            if self.attack_seed is None:
+                raise ValueError("attacked rows require attack_seed")
+            if self.observation_key is None:
+                raise ValueError("attacked rows require observation_key")
         if self.abstained and self.detected:
             raise ValueError("abstained rows cannot also count as detected")
         if self.false_positive and self.attack_family is not None:
             raise ValueError("false positives apply only to honest controls")
+        if self.attack_family is None and (
+            self.attack_seed is not None or self.peer_receipt_id is not None or self.observation_key is not None
+        ):
+            raise ValueError("honest control rows cannot carry attack observation metadata")
         return self
 
 
@@ -249,9 +269,13 @@ def build_fixture_bundle(
 def validate_attack_receipt(row: E2ReceiptRow) -> E2ReceiptRow:
     reasons: list[str] = []
     manifest = row.attack_manifest
+    expected_detected = False
+    expected_abstained = False
     if row.attack_family is None:
         if manifest is not None:
             reasons.append("honest control rows cannot include attack manifests")
+        if row.analysis_surface != AttackAnalysisSurface.EXACT_MATCH.value:
+            reasons.append("honest control rows must use EXACT_MATCH analysis_surface")
     else:
         if manifest is None:
             reasons.append("attacked rows require attack manifests")
@@ -266,9 +290,61 @@ def validate_attack_receipt(row: E2ReceiptRow) -> E2ReceiptRow:
                 reasons.append("attack manifest original_target_hash does not match row target")
             if manifest.attacked_target_hash != row.observed_target_hash:
                 reasons.append("attack manifest attacked_target_hash does not match row target")
+            expected_surface = canonical_attack_surface(
+                manifest.family,
+                numeric_mode=manifest.numeric_mode,
+            )
+            if row.analysis_surface != expected_surface.value:
+                reasons.append("row.analysis_surface does not match the canonical manifest surface")
+            expected_peer_receipt_id = next(
+                (
+                    str(parameter.value)
+                    for parameter in manifest.parameters
+                    if parameter.key == "peer_receipt_id"
+                ),
+                None,
+            )
+            if row.peer_receipt_id != expected_peer_receipt_id:
+                reasons.append("row.peer_receipt_id does not match the canonical manifest peer binding")
+            expected_observation_key = _observation_key(
+                manifest.family,
+                manifest.seed,
+                manifest.original_target_hash,
+                expected_peer_receipt_id,
+            )
+            if row.observation_key != expected_observation_key:
+                reasons.append("row.observation_key does not match the canonical manifest observation key")
+            if row.attack_seed != manifest.seed:
+                reasons.append("row.attack_seed does not match manifest.seed")
+            expected_abstained = expected_surface is AttackAnalysisSurface.UNSUPPORTED
+            expected_detected = not row.accepted and not expected_abstained
+            if expected_surface is AttackAnalysisSurface.UNSUPPORTED and row.accepted:
+                reasons.append("unsupported attack surfaces cannot be accepted")
+            if expected_surface is not AttackAnalysisSurface.UNSUPPORTED and row.abstained:
+                reasons.append("supported attack surfaces cannot abstain")
+    if row.detected != expected_detected:
+        reasons.append("row.detected is inconsistent with canonical acceptance/abstention")
+    if row.abstained != expected_abstained:
+        reasons.append("row.abstained is inconsistent with the canonical attack surface")
     if reasons:
         raise ArtifactValidationError(tuple(dict.fromkeys(reasons)))
     return row
+
+
+def _observation_key(
+    family: AttackFamily,
+    seed: int,
+    original_target_hash: str,
+    peer_receipt_id: str | None,
+) -> str:
+    return "|".join(
+        (
+            family.value,
+            str(seed),
+            original_target_hash,
+            peer_receipt_id or "",
+        )
+    )
 
 
 def _exact_row(
@@ -346,13 +422,14 @@ def evaluate_receipt(
         if attack_manifest is not None
         else AttackAnalysisSurface.EXACT_MATCH
     )
+    numeric_mode = attack_manifest.numeric_mode if attack_manifest is not None else None
     original_hash = (
-        committed_target_hash(bundle, family, analysis_surface=analysis_surface)
+        committed_target_hash(bundle, family, numeric_mode=numeric_mode)
         if family is not None
         else bundle.commitment.response_hash
     )
     observed_hash = (
-        observed_target_hash(bundle, family, analysis_surface=analysis_surface)
+        observed_target_hash(bundle, family, numeric_mode=numeric_mode)
         if family is not None
         else bundle.response_hash
     )
@@ -363,11 +440,20 @@ def evaluate_receipt(
 
     if family is None:
         accepted, assurance_class, residual_risk = _exact_row(bundle, family=None, manifest=None)
+        attack_seed = None
+        peer_receipt_id = None
+        observation_key = None
     elif analysis_surface is AttackAnalysisSurface.UNSUPPORTED:
         accepted = False
         abstained = True
         assurance_class = analysis_surface.value
         residual_risk = ("unsupported kernel surface requires abstention",)
+        attack_seed = attack_manifest.seed
+        peer_receipt_id = next(
+            (str(parameter.value) for parameter in attack_manifest.parameters if parameter.key == "peer_receipt_id"),
+            None,
+        )
+        observation_key = _observation_key(family, attack_manifest.seed, original_hash, peer_receipt_id)
     elif analysis_surface is AttackAnalysisSurface.EXACT_FIELD:
         audit = verify_freivalds_field(
             bundle.field_matrix_a,
@@ -381,6 +467,9 @@ def evaluate_receipt(
         accepted = audit.accepted
         assurance_class = audit.assurance_class.value
         residual_risk = tuple(audit.residual_risk)
+        attack_seed = attack_manifest.seed
+        peer_receipt_id = None
+        observation_key = _observation_key(family, attack_manifest.seed, original_hash, None)
     elif analysis_surface is AttackAnalysisSurface.EMPIRICAL_FLOAT:
         audit = verify_freivalds_float(
             bundle.float_matrix_a,
@@ -395,20 +484,41 @@ def evaluate_receipt(
         accepted = audit.accepted
         assurance_class = audit.assurance_class.value
         residual_risk = tuple(audit.residual_risk)
+        attack_seed = attack_manifest.seed
+        peer_receipt_id = None
+        observation_key = _observation_key(family, attack_manifest.seed, original_hash, None)
     else:
         accepted, assurance_class, residual_risk = _exact_row(
             bundle,
             family=family,
             manifest=attack_manifest,
         )
-
-    if family is AttackFamily.REPLAY_NULLIFIER and bundle.nullifier in set(prior_nullifiers):
-        accepted = False
-        residual_risk = tuple(
-            dict.fromkeys(
-                (*residual_risk, "observed nullifier already appeared in prior receipts")
-            )
+        attack_seed = attack_manifest.seed
+        peer_receipt_id = next(
+            (str(parameter.value) for parameter in attack_manifest.parameters if parameter.key == "peer_receipt_id"),
+            None,
         )
+        observation_key = _observation_key(family, attack_manifest.seed, original_hash, peer_receipt_id)
+
+    if family is AttackFamily.REPLAY_NULLIFIER:
+        prior_nullifier_set = frozenset(prior_nullifiers)
+        if bundle.nullifier in prior_nullifier_set:
+            accepted = False
+            residual_risk = tuple(
+                dict.fromkeys(
+                    (*residual_risk, "observed nullifier already appeared in prior receipts")
+                )
+            )
+        else:
+            accepted = True
+            residual_risk = tuple(
+                dict.fromkeys(
+                    (
+                        *residual_risk,
+                        "changed nullifier without prior membership is not replay and is excluded from replay detection",
+                    )
+                )
+            )
 
     detected = family is not None and not accepted and not abstained
     false_positive = family is None and not accepted
@@ -422,6 +532,9 @@ def evaluate_receipt(
         attack_manifest=attack_manifest,
         analysis_surface=analysis_surface.value,
         assurance_class=assurance_class,
+        attack_seed=attack_seed,
+        peer_receipt_id=peer_receipt_id,
+        observation_key=observation_key,
         audit_rate=audit_rate,
         freivalds_rounds=freivalds_rounds,
         detected=detected,
@@ -445,13 +558,17 @@ def build_publication_record(
     summary: E2Summary,
     rows: list[E2ReceiptRow],
     run_config: RunConfig,
+    provenance_bundle: ProvenanceBundle | None = None,
 ) -> dict[str, object]:
     origins = {row.origin.value for row in rows}
     origin = next(iter(origins)) if len(origins) == 1 else "MIXED_ROW_ORIGINS"
-    publication_authorized = (
-        run_config.authorization_scope == PUBLICATION_EVIDENCE_AUTHORIZED
-        and origin != EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value
+    publication_reasons = _publication_precheck_reasons(
+        summary=summary,
+        rows=rows,
+        run_config=run_config,
+        provenance_bundle=provenance_bundle,
     )
+    publication_authorized = not publication_reasons
     record: dict[str, object] = {
         "schema_version": ARTIFACT_RECORD_SCHEMA_VERSION,
         "artifact_id": f"{run_config.experiment_id}-E2-SUMMARY",
@@ -466,23 +583,74 @@ def build_publication_record(
         "content_hash": "",
         "parent_hashes": list(run_config.parent_hashes),
         "payload": {
+            "minimum_supported_denominator": summary.minimum_supported_denominator,
+            "minimum_unique_attack_seeds": summary.minimum_unique_attack_seeds,
+            "unique_attack_seed_count": summary.unique_attack_seed_count,
             "exact_denominator": summary.exact_denominator,
             "exact_detected": summary.exact_detected,
             "exact_detection_rate": summary.exact_detection_rate,
+            "exact_confidence_interval": list(summary.exact_confidence_interval),
             "empirical_denominator": summary.empirical_denominator,
             "empirical_detected": summary.empirical_detected,
             "empirical_detection_rate": summary.empirical_detection_rate,
+            "empirical_confidence_interval": list(summary.empirical_confidence_interval),
             "unsupported_attack_count": summary.unsupported_attack_count,
             "honest_control_count": summary.honest_control_count,
             "false_positive_count": summary.false_positive_count,
             "false_positive_rate": summary.false_positive_rate,
             "residual_surface_ledger": list(summary.residual_surface_ledger),
+            "publication_precheck_reasons": list(publication_reasons),
         },
         "denominator": max(summary.denominator, 1),
-        "ci_required": False,
+        "ci_required": True,
+        "confidence_interval": list(summary.confidence_interval),
         "claim_id": summary.claim_id,
         "claim_disposition": summary.claim_disposition,
-        "provenance": {"status": "UNVERIFIED_LOCAL_ONLY"},
+        "provenance": (
+            provenance_bundle.manifest.model_dump(mode="json")
+            if provenance_bundle is not None
+            else {"status": "UNVERIFIED_LOCAL_ONLY"}
+        ),
     }
     record["content_hash"] = digest("ARTIFACT_CONTENT", artifact_content_material(record))
     return record
+
+
+def _publication_precheck_reasons(
+    *,
+    summary: E2Summary,
+    rows: list[E2ReceiptRow],
+    run_config: RunConfig,
+    provenance_bundle: ProvenanceBundle | None,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    row_origins = {row.origin.value for row in rows}
+    if row_origins != {run_config.origin.value}:
+        reasons.append("rows.origin must exactly match run_config.origin")
+    if run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+        reasons.append(
+            f"run_config.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+        )
+    if run_config.origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
+        reasons.append("synthetic non-evidence origin can never freeze")
+    if summary.denominator < summary.minimum_supported_denominator:
+        reasons.append("summary.denominator does not meet the frozen E2 minimum supported denominator")
+    if summary.unique_attack_seed_count < summary.minimum_unique_attack_seeds:
+        reasons.append("summary.unique_attack_seed_count does not meet the frozen E2 minimum seed contract")
+    if provenance_bundle is None:
+        reasons.append("publication freeze requires a verified provenance bundle")
+        return tuple(dict.fromkeys(reasons))
+    manifest = provenance_bundle.manifest
+    if provenance_bundle.config.model_dump(mode="json") != run_config.model_dump(mode="json"):
+        reasons.append("provenance bundle config must exactly match run_config")
+    if manifest.run_id != run_config.run_id:
+        reasons.append("provenance manifest run_id must equal run_config.run_id")
+    if manifest.experiment_id != run_config.experiment_id:
+        reasons.append("provenance manifest experiment_id must equal run_config.experiment_id")
+    if manifest.origin is not run_config.origin:
+        reasons.append("provenance manifest origin must equal run_config.origin")
+    if manifest.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+        reasons.append(
+            f"provenance.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+        )
+    return tuple(dict.fromkeys(reasons))

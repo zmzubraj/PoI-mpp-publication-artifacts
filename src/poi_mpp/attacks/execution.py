@@ -42,6 +42,11 @@ class AttackAnalysisSurface(StrEnum):
     UNSUPPORTED = "UNSUPPORTED_SURFACE"
 
 
+class AttackNumericMode(StrEnum):
+    EXACT_FIELD = "EXACT_FIELD"
+    EMPIRICAL_FLOAT = "EMPIRICAL_FLOAT"
+
+
 class AttackParameter(_FrozenModel):
     key: str
     value: str | int | float | bool
@@ -65,6 +70,7 @@ class AttackManifest(_FrozenModel):
     schema_version: str = "POI_MPP_E2_ATTACK_MANIFEST_V1"
     family: AttackFamily
     analysis_surface: AttackAnalysisSurface
+    numeric_mode: AttackNumericMode | None = None
     location: str
     seed: int = Field(ge=0)
     origin: EvidenceOrigin
@@ -86,6 +92,18 @@ class AttackManifest(_FrozenModel):
         if not _WORD_HEX.fullmatch(value):
             raise ValueError("attack manifest hashes must be 32-byte hex words")
         return value
+
+    @model_validator(mode="after")
+    def validate_canonical_surface(self) -> "AttackManifest":
+        expected = canonical_attack_surface(self.family, numeric_mode=self.numeric_mode)
+        if self.analysis_surface is not expected:
+            raise ValueError("analysis_surface must equal the canonical surface for family/numeric_mode")
+        if self.family is AttackFamily.TENSOR_PRODUCT_CORRUPTION:
+            if self.numeric_mode is None:
+                raise ValueError("tensor corruption attacks require numeric_mode")
+        elif self.numeric_mode is not None:
+            raise ValueError("numeric_mode is only valid for tensor corruption attacks")
+        return self
 
 
 class ExecutionAuditBundle(_FrozenModel):
@@ -240,15 +258,23 @@ def _parameter_items(parameters: dict[str, str | int | float | bool]) -> tuple[A
     return tuple(AttackParameter(key=key, value=value) for key, value in sorted(parameters.items()))
 
 
-def _support_for(
+def canonical_attack_surface(
     family: AttackFamily,
     *,
-    analysis_surface: AttackAnalysisSurface | None = None,
+    numeric_mode: AttackNumericMode | None = None,
 ) -> AttackAnalysisSurface:
     if family is AttackFamily.TENSOR_PRODUCT_CORRUPTION:
-        return analysis_surface or AttackAnalysisSurface.EXACT_FIELD
+        if numeric_mode is AttackNumericMode.EXACT_FIELD:
+            return AttackAnalysisSurface.EXACT_FIELD
+        if numeric_mode is AttackNumericMode.EMPIRICAL_FLOAT:
+            return AttackAnalysisSurface.EMPIRICAL_FLOAT
+        raise ValueError("tensor corruption attacks require a canonical numeric_mode")
     if family is AttackFamily.UNSUPPORTED_KERNEL:
+        if numeric_mode is not None:
+            raise ValueError("unsupported kernel attacks cannot declare numeric_mode")
         return AttackAnalysisSurface.UNSUPPORTED
+    if numeric_mode is not None:
+        raise ValueError("numeric_mode is only valid for tensor corruption attacks")
     return AttackAnalysisSurface.EXACT_MATCH
 
 
@@ -301,7 +327,7 @@ def committed_target_hash(
     bundle: ExecutionAuditBundle,
     family: AttackFamily,
     *,
-    analysis_surface: AttackAnalysisSurface | None = None,
+    numeric_mode: AttackNumericMode | None = None,
 ) -> str:
     if family is AttackFamily.MODEL_ROOT_SUBSTITUTION:
         return bundle.model_manifest.model_root
@@ -310,7 +336,7 @@ def committed_target_hash(
     if family is AttackFamily.TRACE_NODE_MUTATION:
         return bundle.commitment.trace_root
     if family is AttackFamily.TENSOR_PRODUCT_CORRUPTION:
-        support = _support_for(family, analysis_surface=analysis_surface)
+        support = canonical_attack_surface(family, numeric_mode=numeric_mode)
         if support is AttackAnalysisSurface.EMPIRICAL_FLOAT:
             return _matrix_hash("E2_FLOAT_PRODUCT", bundle.committed_float_matrix_c)
         return _matrix_hash("E2_FIELD_PRODUCT", bundle.committed_field_matrix_c)
@@ -333,7 +359,7 @@ def observed_target_hash(
     bundle: ExecutionAuditBundle,
     family: AttackFamily,
     *,
-    analysis_surface: AttackAnalysisSurface | None = None,
+    numeric_mode: AttackNumericMode | None = None,
 ) -> str:
     if family is AttackFamily.MODEL_ROOT_SUBSTITUTION:
         return bundle.model_root
@@ -342,7 +368,7 @@ def observed_target_hash(
     if family is AttackFamily.TRACE_NODE_MUTATION:
         return bundle.trace_root
     if family is AttackFamily.TENSOR_PRODUCT_CORRUPTION:
-        support = _support_for(family, analysis_surface=analysis_surface)
+        support = canonical_attack_surface(family, numeric_mode=numeric_mode)
         if support is AttackAnalysisSurface.EMPIRICAL_FLOAT:
             return _matrix_hash("E2_FLOAT_PRODUCT", bundle.float_matrix_c)
         return _matrix_hash("E2_FIELD_PRODUCT", bundle.field_matrix_c)
@@ -369,7 +395,21 @@ def apply_attack(
     peer_bundle: ExecutionAuditBundle | None = None,
     analysis_surface: AttackAnalysisSurface | None = None,
 ) -> tuple[ExecutionAuditBundle, AttackManifest]:
-    support = _support_for(family, analysis_surface=analysis_surface)
+    numeric_mode: AttackNumericMode | None = None
+    if family is AttackFamily.TENSOR_PRODUCT_CORRUPTION:
+        if analysis_surface is None:
+            numeric_mode = AttackNumericMode.EXACT_FIELD
+        elif analysis_surface is AttackAnalysisSurface.EXACT_FIELD:
+            numeric_mode = AttackNumericMode.EXACT_FIELD
+        elif analysis_surface is AttackAnalysisSurface.EMPIRICAL_FLOAT:
+            numeric_mode = AttackNumericMode.EMPIRICAL_FLOAT
+        else:
+            raise ValueError("tensor corruption attacks only support exact-field or empirical-float surfaces")
+    elif analysis_surface is not None:
+        expected_surface = canonical_attack_surface(family)
+        if analysis_surface is not expected_surface:
+            raise ValueError("analysis_surface cannot relabel the canonical attack surface")
+    support = canonical_attack_surface(family, numeric_mode=numeric_mode)
     parameters: dict[str, str | int | float | bool] = {}
     updates: dict[str, Any]
     location: str
@@ -395,7 +435,8 @@ def apply_attack(
             updates = {
                 "field_matrix_c": _mutate_int_product(bundle.field_matrix_c, seed=seed)
             }
-        parameters["analysis_surface"] = support.value
+        assert numeric_mode is not None
+        parameters["numeric_mode"] = numeric_mode.value
     elif family is AttackFamily.RESPONSE_BINDING_MISMATCH:
         location = "response.binding"
         updates = {
@@ -444,6 +485,7 @@ def apply_attack(
     manifest = AttackManifest(
         family=family,
         analysis_surface=support,
+        numeric_mode=numeric_mode,
         location=location,
         seed=seed,
         origin=bundle.origin,
@@ -451,12 +493,12 @@ def apply_attack(
         original_target_hash=committed_target_hash(
             bundle,
             family,
-            analysis_surface=support,
+            numeric_mode=numeric_mode,
         ),
         attacked_target_hash=observed_target_hash(
             attacked,
             family,
-            analysis_surface=support,
+            numeric_mode=numeric_mode,
         ),
         parameters=_parameter_items(parameters),
     )
