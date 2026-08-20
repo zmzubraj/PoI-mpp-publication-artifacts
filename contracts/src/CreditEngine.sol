@@ -6,9 +6,11 @@ import "./TaskManager.sol";
 import "./ReceiptManager.sol";
 
 contract CreditEngine {
+    error CreditEngine__ActiveReceiptCountMismatch();
     error CreditEngine__BudgetExceeded();
     error CreditEngine__NoActiveReceipt();
     error CreditEngine__ReceiptAlreadyCredited();
+    error CreditEngine__ReceiptIdsNotStrictlyAscending();
     error CreditEngine__ReceiptMissing();
     error CreditEngine__ReceiptNotActive();
     error CreditEngine__ReceiptTaskMismatch();
@@ -28,6 +30,7 @@ contract CreditEngine {
 
     mapping(uint256 => uint256) public taskAllocated;
     mapping(uint256 => bool) public creditedReceipts;
+    mapping(uint256 => uint256) public receiptCredit;
 
     event CollateralSetV1(uint16 indexed version, address indexed worker, uint256 amount);
     event CreditAddedV1(
@@ -58,12 +61,55 @@ contract CreditEngine {
         emit CollateralSetV1(EVENT_VERSION, worker, amount);
     }
 
-    function addCredit(uint256 taskId, uint256 receiptId, address worker, uint256 credit) external onlyCreditOperator {
+    function allocateCredit(uint256 taskId, uint256[] calldata receiptIds) external onlyCreditOperator {
         TaskManager.Task memory task = taskManager.getTask(taskId);
         if (!task.active || !task.registered || task.taskClass != TaskManager.TaskClass.CONSENSUS) {
             revert CreditEngine__TaskNotCreditable();
         }
+        if (receiptIds.length == 0) {
+            revert CreditEngine__NoActiveReceipt();
+        }
+        address worker = task.worker;
+        if (!taskManager.isRegisteredWorker(worker)) {
+            revert CreditEngine__WorkerMismatch();
+        }
+        uint256 activeCount = receiptManager.activeReceiptCount(taskId, worker);
+        if (activeCount == 0) {
+            revert CreditEngine__NoActiveReceipt();
+        }
+        if (receiptIds.length != activeCount) {
+            revert CreditEngine__ActiveReceiptCountMismatch();
+        }
 
+        uint256 baseShare = task.creditBudget / receiptIds.length;
+        uint256 remainder = task.creditBudget % receiptIds.length;
+        uint64 creditEpoch = task.epoch + 1;
+        uint256 previousReceiptId;
+        uint256 allocated = taskAllocated[taskId];
+        for (uint256 index = 0; index < receiptIds.length; index++) {
+            uint256 receiptId = receiptIds[index];
+            if (index > 0 && receiptId <= previousReceiptId) {
+                revert CreditEngine__ReceiptIdsNotStrictlyAscending();
+            }
+            previousReceiptId = receiptId;
+            uint256 share = baseShare + (index < remainder ? 1 : 0);
+            allocated = _allocateReceiptCredit(
+                taskId, task.epoch, task.creditBudget, worker, creditEpoch, receiptId, share, allocated
+            );
+        }
+        taskAllocated[taskId] = allocated;
+    }
+
+    function _allocateReceiptCredit(
+        uint256 taskId,
+        uint64 taskEpoch,
+        uint256 taskCreditBudget,
+        address worker,
+        uint64 creditEpoch,
+        uint256 receiptId,
+        uint256 share,
+        uint256 allocated
+    ) private returns (uint256 nextAllocated) {
         ReceiptManager.Receipt memory receipt = receiptManager.getReceipt(receiptId);
         if (receipt.taskId == 0 || receipt.worker == address(0)) {
             revert CreditEngine__ReceiptMissing();
@@ -71,31 +117,28 @@ contract CreditEngine {
         if (receipt.taskId != taskId) {
             revert CreditEngine__ReceiptTaskMismatch();
         }
-        if (worker != task.worker || worker != receipt.worker || !taskManager.isRegisteredWorker(worker)) {
+        if (receipt.worker != worker) {
             revert CreditEngine__WorkerMismatch();
         }
         if (receipt.state != ReceiptManager.State.ACTIVE) {
             revert CreditEngine__ReceiptNotActive();
         }
-        if (receipt.activatedEpoch != task.epoch + 1) {
+        if (receipt.activatedEpoch != taskEpoch + 1) {
             revert CreditEngine__ReceiptWrongEpoch();
         }
         if (creditedReceipts[receiptId]) {
             revert CreditEngine__ReceiptAlreadyCredited();
         }
-        if (receiptManager.activeReceiptCount(taskId, worker) == 0) {
-            revert CreditEngine__NoActiveReceipt();
-        }
 
-        uint256 nextAllocated = taskAllocated[taskId] + credit;
-        if (nextAllocated > task.creditBudget) {
+        nextAllocated = allocated + share;
+        if (nextAllocated > taskCreditBudget) {
             revert CreditEngine__BudgetExceeded();
         }
+
         creditedReceipts[receiptId] = true;
-        taskAllocated[taskId] = nextAllocated;
-        uint64 creditEpoch = task.epoch + 1;
-        rawCredit[creditEpoch][worker] += credit;
-        emit CreditAddedV1(EVENT_VERSION, taskId, creditEpoch, receiptId, worker, credit, nextAllocated);
+        receiptCredit[receiptId] = share;
+        rawCredit[creditEpoch][worker] += share;
+        emit CreditAddedV1(EVENT_VERSION, taskId, creditEpoch, receiptId, worker, share, nextAllocated);
     }
 
     function activeWeight(uint64 epoch, address worker) external view returns (uint256) {

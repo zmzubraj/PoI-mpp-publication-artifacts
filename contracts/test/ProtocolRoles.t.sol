@@ -55,12 +55,14 @@ abstract contract ProtocolKernelBase is MinimalTest {
 
     bytes32 internal constant MODEL_ROOT = keccak256("model-root");
     bytes32 internal constant RUNTIME_ROOT = keccak256("runtime-root");
+    bytes32 internal constant MODEL_MANIFEST_HASH = keccak256("model-manifest");
     bytes32 internal constant TASK_ROOT = keccak256("task-root");
     bytes32 internal constant SERVICE_TASK_ROOT = keccak256("service-task-root");
     bytes32 internal constant RESPONSE_ROOT = keccak256("response-root");
     bytes32 internal constant TRACE_ROOT = keccak256("trace-root");
     bytes32 internal constant EVIDENCE_ROOT = keccak256("evidence-root");
     bytes32 internal constant ARTIFACT_ROOT = keccak256("artifact-root");
+    bytes32 internal constant NONCE = keccak256("nonce");
     bytes32 internal constant AUDIT_ID = keccak256("audit-id");
     bytes32 internal constant SEED_HASH = keccak256("seed-hash");
     bytes32 internal constant POLICY_HASH = keccak256("policy-hash");
@@ -102,7 +104,7 @@ abstract contract ProtocolKernelBase is MinimalTest {
         policy.setCreditEngine(address(creditEngine));
 
         vm.prank(MODEL_ADMIN);
-        modelRegistry.registerModel(MODEL_ROOT, RUNTIME_ROOT, 1);
+        modelRegistry.registerModel(MODEL_ROOT, RUNTIME_ROOT, MODEL_MANIFEST_HASH, 1);
 
         vm.startPrank(TASK_ADMIN);
         taskManager.registerWorker(WORKER);
@@ -125,7 +127,7 @@ abstract contract ProtocolKernelBase is MinimalTest {
 
     function _commit(uint256 taskId, address worker) internal {
         vm.prank(worker);
-        commitmentHub.commitResponse(taskId, RESPONSE_ROOT, TRACE_ROOT, EVIDENCE_ROOT, ARTIFACT_ROOT);
+        commitmentHub.commitResponse(taskId, RESPONSE_ROOT, TRACE_ROOT, EVIDENCE_ROOT, ARTIFACT_ROOT, NONCE);
     }
 
     function _finalizeCommitment(uint256 taskId) internal {
@@ -158,16 +160,18 @@ abstract contract ProtocolKernelBase is MinimalTest {
 }
 
 contract ProtocolRolesTest is ProtocolKernelBase {
-    function testUnauthorizedCallerCannotAddCredit() public {
+    function testUnauthorizedCallerCannotAllocateCredit() public {
         vm.prank(ATTACKER);
         vm.expectRevert(CreditEngine.CreditEngine__Unauthorized.selector);
-        creditEngine.addCredit(consensusTaskId, pendingReceiptId, WORKER, 10);
+        uint256[] memory receiptIds = new uint256[](1);
+        receiptIds[0] = pendingReceiptId;
+        creditEngine.allocateCredit(consensusTaskId, receiptIds);
     }
 
     function testOnlyRegisteredWorkerCanCommitTask() public {
         vm.prank(ATTACKER);
         vm.expectRevert(CommitmentHub.CommitmentHub__WorkerMismatch.selector);
-        commitmentHub.commitResponse(serviceTaskId, RESPONSE_ROOT, TRACE_ROOT, EVIDENCE_ROOT, ARTIFACT_ROOT);
+        commitmentHub.commitResponse(serviceTaskId, RESPONSE_ROOT, TRACE_ROOT, EVIDENCE_ROOT, ARTIFACT_ROOT, NONCE);
     }
 
     function testOnlyTaskAdminCanRegisterWorker() public {
@@ -179,7 +183,7 @@ contract ProtocolRolesTest is ProtocolKernelBase {
     function testOnlyModelAdminCanRegisterModel() public {
         vm.prank(ATTACKER);
         vm.expectRevert(ModelRegistry.ModelRegistry__Unauthorized.selector);
-        modelRegistry.registerModel(keccak256("unauthorized-model"), RUNTIME_ROOT, 2);
+        modelRegistry.registerModel(keccak256("unauthorized-model"), RUNTIME_ROOT, MODEL_MANIFEST_HASH, 2);
     }
 
     function testRejectsFutureTaskEpochOutsideCanonicalCurrentEpoch() public {

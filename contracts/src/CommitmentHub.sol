@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "./ModelRegistry.sol";
 import "./PolicyRegistry.sol";
+import "./ProtocolHashing.sol";
 import "./TaskManager.sol";
 
 contract CommitmentHub {
@@ -19,11 +21,14 @@ contract CommitmentHub {
     struct Commitment {
         uint256 taskId;
         address worker;
+        bytes32 taskCommitment;
+        bytes32 modelCommitment;
         bytes32 commitmentHash;
-        bytes32 responseRoot;
+        bytes32 responseHash;
         bytes32 traceRoot;
         bytes32 evidenceRoot;
         bytes32 artifactRoot;
+        bytes32 nonce;
         uint64 committedBlock;
         uint64 finalizedBlock;
         bool exists;
@@ -35,11 +40,14 @@ contract CommitmentHub {
         uint16 indexed version,
         uint256 indexed taskId,
         address indexed worker,
+        bytes32 taskCommitment,
+        bytes32 modelCommitment,
         bytes32 commitmentHash,
-        bytes32 responseRoot,
+        bytes32 responseHash,
         bytes32 traceRoot,
         bytes32 evidenceRoot,
         bytes32 artifactRoot,
+        bytes32 nonce,
         uint64 committedBlock,
         uint64 finalizedBlock
     );
@@ -51,13 +59,14 @@ contract CommitmentHub {
 
     function commitResponse(
         uint256 taskId,
-        bytes32 responseRoot,
+        bytes32 responseHash,
         bytes32 traceRoot,
         bytes32 evidenceRoot,
-        bytes32 artifactRoot
+        bytes32 artifactRoot,
+        bytes32 nonce
     ) external payable {
         if (
-            responseRoot == bytes32(0) || traceRoot == bytes32(0) || evidenceRoot == bytes32(0)
+            responseHash == bytes32(0) || traceRoot == bytes32(0) || evidenceRoot == bytes32(0)
                 || artifactRoot == bytes32(0)
         ) {
             revert CommitmentHub__InvalidRoot();
@@ -74,46 +83,60 @@ contract CommitmentHub {
             revert CommitmentHub__AlreadyCommitted();
         }
 
-        uint64 committedBlock = uint64(block.number);
-        uint64 finalizedBlock = committedBlock + policy.commitmentFinalityDepth();
-        bytes32 commitmentHash = keccak256(
-            abi.encode(
-                EVENT_VERSION,
-                taskId,
-                msg.sender,
-                responseRoot,
-                traceRoot,
-                evidenceRoot,
-                artifactRoot,
-                committedBlock,
-                finalizedBlock
-            )
+        Commitment storage committed = commitments[taskId];
+        committed.taskId = taskId;
+        committed.worker = msg.sender;
+        committed.taskCommitment = taskManager.taskCommitment(taskId);
+        committed.modelCommitment = ModelRegistry(address(taskManager.modelRegistry())).modelCommitment(task.modelRoot);
+        committed.responseHash = responseHash;
+        committed.traceRoot = traceRoot;
+        committed.evidenceRoot = evidenceRoot;
+        committed.artifactRoot = artifactRoot;
+        committed.nonce = nonce;
+        committed.committedBlock = uint64(block.number);
+        committed.finalizedBlock = committed.committedBlock + policy.commitmentFinalityDepth();
+        committed.commitmentHash = ProtocolHashing.responseCommitment(
+            committed.taskCommitment,
+            committed.modelCommitment,
+            committed.responseHash,
+            committed.traceRoot,
+            committed.evidenceRoot,
+            committed.artifactRoot,
+            committed.nonce
         );
-
-        commitments[taskId] = Commitment(
-            taskId,
-            msg.sender,
-            commitmentHash,
-            responseRoot,
-            traceRoot,
-            evidenceRoot,
-            artifactRoot,
-            committedBlock,
-            finalizedBlock,
-            true
-        );
+        committed.exists = true;
 
         emit ResponseCommittedV1(
             EVENT_VERSION,
             taskId,
             msg.sender,
-            commitmentHash,
-            responseRoot,
-            traceRoot,
-            evidenceRoot,
-            artifactRoot,
-            committedBlock,
-            finalizedBlock
+            committed.taskCommitment,
+            committed.modelCommitment,
+            committed.commitmentHash,
+            committed.responseHash,
+            committed.traceRoot,
+            committed.evidenceRoot,
+            committed.artifactRoot,
+            committed.nonce,
+            committed.committedBlock,
+            committed.finalizedBlock
+        );
+    }
+
+    function previewResponseCommitment(
+        uint256 taskId,
+        bytes32 responseHash,
+        bytes32 traceRoot,
+        bytes32 evidenceRoot,
+        bytes32 artifactRoot,
+        bytes32 nonce
+    ) external view returns (bytes32) {
+        TaskManager.Task memory task = taskManager.getTask(taskId);
+        bytes32 taskCommitmentHash = taskManager.taskCommitment(taskId);
+        bytes32 modelCommitmentHash =
+            ModelRegistry(address(taskManager.modelRegistry())).modelCommitment(task.modelRoot);
+        return ProtocolHashing.responseCommitment(
+            taskCommitmentHash, modelCommitmentHash, responseHash, traceRoot, evidenceRoot, artifactRoot, nonce
         );
     }
 

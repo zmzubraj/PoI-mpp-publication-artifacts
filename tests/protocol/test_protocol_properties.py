@@ -6,12 +6,12 @@ import pytest
 
 from poi_mpp.protocol.receipt import ActivateReceipt, OpenChallenge, RecordAudit, RecordDataAvailability, SlashReceipt
 from poi_mpp.protocol.reference_machine import InvalidTransition, transition
-from poi_mpp.protocol.types import ReceiptState
+from poi_mpp.protocol.types import AuditDecision, ReceiptState
 
 
 def test_no_event_order_activates_without_all_gates(receipt, mature_context, context_without_gates):
     events = (
-        RecordAudit(decision="ACCEPT"),
+        RecordAudit(decision=AuditDecision.ACCEPT),
         RecordDataAvailability(available=True),
         ActivateReceipt(),
     )
@@ -33,7 +33,7 @@ def test_no_event_order_activates_without_all_gates(receipt, mature_context, con
 def test_slashed_receipt_never_returns_active(receipt, mature_context):
     challenged = transition(
         transition(
-            transition(receipt, RecordAudit(decision="ACCEPT"), mature_context),
+            transition(receipt, RecordAudit(decision=AuditDecision.ACCEPT), mature_context),
             RecordDataAvailability(available=True),
             mature_context,
         ),
@@ -42,7 +42,7 @@ def test_slashed_receipt_never_returns_active(receipt, mature_context):
     )
     slashed = transition(challenged, SlashReceipt(reason="challenge"), mature_context)
     for event in (
-        RecordAudit(decision="ACCEPT"),
+        RecordAudit(decision=AuditDecision.ACCEPT),
         RecordDataAvailability(available=True),
         ActivateReceipt(),
     ):

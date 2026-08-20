@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from pydantic import field_validator
 
-from poi_mpp.protocol.types import _FrozenProtocolModel
+from poi_mpp.protocol.types import AuditDecision, _FrozenProtocolModel
 
 
 class RecordAudit(_FrozenProtocolModel):
-    decision: Literal["ACCEPT", "REJECT", "ABSTAIN"]
+    decision: AuditDecision
 
 
 class RecordDataAvailability(_FrozenProtocolModel):

@@ -5,6 +5,7 @@ import pytest
 from poi_mpp.protocol.audit_compiler import AuditPolicy, compile_audit
 from poi_mpp.protocol.commitment import commit_response
 from poi_mpp.protocol.types import (
+    AuditDecision,
     ModelManifest,
     Receipt,
     ReceiptState,
@@ -17,11 +18,14 @@ from poi_mpp.protocol.types import (
 @pytest.fixture()
 def task() -> TaskSpec:
     return TaskSpec(
-        task_id="task-grounded-1",
-        worker_id="worker-1",
+        task_id=1,
+        task_root="0xaa" + "aa" * 31,
+        worker_id="0x0000000000000000000000000000000000002001",
         task_class=TaskClass.CONSENSUS,
         registered=True,
+        credit_budget=90,
         epoch=7,
+        deadline=500,
         commitment_height=120,
         commitment_finality_depth=5,
         challenge_window_blocks=9,
@@ -32,10 +36,10 @@ def task() -> TaskSpec:
 @pytest.fixture()
 def model() -> ModelManifest:
     return ModelManifest(
-        model_id="open-weight-3b",
-        model_root="a" * 64,
-        revision="b" * 40,
-        parameter_count=3_000_000_000,
+        model_root="0xbb" + "bb" * 31,
+        runtime_root="0xcc" + "cc" * 31,
+        model_manifest_hash="0xdd" + "dd" * 31,
+        assurance_class=1,
     )
 
 
@@ -49,11 +53,11 @@ def commitment(task: TaskSpec, model: ModelManifest):
     return commit_response(
         task=task,
         model=model,
-        response_hash="1" * 64,
-        trace_root="2" * 64,
-        evidence_root="3" * 64,
-        artifact_root="4" * 64,
-        nonce=b"seed-1",
+        response_hash="0x" + "11" * 32,
+        trace_root="0x" + "22" * 32,
+        evidence_root="0x" + "33" * 32,
+        artifact_root="0x" + "44" * 32,
+        nonce=bytes.fromhex("55" * 32),
     )
 
 
@@ -65,7 +69,7 @@ def audit_plan(task: TaskSpec, commitment, policy: AuditPolicy):
 @pytest.fixture()
 def receipt(task: TaskSpec, commitment, audit_plan) -> Receipt:
     return Receipt(
-        receipt_id="receipt-1",
+        receipt_id=1,
         task_id=task.task_id,
         worker_id=task.worker_id,
         commitment_hash=commitment.commitment_hash,
@@ -73,10 +77,13 @@ def receipt(task: TaskSpec, commitment, audit_plan) -> Receipt:
         state=ReceiptState.PENDING,
         epoch_issued=task.epoch,
         challenge_deadline=task.commitment_height + task.challenge_window_blocks,
-        nullifier="5" * 64,
+        nullifier="0x" + "66" * 32,
+        audit_decision=None,
         audit_accepted=False,
+        da_decision=None,
         data_availability_passed=False,
         activated_epoch=None,
+        challenge_reason=None,
         slash_reason=None,
     )
 

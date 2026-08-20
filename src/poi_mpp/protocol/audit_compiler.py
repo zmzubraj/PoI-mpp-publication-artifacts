@@ -14,6 +14,7 @@ from poi_mpp.protocol.types import (
     TaskSpec,
     trusted_response_commitment,
     _FrozenProtocolModel,
+    task_commitment_hash,
 )
 
 
@@ -41,6 +42,10 @@ def _sample_indices(seed_material: bytes, *, domain_size: int, sample_count: int
     return tuple(indices)
 
 
+def _word_digest(domain: str, value: object) -> str:
+    return f"0x{digest(domain, value)}"
+
+
 def compile_audit(
     policy: AuditPolicy,
     task: TaskSpec,
@@ -56,14 +61,14 @@ def compile_audit(
         raise InvalidTransition("commitment is not finalized")
     if round_index < 0:
         raise InvalidTransition("round_index must be non-negative")
-    expected_task_root = digest("TASK_SPEC", task)
+    expected_task_commitment = task_commitment_hash(task)
     if (
         commitment.task_id != task.task_id
         or commitment.worker_id != task.worker_id
         or commitment.task_class is not task.task_class
         or commitment.task_epoch != task.epoch
-        or commitment.task_root != expected_task_root
-        or commitment.commitment_height != task.commitment_height
+        or commitment.task_commitment != expected_task_commitment
+        or commitment.committed_height != task.commitment_height
         or commitment.commitment_finality_depth != task.commitment_finality_depth
         or commitment.finalized_height
         != task.commitment_height + task.commitment_finality_depth
@@ -75,32 +80,32 @@ def compile_audit(
         raise InvalidTransition("unregistered tasks cannot derive audit plans")
     if not policy.replacement and policy.sample_count > task.audit_domain_size:
         raise InvalidTransition("sample_count exceeds audit domain without replacement")
-    policy_hash = digest("AUDIT_POLICY", policy)
+    policy_hash = _word_digest("AUDIT_POLICY", policy)
     seed_material = {
         "task_id": task.task_id,
         "worker_id": commitment.worker_id,
-        "task_class": commitment.task_class.value,
+        "task_class": int(commitment.task_class),
         "task_epoch": commitment.task_epoch,
-        "task_root": commitment.task_root,
+        "task_commitment": commitment.task_commitment,
+        "model_commitment": commitment.model_commitment,
         "commitment_hash": commitment.commitment_hash,
         "response_hash": commitment.response_hash,
         "trace_root": commitment.trace_root,
         "evidence_root": commitment.evidence_root,
         "artifact_root": commitment.artifact_root,
-        "model_manifest_hash": commitment.model_manifest_hash,
         "policy_hash": policy_hash,
         "epoch_beacon": epoch_beacon.hex(),
         "round_index": round_index,
         "finalized_height": commitment.finalized_height,
     }
-    seed_hash = digest("AUDIT_SEED", seed_material)
+    seed_hash = _word_digest("AUDIT_SEED", seed_material)
     sample_indices = _sample_indices(
-        bytes.fromhex(seed_hash),
+        bytes.fromhex(seed_hash[2:]),
         domain_size=task.audit_domain_size,
         sample_count=policy.sample_count,
         replacement=policy.replacement,
     )
-    audit_id = digest(
+    audit_id = _word_digest(
         "AUDIT_PLAN",
         {
             "commitment_hash": commitment.commitment_hash,

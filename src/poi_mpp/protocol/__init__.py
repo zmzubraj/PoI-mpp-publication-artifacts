@@ -14,6 +14,7 @@ from poi_mpp.protocol.receipt import (
 )
 from poi_mpp.protocol.reference_machine import InvalidTransition, transition
 from poi_mpp.protocol.types import (
+    AuditDecision,
     AuditPlan,
     ModelManifest,
     Receipt,
@@ -26,6 +27,7 @@ from poi_mpp.protocol.types import (
 
 __all__ = [
     "ActivateReceipt",
+    "AuditDecision",
     "AuditPlan",
     "AuditPolicy",
     "CreditAllocation",

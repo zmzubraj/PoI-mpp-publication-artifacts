@@ -12,32 +12,55 @@ def test_commitment_digest_binds_all_roots_and_nonce(task, model):
     baseline = commit_response(
         task=task,
         model=model,
-        response_hash="1" * 64,
-        trace_root="2" * 64,
-        evidence_root="3" * 64,
-        artifact_root="4" * 64,
-        nonce=b"seed-1",
+        response_hash="0x" + "11" * 32,
+        trace_root="0x" + "22" * 32,
+        evidence_root="0x" + "33" * 32,
+        artifact_root="0x" + "44" * 32,
+        nonce=bytes.fromhex("55" * 32),
     )
     changed_trace = commit_response(
         task=task,
         model=model,
-        response_hash="1" * 64,
-        trace_root="9" * 64,
-        evidence_root="3" * 64,
-        artifact_root="4" * 64,
-        nonce=b"seed-1",
+        response_hash="0x" + "11" * 32,
+        trace_root="0x" + "99" * 32,
+        evidence_root="0x" + "33" * 32,
+        artifact_root="0x" + "44" * 32,
+        nonce=bytes.fromhex("55" * 32),
     )
     changed_nonce = commit_response(
         task=task,
         model=model,
-        response_hash="1" * 64,
-        trace_root="2" * 64,
-        evidence_root="3" * 64,
-        artifact_root="4" * 64,
-        nonce=b"seed-2",
+        response_hash="0x" + "11" * 32,
+        trace_root="0x" + "22" * 32,
+        evidence_root="0x" + "33" * 32,
+        artifact_root="0x" + "44" * 32,
+        nonce=bytes.fromhex("66" * 32),
     )
     assert baseline.commitment_hash != changed_trace.commitment_hash
     assert baseline.commitment_hash != changed_nonce.commitment_hash
+
+
+def test_commitment_hash_excludes_height_and_finality_envelope(task, model):
+    baseline = commit_response(
+        task=task,
+        model=model,
+        response_hash="0x" + "11" * 32,
+        trace_root="0x" + "22" * 32,
+        evidence_root="0x" + "33" * 32,
+        artifact_root="0x" + "44" * 32,
+        nonce=bytes.fromhex("55" * 32),
+    )
+    later = commit_response(
+        task=task.model_copy(update={"commitment_height": task.commitment_height + 100}),
+        model=model,
+        response_hash="0x" + "11" * 32,
+        trace_root="0x" + "22" * 32,
+        evidence_root="0x" + "33" * 32,
+        artifact_root="0x" + "44" * 32,
+        nonce=bytes.fromhex("55" * 32),
+    )
+    assert baseline.commitment_hash == later.commitment_hash
+    assert baseline.finalized_height != later.finalized_height
 
 
 def test_audit_cannot_compile_before_commitment_finality(task, commitment, policy):
@@ -53,16 +76,15 @@ def test_commitment_direct_constructor_is_not_public(task):
             worker_id=task.worker_id,
             task_class=task.task_class,
             task_epoch=task.epoch,
-            task_root="a" * 64,
-            model_id="model-1",
-            model_manifest_hash="b" * 64,
-            response_hash="1" * 64,
-            trace_root="2" * 64,
-            evidence_root="3" * 64,
-            artifact_root="4" * 64,
-            nonce_hex="11",
-            commitment_hash="5" * 64,
-            commitment_height=task.commitment_height,
+            task_commitment="0x" + "aa" * 32,
+            model_commitment="0x" + "bb" * 32,
+            response_hash="0x" + "11" * 32,
+            trace_root="0x" + "22" * 32,
+            evidence_root="0x" + "33" * 32,
+            artifact_root="0x" + "44" * 32,
+            nonce="0x" + "55" * 32,
+            commitment_hash="0x" + "66" * 32,
+            committed_height=task.commitment_height,
             commitment_finality_depth=task.commitment_finality_depth,
             finalized_height=task.commitment_height + task.commitment_finality_depth,
         )

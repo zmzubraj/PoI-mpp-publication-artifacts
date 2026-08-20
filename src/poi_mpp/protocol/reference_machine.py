@@ -11,7 +11,7 @@ from poi_mpp.protocol.receipt import (
     RecordDataAvailability,
     SlashReceipt,
 )
-from poi_mpp.protocol.types import Receipt, ReceiptState, TransitionContext
+from poi_mpp.protocol.types import AuditDecision, Receipt, ReceiptState, TransitionContext
 
 
 class InvalidTransition(ValueError):
@@ -30,15 +30,15 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
             raise InvalidTransition("audit decision is already recorded")
         if receipt.da_decision is not None:
             raise InvalidTransition("audit decision cannot be recorded after data availability")
-        if event.decision == "ACCEPT":
+        if event.decision is AuditDecision.ACCEPT:
             return receipt.model_copy(
-                update={"audit_decision": "ACCEPT", "audit_accepted": True}
+                update={"audit_decision": AuditDecision.ACCEPT, "audit_accepted": True}
             )
-        if event.decision == "ABSTAIN":
+        if event.decision is AuditDecision.ABSTAIN:
             return receipt.model_copy(
                 update={
                     "state": ReceiptState.ABSTAINED,
-                    "audit_decision": "ABSTAIN",
+                    "audit_decision": AuditDecision.ABSTAIN,
                     "audit_accepted": False,
                     "data_availability_passed": False,
                 }
@@ -46,7 +46,7 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
         return receipt.model_copy(
             update={
                 "state": ReceiptState.REJECTED,
-                "audit_decision": "REJECT",
+                "audit_decision": AuditDecision.REJECT,
                 "audit_accepted": False,
                 "data_availability_passed": False,
             }
@@ -68,7 +68,7 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
         )
     if isinstance(event, OpenChallenge):
         _require_pending(receipt, "OpenChallenge")
-        if receipt.audit_decision != "ACCEPT":
+        if receipt.audit_decision is not AuditDecision.ACCEPT:
             raise InvalidTransition("receipt cannot be challenged before audit acceptance")
         if receipt.da_decision is not True:
             raise InvalidTransition("receipt cannot be challenged before DA confirmation")
@@ -82,14 +82,17 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
         )
     if isinstance(event, ActivateReceipt):
         _require_pending(receipt, "ActivateReceipt")
-        if receipt.audit_decision != "ACCEPT":
+        if receipt.audit_decision is not AuditDecision.ACCEPT:
             raise InvalidTransition("receipt cannot activate before audit acceptance")
         if receipt.da_decision is not True:
             raise InvalidTransition("receipt cannot activate before DA confirmation")
         if context.current_height < receipt.challenge_deadline:
             raise InvalidTransition("receipt cannot activate before challenge window elapses")
+        target_epoch = receipt.epoch_issued + 1
         if context.current_epoch <= receipt.epoch_issued:
             raise InvalidTransition("current-epoch receipts cannot create current-epoch authority")
+        if context.current_epoch > target_epoch:
+            raise InvalidTransition("receipt activation window is closed")
         if receipt.nullifier in context.used_nullifiers:
             raise InvalidTransition("nullifier has already been used")
         return receipt.model_copy(
@@ -102,7 +105,7 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
         _require_pending(receipt, "ExpireReceipt")
         if context.current_height < receipt.challenge_deadline:
             raise InvalidTransition("receipt cannot expire before the challenge window elapses")
-        if receipt.audit_decision == "ACCEPT" and receipt.da_decision is True:
+        if receipt.audit_decision is AuditDecision.ACCEPT and receipt.da_decision is True:
             raise InvalidTransition("ready receipts must activate or be challenged, not expire")
         return receipt.model_copy(update={"state": ReceiptState.EXPIRED})
     if isinstance(event, SlashReceipt):

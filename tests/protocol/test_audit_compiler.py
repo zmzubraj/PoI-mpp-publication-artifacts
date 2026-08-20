@@ -23,6 +23,6 @@ def test_compile_audit_changes_with_beacon_or_round(task, commitment, policy):
 
 
 def test_compile_audit_revalidates_task_binding(task, commitment, policy):
-    forged_task = task.model_copy(update={"worker_id": "worker-2"})
+    forged_task = task.model_copy(update={"worker_id": "0x0000000000000000000000000000000000002002"})
     with pytest.raises(InvalidTransition, match="does not match"):
         compile_audit(policy, forged_task, commitment, b"beacon", 0)

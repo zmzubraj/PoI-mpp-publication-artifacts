@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "./PolicyRegistry.sol";
+import "./ProtocolHashing.sol";
 
 contract ModelRegistry {
     error ModelRegistry__AlreadyRegistered();
@@ -16,6 +17,7 @@ contract ModelRegistry {
     struct Model {
         bytes32 modelRoot;
         bytes32 runtimeRoot;
+        bytes32 modelManifestHash;
         uint8 assuranceClass;
         bool active;
     }
@@ -23,7 +25,11 @@ contract ModelRegistry {
     mapping(bytes32 => Model) public models;
 
     event ModelRegisteredV1(
-        uint16 indexed version, bytes32 indexed modelRoot, bytes32 runtimeRoot, uint8 assuranceClass
+        uint16 indexed version,
+        bytes32 indexed modelRoot,
+        bytes32 runtimeRoot,
+        bytes32 modelManifestHash,
+        uint8 assuranceClass
     );
     event ModelDeactivatedV1(uint16 indexed version, bytes32 indexed modelRoot);
 
@@ -38,15 +44,18 @@ contract ModelRegistry {
         _;
     }
 
-    function registerModel(bytes32 modelRoot, bytes32 runtimeRoot, uint8 assuranceClass) external onlyModelAdmin {
-        if (modelRoot == bytes32(0) || runtimeRoot == bytes32(0)) {
+    function registerModel(bytes32 modelRoot, bytes32 runtimeRoot, bytes32 modelManifestHash, uint8 assuranceClass)
+        external
+        onlyModelAdmin
+    {
+        if (modelRoot == bytes32(0) || runtimeRoot == bytes32(0) || modelManifestHash == bytes32(0)) {
             revert ModelRegistry__InvalidRoot();
         }
         if (models[modelRoot].active) {
             revert ModelRegistry__AlreadyRegistered();
         }
-        models[modelRoot] = Model(modelRoot, runtimeRoot, assuranceClass, true);
-        emit ModelRegisteredV1(EVENT_VERSION, modelRoot, runtimeRoot, assuranceClass);
+        models[modelRoot] = Model(modelRoot, runtimeRoot, modelManifestHash, assuranceClass, true);
+        emit ModelRegisteredV1(EVENT_VERSION, modelRoot, runtimeRoot, modelManifestHash, assuranceClass);
     }
 
     function deactivateModel(bytes32 modelRoot) external onlyModelAdmin {
@@ -59,5 +68,15 @@ contract ModelRegistry {
 
     function isRegisteredModel(bytes32 modelRoot) external view returns (bool) {
         return models[modelRoot].active;
+    }
+
+    function modelCommitment(bytes32 modelRoot) external view returns (bytes32) {
+        Model memory model = models[modelRoot];
+        if (!model.active) {
+            revert ModelRegistry__ModelNotFound();
+        }
+        return ProtocolHashing.modelCommitment(
+            model.modelRoot, model.runtimeRoot, model.modelManifestHash, model.assuranceClass
+        );
     }
 }

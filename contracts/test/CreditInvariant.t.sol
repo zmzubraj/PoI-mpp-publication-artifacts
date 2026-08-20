@@ -5,9 +5,11 @@ import "./ProtocolRoles.t.sol";
 
 contract CreditInvariantTest is ProtocolKernelBase {
     function testServiceTaskCannotMintConsensusCredit() public {
+        uint256[] memory receiptIds = new uint256[](1);
+        receiptIds[0] = pendingReceiptId;
         vm.prank(CREDIT_OPERATOR);
         vm.expectRevert(CreditEngine.CreditEngine__TaskNotCreditable.selector);
-        creditEngine.addCredit(serviceTaskId, pendingReceiptId, ALT_WORKER, 1);
+        creditEngine.allocateCredit(serviceTaskId, receiptIds);
     }
 
     function testZeroCreditProducesZeroWeight() public {
@@ -16,54 +18,51 @@ contract CreditInvariantTest is ProtocolKernelBase {
         assertEq(creditEngine.activeWeight(2, WORKER), 0, "zero credit weight");
     }
 
-    function testFuzz_TaskAllocationNeverExceedsBudget(uint96 firstCredit, uint96 secondCredit) public {
+    function testTaskAllocationConsumesExactBudgetAcrossCanonicalReceiptBatch() public {
         uint256 secondReceiptId = _mintPendingReceipt(keccak256("budget-second-receipt"));
         _matureReceiptWindow(consensusTaskId);
         _activatePendingReceipt(pendingReceiptId);
         _activatePendingReceipt(secondReceiptId);
 
-        TaskManager.Task memory task = taskManager.getTask(consensusTaskId);
-        vm.assume(firstCredit <= task.creditBudget);
+        uint256[] memory receiptIds = new uint256[](2);
+        receiptIds[0] = pendingReceiptId;
+        receiptIds[1] = secondReceiptId;
 
         vm.prank(CREDIT_OPERATOR);
-        creditEngine.addCredit(consensusTaskId, pendingReceiptId, WORKER, firstCredit);
+        creditEngine.allocateCredit(consensusTaskId, receiptIds);
 
-        uint256 remaining = task.creditBudget - firstCredit;
-        if (secondCredit > remaining) {
-            vm.prank(CREDIT_OPERATOR);
-            vm.expectRevert(CreditEngine.CreditEngine__BudgetExceeded.selector);
-            creditEngine.addCredit(consensusTaskId, secondReceiptId, WORKER, secondCredit);
-        } else {
-            vm.prank(CREDIT_OPERATOR);
-            creditEngine.addCredit(consensusTaskId, secondReceiptId, WORKER, secondCredit);
-            assertEq(
-                creditEngine.taskAllocated(consensusTaskId), uint256(firstCredit) + uint256(secondCredit), "allocated"
-            );
-        }
+        TaskManager.Task memory task = taskManager.getTask(consensusTaskId);
+        assertEq(creditEngine.taskAllocated(consensusTaskId), task.creditBudget, "allocated");
+        assertEq(creditEngine.rawCredit(2, WORKER), task.creditBudget, "epoch credit");
     }
 
-    function testCreditRequiresSpecificActiveReceiptAndPreventsReplay() public {
+    function testCreditRequiresCanonicalActiveReceiptBatchAndPreventsReplay() public {
         _matureReceiptWindow(consensusTaskId);
         vm.roll(block.number + 1);
         _activatePendingReceipt(pendingReceiptId);
 
-        vm.prank(CREDIT_OPERATOR);
-        creditEngine.addCredit(consensusTaskId, pendingReceiptId, WORKER, 10);
+        uint256[] memory receiptIds = new uint256[](1);
+        receiptIds[0] = pendingReceiptId;
 
-        assertEq(creditEngine.taskAllocated(consensusTaskId), 10, "task credit");
-        assertEq(creditEngine.rawCredit(2, WORKER), 10, "epoch credit");
+        vm.prank(CREDIT_OPERATOR);
+        creditEngine.allocateCredit(consensusTaskId, receiptIds);
+
+        assertEq(creditEngine.taskAllocated(consensusTaskId), 100, "task credit");
+        assertEq(creditEngine.rawCredit(2, WORKER), 100, "epoch credit");
 
         vm.prank(CREDIT_OPERATOR);
         vm.expectRevert(CreditEngine.CreditEngine__ReceiptAlreadyCredited.selector);
-        creditEngine.addCredit(consensusTaskId, pendingReceiptId, WORKER, 1);
+        creditEngine.allocateCredit(consensusTaskId, receiptIds);
     }
 
     function testInactiveOrMismatchedReceiptCannotMintCredit() public {
         uint256 otherReceiptId = _mintPendingReceipt(keccak256("other-nullifier"));
+        uint256[] memory singleReceipt = new uint256[](1);
+        singleReceipt[0] = otherReceiptId;
 
         vm.prank(CREDIT_OPERATOR);
-        vm.expectRevert(CreditEngine.CreditEngine__ReceiptNotActive.selector);
-        creditEngine.addCredit(consensusTaskId, otherReceiptId, WORKER, 1);
+        vm.expectRevert(CreditEngine.CreditEngine__NoActiveReceipt.selector);
+        creditEngine.allocateCredit(consensusTaskId, singleReceipt);
 
         _matureReceiptWindow(consensusTaskId);
         vm.roll(block.number + 1);
@@ -71,11 +70,26 @@ contract CreditInvariantTest is ProtocolKernelBase {
 
         vm.prank(CREDIT_OPERATOR);
         vm.expectRevert(CreditEngine.CreditEngine__TaskNotCreditable.selector);
-        creditEngine.addCredit(serviceTaskId, pendingReceiptId, WORKER, 1);
+        creditEngine.allocateCredit(serviceTaskId, singleReceipt);
+
+        singleReceipt[0] = pendingReceiptId;
+        vm.prank(CREDIT_OPERATOR);
+        vm.expectRevert(CreditEngine.CreditEngine__TaskNotCreditable.selector);
+        creditEngine.allocateCredit(serviceTaskId, singleReceipt);
+    }
+
+    function testReceiptBatchMustCoverAllActiveReceipts() public {
+        uint256 secondReceiptId = _mintPendingReceipt(keccak256("coverage-second-receipt"));
+        _matureReceiptWindow(consensusTaskId);
+        _activatePendingReceipt(pendingReceiptId);
+        _activatePendingReceipt(secondReceiptId);
+
+        uint256[] memory subset = new uint256[](1);
+        subset[0] = pendingReceiptId;
 
         vm.prank(CREDIT_OPERATOR);
-        vm.expectRevert(CreditEngine.CreditEngine__WorkerMismatch.selector);
-        creditEngine.addCredit(consensusTaskId, pendingReceiptId, ALT_WORKER, 1);
+        vm.expectRevert(CreditEngine.CreditEngine__ActiveReceiptCountMismatch.selector);
+        creditEngine.allocateCredit(consensusTaskId, subset);
     }
 
     function invariant_TaskAllocationNeverExceedsBudget() public view {

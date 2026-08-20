@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "./PolicyRegistry.sol";
 import "./ModelRegistry.sol";
+import "./ProtocolHashing.sol";
 
 contract TaskManager {
     error TaskManager__EpochMismatch();
@@ -108,5 +109,15 @@ contract TaskManager {
 
     function getTask(uint256 taskId) external view returns (Task memory) {
         return tasks[taskId];
+    }
+
+    function taskCommitment(uint256 taskId) external view returns (bytes32) {
+        Task memory task = tasks[taskId];
+        if (!task.active || !task.registered) {
+            revert TaskManager__InvalidTask();
+        }
+        return ProtocolHashing.taskCommitment(
+            taskId, task.taskRoot, task.worker, uint8(task.taskClass), task.creditBudget, task.epoch, task.deadline
+        );
     }
 }

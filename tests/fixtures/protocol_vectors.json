@@ -1,0 +1,571 @@
+{
+  "abi_layout": {
+    "model_commitment": [
+      {
+        "name": "domain",
+        "type": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint16"
+      },
+      {
+        "name": "modelRoot",
+        "type": "bytes32"
+      },
+      {
+        "name": "runtimeRoot",
+        "type": "bytes32"
+      },
+      {
+        "name": "modelManifestHash",
+        "type": "bytes32"
+      },
+      {
+        "name": "assuranceClass",
+        "type": "uint8"
+      }
+    ],
+    "response_commitment": [
+      {
+        "name": "domain",
+        "type": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint16"
+      },
+      {
+        "name": "taskCommitment",
+        "type": "bytes32"
+      },
+      {
+        "name": "modelCommitment",
+        "type": "bytes32"
+      },
+      {
+        "name": "responseHash",
+        "type": "bytes32"
+      },
+      {
+        "name": "traceRoot",
+        "type": "bytes32"
+      },
+      {
+        "name": "evidenceRoot",
+        "type": "bytes32"
+      },
+      {
+        "name": "artifactRoot",
+        "type": "bytes32"
+      },
+      {
+        "name": "nonce",
+        "type": "bytes32"
+      }
+    ],
+    "task_commitment": [
+      {
+        "name": "domain",
+        "type": "bytes32"
+      },
+      {
+        "name": "version",
+        "type": "uint16"
+      },
+      {
+        "name": "taskId",
+        "type": "uint256"
+      },
+      {
+        "name": "taskRoot",
+        "type": "bytes32"
+      },
+      {
+        "name": "worker",
+        "type": "address"
+      },
+      {
+        "name": "taskClass",
+        "type": "uint8"
+      },
+      {
+        "name": "creditBudget",
+        "type": "uint256"
+      },
+      {
+        "name": "epoch",
+        "type": "uint64"
+      },
+      {
+        "name": "deadline",
+        "type": "uint64"
+      }
+    ]
+  },
+  "artifact_origin": "TEST_VECTOR_NON_EVIDENCE",
+  "commitment_vectors": [
+    {
+      "expected": {
+        "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+        "finalized_height": 3,
+        "model_commitment": "0x6cc38e7d8ed382ce80d3142fef6db5d65f77e5e7c13bed9b732212ad35c3f55f",
+        "task_commitment": "0xa71131195fdcd5e87b0cf127d654805ac004377e439897e7f626a052221f07d2"
+      },
+      "inputs": {
+        "artifact_root": "0xd83aca0e722ad4365162d18e54db653a7a11e08f472ea12ec01bb035002ceabe",
+        "evidence_root": "0x520f1d1215114bafb3a1b7792638a266b07e7fd87bc6ecc17e46c8a79026815a",
+        "nonce": "0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759",
+        "response_hash": "0x653eb5647e0476cedf9191d6bdf7781db7fc4c2230a900388530e1a59fcd6bda",
+        "trace_root": "0x493d875889d13fe46f729187823f07a16a6d3ad455742d028e80016b397dbe21"
+      },
+      "model": {
+        "assurance_class": 1,
+        "model_manifest_hash": "0x723ee386a992a1d82496a7c7ff6a31869bfb3dfb9a1debfe49d8406601ddd245",
+        "model_root": "0x44a56b126c2f006b1dd376d118236897abc703751abb78eaac730e554dd49f77",
+        "runtime_root": "0xf60ad809ce26db6fe33da21c8f08e694e32242a74381b3d0f063b741f53aff81"
+      },
+      "name": "baseline_commitment",
+      "task": {
+        "audit_domain_size": 16,
+        "challenge_window_blocks": 5,
+        "commitment_finality_depth": 2,
+        "commitment_height": 1,
+        "credit_budget": 100,
+        "deadline": 500,
+        "epoch": 1,
+        "registered": true,
+        "task_class": 1,
+        "task_id": 1,
+        "task_root": "0x04838d077a606ff8949dbe7f0d79f9095388b6c5dd49a0c8fa4b1e74ce1cdba9",
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    },
+    {
+      "expected": {
+        "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+        "finalized_height": 103,
+        "model_commitment": "0x6cc38e7d8ed382ce80d3142fef6db5d65f77e5e7c13bed9b732212ad35c3f55f",
+        "task_commitment": "0xa71131195fdcd5e87b0cf127d654805ac004377e439897e7f626a052221f07d2"
+      },
+      "inputs": {
+        "artifact_root": "0xd83aca0e722ad4365162d18e54db653a7a11e08f472ea12ec01bb035002ceabe",
+        "evidence_root": "0x520f1d1215114bafb3a1b7792638a266b07e7fd87bc6ecc17e46c8a79026815a",
+        "nonce": "0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759",
+        "response_hash": "0x653eb5647e0476cedf9191d6bdf7781db7fc4c2230a900388530e1a59fcd6bda",
+        "trace_root": "0x493d875889d13fe46f729187823f07a16a6d3ad455742d028e80016b397dbe21"
+      },
+      "model": {
+        "assurance_class": 1,
+        "model_manifest_hash": "0x723ee386a992a1d82496a7c7ff6a31869bfb3dfb9a1debfe49d8406601ddd245",
+        "model_root": "0x44a56b126c2f006b1dd376d118236897abc703751abb78eaac730e554dd49f77",
+        "runtime_root": "0xf60ad809ce26db6fe33da21c8f08e694e32242a74381b3d0f063b741f53aff81"
+      },
+      "name": "height_invariant_commitment",
+      "task": {
+        "audit_domain_size": 16,
+        "challenge_window_blocks": 5,
+        "commitment_finality_depth": 2,
+        "commitment_height": 101,
+        "credit_budget": 100,
+        "deadline": 500,
+        "epoch": 1,
+        "registered": true,
+        "task_class": 1,
+        "task_id": 1,
+        "task_root": "0x04838d077a606ff8949dbe7f0d79f9095388b6c5dd49a0c8fa4b1e74ce1cdba9",
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    }
+  ],
+  "credit_vectors": [
+    {
+      "expected": {
+        "active_weight": {
+          "beta": 10,
+          "collateral": 1000,
+          "concentration_cap": 1000,
+          "credit": 100,
+          "weight": 100
+        },
+        "by_receipt": {
+          "1": 100
+        },
+        "by_worker": {
+          "0x0000000000000000000000000000000000002001": 100
+        },
+        "ordered_receipt_ids": [
+          1
+        ],
+        "total_credit": 100
+      },
+      "name": "single_receipt_budget",
+      "receipts": [
+        {
+          "activated_epoch": 2,
+          "audit_accepted": true,
+          "audit_decision": 1,
+          "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "challenge_deadline": 6,
+          "challenge_reason": null,
+          "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+          "da_decision": true,
+          "data_availability_passed": true,
+          "epoch_issued": 1,
+          "nullifier": "0x6666666666666666666666666666666666666666666666666666666666666666",
+          "receipt_id": 1,
+          "slash_reason": null,
+          "state": 2,
+          "task_id": 1,
+          "worker_id": "0x0000000000000000000000000000000000002001"
+        }
+      ],
+      "task": {
+        "audit_domain_size": 16,
+        "challenge_window_blocks": 5,
+        "commitment_finality_depth": 2,
+        "commitment_height": 1,
+        "credit_budget": 100,
+        "deadline": 500,
+        "epoch": 1,
+        "registered": true,
+        "task_class": 1,
+        "task_id": 1,
+        "task_root": "0x04838d077a606ff8949dbe7f0d79f9095388b6c5dd49a0c8fa4b1e74ce1cdba9",
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    },
+    {
+      "expected": {
+        "by_receipt": {
+          "1": 50,
+          "2": 50
+        },
+        "by_worker": {
+          "0x0000000000000000000000000000000000002001": 100
+        },
+        "ordered_receipt_ids": [
+          1,
+          2
+        ],
+        "total_credit": 100
+      },
+      "name": "two_receipt_even_split",
+      "receipts": [
+        {
+          "activated_epoch": 2,
+          "audit_accepted": true,
+          "audit_decision": 1,
+          "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "challenge_deadline": 6,
+          "challenge_reason": null,
+          "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+          "da_decision": true,
+          "data_availability_passed": true,
+          "epoch_issued": 1,
+          "nullifier": "0x6666666666666666666666666666666666666666666666666666666666666666",
+          "receipt_id": 1,
+          "slash_reason": null,
+          "state": 2,
+          "task_id": 1,
+          "worker_id": "0x0000000000000000000000000000000000002001"
+        },
+        {
+          "activated_epoch": 2,
+          "audit_accepted": true,
+          "audit_decision": 1,
+          "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "challenge_deadline": 6,
+          "challenge_reason": null,
+          "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+          "da_decision": true,
+          "data_availability_passed": true,
+          "epoch_issued": 1,
+          "nullifier": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "receipt_id": 2,
+          "slash_reason": null,
+          "state": 2,
+          "task_id": 1,
+          "worker_id": "0x0000000000000000000000000000000000002001"
+        }
+      ],
+      "task": {
+        "audit_domain_size": 16,
+        "challenge_window_blocks": 5,
+        "commitment_finality_depth": 2,
+        "commitment_height": 1,
+        "credit_budget": 100,
+        "deadline": 500,
+        "epoch": 1,
+        "registered": true,
+        "task_class": 1,
+        "task_id": 1,
+        "task_root": "0x04838d077a606ff8949dbe7f0d79f9095388b6c5dd49a0c8fa4b1e74ce1cdba9",
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    },
+    {
+      "expected_error": {
+        "python": "duplicate receipt_id is not allowed",
+        "solidity": "CreditEngine__ReceiptIdsNotStrictlyAscending"
+      },
+      "name": "duplicate_receipt_id_rejected",
+      "receipts": [
+        {
+          "activated_epoch": 2,
+          "audit_accepted": true,
+          "audit_decision": 1,
+          "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "challenge_deadline": 6,
+          "challenge_reason": null,
+          "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+          "da_decision": true,
+          "data_availability_passed": true,
+          "epoch_issued": 1,
+          "nullifier": "0x6666666666666666666666666666666666666666666666666666666666666666",
+          "receipt_id": 1,
+          "slash_reason": null,
+          "state": 2,
+          "task_id": 1,
+          "worker_id": "0x0000000000000000000000000000000000002001"
+        },
+        {
+          "activated_epoch": 2,
+          "audit_accepted": true,
+          "audit_decision": 1,
+          "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+          "challenge_deadline": 6,
+          "challenge_reason": null,
+          "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+          "da_decision": true,
+          "data_availability_passed": true,
+          "epoch_issued": 1,
+          "nullifier": "0x8888888888888888888888888888888888888888888888888888888888888888",
+          "receipt_id": 1,
+          "slash_reason": null,
+          "state": 2,
+          "task_id": 1,
+          "worker_id": "0x0000000000000000000000000000000000002001"
+        }
+      ],
+      "task": {
+        "audit_domain_size": 16,
+        "challenge_window_blocks": 5,
+        "commitment_finality_depth": 2,
+        "commitment_height": 1,
+        "credit_budget": 100,
+        "deadline": 500,
+        "epoch": 1,
+        "registered": true,
+        "task_class": 1,
+        "task_id": 1,
+        "task_root": "0x04838d077a606ff8949dbe7f0d79f9095388b6c5dd49a0c8fa4b1e74ce1cdba9",
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    }
+  ],
+  "domains": {
+    "model": {
+      "label": "POI_MPP_MODEL",
+      "version": 1
+    },
+    "response_commitment": {
+      "label": "POI_MPP_RESPONSE_COMMITMENT",
+      "version": 1
+    },
+    "task": {
+      "label": "POI_MPP_TASK",
+      "version": 1
+    }
+  },
+  "enum_values": {
+    "AuditDecision": {
+      "ABSTAIN": 3,
+      "ACCEPT": 1,
+      "NONE": 0,
+      "REJECT": 2
+    },
+    "ReceiptState": {
+      "ABSTAINED": 3,
+      "ACTIVE": 2,
+      "CHALLENGED": 4,
+      "DA_FAILED": 5,
+      "EXPIRED": 6,
+      "NONE": 0,
+      "PENDING": 1,
+      "REJECTED": 7,
+      "SLASHED": 8
+    },
+    "TaskClass": {
+      "CONSENSUS": 1,
+      "SERVICE": 0
+    }
+  },
+  "evidence_origin": "SYNTHETIC_NON_EVIDENCE",
+  "format": "POI_MPP_PROTOCOL_VECTORS_V1",
+  "foundry_verified_examples": {
+    "model_commitment": "0x6cc38e7d8ed382ce80d3142fef6db5d65f77e5e7c13bed9b732212ad35c3f55f",
+    "response_commitment": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+    "single_receipt_credit": {
+      "by_receipt": {
+        "1": 100
+      },
+      "by_worker": {
+        "0x0000000000000000000000000000000000002001": 100
+      },
+      "ordered_receipt_ids": [
+        1
+      ],
+      "task_id": 1,
+      "total_credit": 100
+    },
+    "task_commitment": "0xa71131195fdcd5e87b0cf127d654805ac004377e439897e7f626a052221f07d2",
+    "two_receipt_credit": {
+      "by_receipt": {
+        "1": 50,
+        "2": 50
+      },
+      "by_worker": {
+        "0x0000000000000000000000000000000000002001": 100
+      },
+      "ordered_receipt_ids": [
+        1,
+        2
+      ],
+      "task_id": 1,
+      "total_credit": 100
+    }
+  },
+  "generated_on": "2026-08-20",
+  "state_vectors": [
+    {
+      "contexts": [
+        {
+          "current_epoch": 2,
+          "current_height": 6,
+          "used_nullifiers": []
+        },
+        {
+          "current_epoch": 2,
+          "current_height": 6,
+          "used_nullifiers": []
+        },
+        {
+          "current_epoch": 2,
+          "current_height": 6,
+          "used_nullifiers": []
+        }
+      ],
+      "events": [
+        {
+          "decision": 1,
+          "kind": "RecordAudit"
+        },
+        {
+          "available": true,
+          "kind": "RecordDataAvailability"
+        },
+        {
+          "kind": "ActivateReceipt"
+        }
+      ],
+      "expected": {
+        "activated_epoch": 2,
+        "state": 2
+      },
+      "name": "activate_success",
+      "receipt": {
+        "activated_epoch": null,
+        "audit_accepted": false,
+        "audit_decision": null,
+        "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "challenge_deadline": 6,
+        "challenge_reason": null,
+        "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+        "da_decision": null,
+        "data_availability_passed": false,
+        "epoch_issued": 1,
+        "nullifier": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "receipt_id": 1,
+        "slash_reason": null,
+        "state": 1,
+        "task_id": 1,
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    },
+    {
+      "contexts": [
+        {
+          "current_epoch": 1,
+          "current_height": 5,
+          "used_nullifiers": []
+        }
+      ],
+      "events": [
+        {
+          "kind": "ActivateReceipt"
+        }
+      ],
+      "expected_error": {
+        "python": "receipt cannot activate before audit acceptance",
+        "solidity": "ReceiptManager__ActivationNotReady"
+      },
+      "name": "activate_before_gates_reverts",
+      "receipt": {
+        "activated_epoch": null,
+        "audit_accepted": false,
+        "audit_decision": null,
+        "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "challenge_deadline": 6,
+        "challenge_reason": null,
+        "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+        "da_decision": null,
+        "data_availability_passed": false,
+        "epoch_issued": 1,
+        "nullifier": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "receipt_id": 1,
+        "slash_reason": null,
+        "state": 1,
+        "task_id": 1,
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    },
+    {
+      "contexts": [
+        {
+          "current_epoch": 3,
+          "current_height": 6,
+          "used_nullifiers": []
+        }
+      ],
+      "events": [
+        {
+          "kind": "ActivateReceipt"
+        }
+      ],
+      "expected_error": {
+        "python": "receipt activation window is closed",
+        "solidity": "ReceiptManager__ActivationWindowClosed"
+      },
+      "name": "late_activation_reverts",
+      "receipt": {
+        "activated_epoch": null,
+        "audit_accepted": true,
+        "audit_decision": 1,
+        "audit_id": "0x7777777777777777777777777777777777777777777777777777777777777777",
+        "challenge_deadline": 6,
+        "challenge_reason": null,
+        "commitment_hash": "0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b",
+        "da_decision": true,
+        "data_availability_passed": true,
+        "epoch_issued": 1,
+        "nullifier": "0x6666666666666666666666666666666666666666666666666666666666666666",
+        "receipt_id": 1,
+        "slash_reason": null,
+        "state": 1,
+        "task_id": 1,
+        "worker_id": "0x0000000000000000000000000000000000002001"
+      }
+    }
+  ]
+}

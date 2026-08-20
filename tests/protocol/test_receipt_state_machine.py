@@ -11,7 +11,7 @@ from poi_mpp.protocol.receipt import (
     SlashReceipt,
 )
 from poi_mpp.protocol.reference_machine import InvalidTransition, transition
-from poi_mpp.protocol.types import Receipt, ReceiptState, TransitionContext
+from poi_mpp.protocol.types import AuditDecision, Receipt, ReceiptState, TransitionContext
 
 
 def _assert_roundtrip_valid(receipt: Receipt) -> None:
@@ -24,7 +24,7 @@ def test_receipt_cannot_activate_before_audit_da_and_window(receipt, context_wit
 
 
 def test_receipt_activates_only_after_all_gates(receipt, mature_context):
-    audited = transition(receipt, RecordAudit(decision="ACCEPT"), mature_context)
+    audited = transition(receipt, RecordAudit(decision=AuditDecision.ACCEPT), mature_context)
     available = transition(audited, RecordDataAvailability(available=True), mature_context)
     activated = transition(available, ActivateReceipt(), mature_context)
     assert activated.state is ReceiptState.ACTIVE
@@ -33,7 +33,7 @@ def test_receipt_activates_only_after_all_gates(receipt, mature_context):
 
 
 def test_successful_challenge_slashes_receipt(receipt, mature_context):
-    audited = transition(receipt, RecordAudit(decision="ACCEPT"), mature_context)
+    audited = transition(receipt, RecordAudit(decision=AuditDecision.ACCEPT), mature_context)
     available = transition(audited, RecordDataAvailability(available=True), mature_context)
     challenged = transition(available, OpenChallenge(reason="semantic mismatch"), mature_context)
     assert challenged.state is ReceiptState.CHALLENGED
@@ -46,7 +46,7 @@ def test_successful_challenge_slashes_receipt(receipt, mature_context):
 
 
 def test_reused_nullifier_is_rejected(receipt, mature_context):
-    audited = transition(receipt, RecordAudit(decision="ACCEPT"), mature_context)
+    audited = transition(receipt, RecordAudit(decision=AuditDecision.ACCEPT), mature_context)
     available = transition(audited, RecordDataAvailability(available=True), mature_context)
     reused = TransitionContext(
         current_height=mature_context.current_height,
@@ -58,9 +58,9 @@ def test_reused_nullifier_is_rejected(receipt, mature_context):
 
 
 def test_duplicate_audit_record_is_rejected(receipt, mature_context):
-    audited = transition(receipt, RecordAudit(decision="ACCEPT"), mature_context)
+    audited = transition(receipt, RecordAudit(decision=AuditDecision.ACCEPT), mature_context)
     with pytest.raises(InvalidTransition, match="already recorded"):
-        transition(audited, RecordAudit(decision="ABSTAIN"), mature_context)
+        transition(audited, RecordAudit(decision=AuditDecision.ABSTAIN), mature_context)
 
 
 def test_duplicate_data_availability_record_is_rejected(receipt, mature_context):
@@ -70,7 +70,7 @@ def test_duplicate_data_availability_record_is_rejected(receipt, mature_context)
 
 
 def test_abstained_receipt_has_explicit_terminal_state(receipt, mature_context):
-    abstained = transition(receipt, RecordAudit(decision="ABSTAIN"), mature_context)
+    abstained = transition(receipt, RecordAudit(decision=AuditDecision.ABSTAIN), mature_context)
     assert abstained.state is ReceiptState.ABSTAINED
     _assert_roundtrip_valid(abstained)
 
@@ -92,7 +92,7 @@ def test_receipt_can_expire_without_activation_prerequisites(receipt, mature_con
     _assert_roundtrip_valid(expired)
 
 
-@pytest.mark.parametrize("decision", ["REJECT", "ABSTAIN"])
+@pytest.mark.parametrize("decision", [AuditDecision.REJECT, AuditDecision.ABSTAIN])
 def test_terminal_audit_after_data_availability_is_forbidden(receipt, mature_context, decision):
     available = transition(receipt, RecordDataAvailability(available=True), mature_context)
     with pytest.raises(InvalidTransition, match="data availability"):
@@ -100,6 +100,6 @@ def test_terminal_audit_after_data_availability_is_forbidden(receipt, mature_con
 
 
 def test_rejected_receipt_roundtrips_after_audit_terminal_state(receipt, mature_context):
-    rejected = transition(receipt, RecordAudit(decision="REJECT"), mature_context)
+    rejected = transition(receipt, RecordAudit(decision=AuditDecision.REJECT), mature_context)
     assert rejected.state is ReceiptState.REJECTED
     _assert_roundtrip_valid(rejected)
