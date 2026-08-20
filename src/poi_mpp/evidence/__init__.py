@@ -16,14 +16,25 @@ from poi_mpp.evidence.provenance import (
     environment_hash,
     freeze_run,
 )
+from poi_mpp.evidence.publication_gate import GateDecision, evaluate_publication_gate
+from poi_mpp.evidence.registry import ArtifactRegistry
+from poi_mpp.evidence.validation import (
+    ArtifactValidationError,
+    ValidationReport,
+    validate_artifact,
+)
 
 __all__ = [
     "ArtifactRecord",
+    "ArtifactRegistry",
     "ArtifactStage",
+    "ArtifactValidationError",
     "DataAvailabilityConfig",
     "EvidenceOrigin",
     "EnvironmentManifest",
     "RunManifest",
+    "GateDecision",
+    "ValidationReport",
     "RunConfig",
     "UNVERSIONED_BLOCKED",
     "approved_schema_hash",
@@ -32,6 +43,8 @@ __all__ = [
     "config_hash",
     "digest",
     "environment_hash",
+    "evaluate_publication_gate",
     "freeze_run",
     "load_run_config",
+    "validate_artifact",
 ]
