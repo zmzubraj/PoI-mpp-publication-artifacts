@@ -8,6 +8,7 @@ import "./AuditManager.sol";
 
 contract ReceiptManager {
     error ReceiptManager__ActivationNotReady();
+    error ReceiptManager__ActivationWindowClosed();
     error ReceiptManager__AuditMissing();
     error ReceiptManager__ChallengeNotConfirmed();
     error ReceiptManager__InvalidNullifier();
@@ -128,16 +129,18 @@ contract ReceiptManager {
         if (usedNullifiers[receipt.nullifier]) {
             revert ReceiptManager__NullifierAlreadyUsed();
         }
-        if (
-            block.number <= receipt.epochIssued || block.number != receipt.challengeDeadline
-                || !auditManager.isReceiptActivatable(receipt.taskId)
-        ) {
+        uint64 targetEpoch = receipt.epochIssued + 1;
+        uint64 currentEpoch = policy.currentEpoch();
+        if (currentEpoch > targetEpoch) {
+            revert ReceiptManager__ActivationWindowClosed();
+        }
+        if (block.number < receipt.challengeDeadline || !auditManager.isReceiptActivatable(receipt.taskId)) {
             revert ReceiptManager__ActivationNotReady();
         }
 
         usedNullifiers[receipt.nullifier] = true;
         receipt.state = State.ACTIVE;
-        receipt.activatedEpoch = receipt.epochIssued + 1;
+        receipt.activatedEpoch = currentEpoch;
         activeReceiptCount[receipt.taskId][receipt.worker] += 1;
         emit ReceiptActivatedV1(
             EVENT_VERSION, receiptId, receipt.taskId, receipt.worker, receipt.nullifier, receipt.activatedEpoch
@@ -170,6 +173,17 @@ contract ReceiptManager {
 
     function isActiveReceipt(uint256 receiptId) external view returns (bool) {
         return receipts[receiptId].state == State.ACTIVE;
+    }
+
+    function isReceiptActivatable(uint256 receiptId) external view returns (bool) {
+        Receipt memory receipt = receipts[receiptId];
+        if (
+            receipt.state != State.PENDING || usedNullifiers[receipt.nullifier]
+                || policy.currentEpoch() != receipt.epochIssued + 1
+        ) {
+            return false;
+        }
+        return block.number >= receipt.challengeDeadline && auditManager.isReceiptActivatable(receipt.taskId);
     }
 
     function getReceipt(uint256 receiptId) external view returns (Receipt memory) {

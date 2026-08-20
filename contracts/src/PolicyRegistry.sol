@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 contract PolicyRegistry {
     error PolicyRegistry__InvalidAddress();
+    error PolicyRegistry__InvalidEpochConfiguration();
     error PolicyRegistry__InvalidPolicyValue();
     error PolicyRegistry__Unauthorized();
 
@@ -25,6 +26,9 @@ contract PolicyRegistry {
     address public receiptManager;
     address public creditEngine;
 
+    uint64 public immutable genesisBlock;
+    uint64 public immutable blocksPerEpoch;
+
     uint64 public commitmentFinalityDepth;
     uint64 public challengeWindowBlocks;
     uint256 public beta;
@@ -39,10 +43,19 @@ contract PolicyRegistry {
         uint64 commitmentFinalityDepth_,
         uint64 challengeWindowBlocks_,
         uint256 beta_,
-        uint256 concentrationCap_
+        uint256 concentrationCap_,
+        uint64 genesisBlock_,
+        uint64 blocksPerEpoch_
     ) {
+        if (genesisBlock_ == 0 || blocksPerEpoch_ == 0) {
+            revert PolicyRegistry__InvalidEpochConfiguration();
+        }
         owner = msg.sender;
+        genesisBlock = genesisBlock_;
+        blocksPerEpoch = blocksPerEpoch_;
         _setPolicy(commitmentFinalityDepth_, challengeWindowBlocks_, beta_, concentrationCap_);
+        emit PolicyParameterUpdatedV1(EVENT_VERSION, keccak256("genesisBlock"), genesisBlock_);
+        emit PolicyParameterUpdatedV1(EVENT_VERSION, keccak256("blocksPerEpoch"), blocksPerEpoch_);
     }
 
     modifier onlyOwner() {
@@ -100,6 +113,17 @@ contract PolicyRegistry {
         uint256 concentrationCap_
     ) external onlyOwner {
         _setPolicy(commitmentFinalityDepth_, challengeWindowBlocks_, beta_, concentrationCap_);
+    }
+
+    function epochAt(uint256 blockHeight) public view returns (uint64) {
+        if (blockHeight < genesisBlock) {
+            return 0;
+        }
+        return uint64(((blockHeight - genesisBlock) / blocksPerEpoch) + 1);
+    }
+
+    function currentEpoch() external view returns (uint64) {
+        return epochAt(block.number);
     }
 
     function _setDependency(bytes32 dependency, address target) private returns (address) {

@@ -21,65 +21,7 @@ interface Vm {
 }
 
 abstract contract MinimalTest {
-    struct FuzzSelector {
-        address addr;
-        bytes4[] selectors;
-    }
-
-    struct FuzzArtifactSelector {
-        string artifact;
-        bytes4[] selectors;
-    }
-
-    struct FuzzInterface {
-        address addr;
-        string[] artifacts;
-    }
-
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
-
-    fallback() external payable {}
-    receive() external payable {}
-
-    function excludeArtifacts() public pure returns (string[] memory excludedArtifacts_) {
-        excludedArtifacts_ = new string[](0);
-    }
-
-    function excludeContracts() public pure returns (address[] memory excludedContracts_) {
-        excludedContracts_ = new address[](0);
-    }
-
-    function excludeSelectors() public pure returns (FuzzSelector[] memory excludedSelectors_) {
-        excludedSelectors_ = new FuzzSelector[](0);
-    }
-
-    function excludeSenders() public pure returns (address[] memory excludedSenders_) {
-        excludedSenders_ = new address[](0);
-    }
-
-    function targetArtifacts() public pure returns (string[] memory targetedArtifacts_) {
-        targetedArtifacts_ = new string[](0);
-    }
-
-    function targetArtifactSelectors() public pure returns (FuzzArtifactSelector[] memory targetedArtifactSelectors_) {
-        targetedArtifactSelectors_ = new FuzzArtifactSelector[](0);
-    }
-
-    function targetContracts() public pure returns (address[] memory targetedContracts_) {
-        targetedContracts_ = new address[](0);
-    }
-
-    function targetSelectors() public pure returns (FuzzSelector[] memory targetedSelectors_) {
-        targetedSelectors_ = new FuzzSelector[](0);
-    }
-
-    function targetSenders() public pure returns (address[] memory targetedSenders_) {
-        targetedSenders_ = new address[](0);
-    }
-
-    function targetInterfaces() public pure returns (FuzzInterface[] memory targetedInterfaces_) {
-        targetedInterfaces_ = new FuzzInterface[](0);
-    }
 
     function assertTrue(bool condition, string memory message) internal pure {
         require(condition, message);
@@ -99,6 +41,9 @@ abstract contract MinimalTest {
 }
 
 abstract contract ProtocolKernelBase is MinimalTest {
+    uint64 internal constant GENESIS_BLOCK = 1;
+    uint64 internal constant BLOCKS_PER_EPOCH = 5;
+
     address internal constant MODEL_ADMIN = address(0x1001);
     address internal constant TASK_ADMIN = address(0x1002);
     address internal constant AUDITOR = address(0x1003);
@@ -134,11 +79,11 @@ abstract contract ProtocolKernelBase is MinimalTest {
     uint256 internal pendingReceiptId;
 
     function setUp() public virtual {
-        policy = new PolicyRegistry(2, 5, 10, 1_000);
+        policy = new PolicyRegistry(2, 5, 10, 1_000, GENESIS_BLOCK, BLOCKS_PER_EPOCH);
         modelRegistry = new ModelRegistry(address(policy));
         taskManager = new TaskManager(address(policy), address(modelRegistry));
         commitmentHub = new CommitmentHub(address(policy), address(taskManager));
-        auditManager = new AuditManager(address(policy), address(commitmentHub));
+        auditManager = new AuditManager(address(policy), address(commitmentHub), address(taskManager));
         receiptManager =
             new ReceiptManager(address(policy), address(taskManager), address(commitmentHub), address(auditManager));
         creditEngine = new CreditEngine(address(policy), address(taskManager), address(receiptManager));
@@ -162,10 +107,11 @@ abstract contract ProtocolKernelBase is MinimalTest {
         vm.startPrank(TASK_ADMIN);
         taskManager.registerWorker(WORKER);
         taskManager.registerWorker(ALT_WORKER);
-        consensusTaskId =
-            taskManager.createTask(TASK_ROOT, MODEL_ROOT, WORKER, TaskManager.TaskClass.CONSENSUS, 100, 1, 500);
+        consensusTaskId = taskManager.createTask(
+            TASK_ROOT, MODEL_ROOT, WORKER, TaskManager.TaskClass.CONSENSUS, 100, policy.currentEpoch(), 500
+        );
         serviceTaskId = taskManager.createTask(
-            SERVICE_TASK_ROOT, MODEL_ROOT, ALT_WORKER, TaskManager.TaskClass.SERVICE, 100, 1, 500
+            SERVICE_TASK_ROOT, MODEL_ROOT, ALT_WORKER, TaskManager.TaskClass.SERVICE, 100, policy.currentEpoch(), 500
         );
         vm.stopPrank();
 
@@ -234,5 +180,15 @@ contract ProtocolRolesTest is ProtocolKernelBase {
         vm.prank(ATTACKER);
         vm.expectRevert(ModelRegistry.ModelRegistry__Unauthorized.selector);
         modelRegistry.registerModel(keccak256("unauthorized-model"), RUNTIME_ROOT, 2);
+    }
+
+    function testRejectsFutureTaskEpochOutsideCanonicalCurrentEpoch() public {
+        uint64 futureEpoch = policy.currentEpoch() + 7;
+        vm.startPrank(TASK_ADMIN);
+        vm.expectRevert(TaskManager.TaskManager__EpochMismatch.selector);
+        taskManager.createTask(
+            keccak256("future-task-root"), MODEL_ROOT, WORKER, TaskManager.TaskClass.CONSENSUS, 100, futureEpoch, 500
+        );
+        vm.stopPrank();
     }
 }

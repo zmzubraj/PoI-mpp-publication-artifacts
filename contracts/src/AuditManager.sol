@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "./PolicyRegistry.sol";
 import "./CommitmentHub.sol";
+import "./TaskManager.sol";
 
 contract AuditManager {
     error AuditManager__AlreadyOpened();
@@ -25,6 +26,7 @@ contract AuditManager {
 
     PolicyRegistry public immutable policy;
     CommitmentHub public immutable commitmentHub;
+    TaskManager public immutable taskManager;
 
     struct AuditRound {
         bytes32 auditId;
@@ -60,9 +62,10 @@ contract AuditManager {
     event ChallengeOpenedV1(uint16 indexed version, uint256 indexed taskId, bytes32 indexed disputeRoot);
     event ReceiptSlashedV1(uint16 indexed version, uint256 indexed taskId);
 
-    constructor(address policy_, address commitmentHub_) {
+    constructor(address policy_, address commitmentHub_, address taskManager_) {
         policy = PolicyRegistry(policy_);
         commitmentHub = CommitmentHub(commitmentHub_);
+        taskManager = TaskManager(taskManager_);
     }
 
     modifier onlyAuditor() {
@@ -179,8 +182,10 @@ contract AuditManager {
 
     function isReceiptActivatable(uint256 taskId) external view returns (bool) {
         AuditRound memory round = rounds[taskId];
+        TaskManager.Task memory task = taskManager.getTask(taskId);
         return round.exists && round.decision == AuditDecision.ACCEPT && round.daRecorded && round.daPassed
-            && !round.challenged && !round.slashed && block.number >= round.challengeDeadline;
+            && !round.challenged && !round.slashed && block.number >= round.challengeDeadline
+            && policy.currentEpoch() == task.epoch + 1;
     }
 
     function getAudit(uint256 taskId) external view returns (AuditRound memory) {

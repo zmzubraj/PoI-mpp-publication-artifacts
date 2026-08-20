@@ -44,6 +44,7 @@ contract CreditInvariantTest is ProtocolKernelBase {
 
     function testCreditRequiresSpecificActiveReceiptAndPreventsReplay() public {
         _matureReceiptWindow(consensusTaskId);
+        vm.roll(block.number + 1);
         _activatePendingReceipt(pendingReceiptId);
 
         vm.prank(CREDIT_OPERATOR);
@@ -65,6 +66,7 @@ contract CreditInvariantTest is ProtocolKernelBase {
         creditEngine.addCredit(consensusTaskId, otherReceiptId, WORKER, 1);
 
         _matureReceiptWindow(consensusTaskId);
+        vm.roll(block.number + 1);
         _activatePendingReceipt(pendingReceiptId);
 
         vm.prank(CREDIT_OPERATOR);

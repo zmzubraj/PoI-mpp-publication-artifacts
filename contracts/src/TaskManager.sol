@@ -5,6 +5,7 @@ import "./PolicyRegistry.sol";
 import "./ModelRegistry.sol";
 
 contract TaskManager {
+    error TaskManager__EpochMismatch();
     error TaskManager__InvalidTask();
     error TaskManager__ModelNotRegistered();
     error TaskManager__Unauthorized();
@@ -87,6 +88,9 @@ contract TaskManager {
         }
         if (!modelRegistry.isRegisteredModel(modelRoot)) {
             revert TaskManager__ModelNotRegistered();
+        }
+        if (epoch != policy.currentEpoch()) {
+            revert TaskManager__EpochMismatch();
         }
         id = nextTaskId++;
         tasks[id] = Task(taskRoot, modelRoot, worker, taskClass, creditBudget, epoch, deadline, true, true);

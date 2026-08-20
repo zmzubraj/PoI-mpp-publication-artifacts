@@ -12,6 +12,7 @@ contract ReceiptLifecycleTest is ProtocolKernelBase {
 
     function testReceiptActivatesOnlyAfterAllGates() public {
         _matureReceiptWindow(consensusTaskId);
+        vm.roll(block.number + 1);
 
         vm.prank(RECEIPT_OPERATOR);
         receiptManager.activate(pendingReceiptId);
@@ -19,14 +20,26 @@ contract ReceiptLifecycleTest is ProtocolKernelBase {
         ReceiptManager.Receipt memory receipt = receiptManager.getReceipt(pendingReceiptId);
         assertEq(uint256(uint8(receipt.state)), uint256(uint8(ReceiptManager.State.ACTIVE)), "state");
         assertTrue(receiptManager.usedNullifiers(NULLIFIER), "nullifier should be consumed");
+        assertEq(receipt.activatedEpoch, policy.currentEpoch(), "activated epoch");
     }
 
     function testLateActivationCannotBackfillHistoricalEpoch() public {
         AuditManager.AuditRound memory round = auditManager.getAudit(consensusTaskId);
-        vm.roll(uint256(round.challengeDeadline) + 1);
+        vm.roll(uint256(round.challengeDeadline) + BLOCKS_PER_EPOCH + 1);
 
         vm.prank(RECEIPT_OPERATOR);
-        vm.expectRevert(ReceiptManager.ReceiptManager__ActivationNotReady.selector);
+        vm.expectRevert(ReceiptManager.ReceiptManager__ActivationWindowClosed.selector);
+        receiptManager.activate(pendingReceiptId);
+    }
+
+    function testAfterDeadlineActivationWithinNextEpochSucceeds() public {
+        _matureReceiptWindow(consensusTaskId);
+        vm.roll(block.number + 1);
+
+        assertTrue(auditManager.isReceiptActivatable(consensusTaskId), "audit activatable");
+        assertTrue(receiptManager.isReceiptActivatable(pendingReceiptId), "receipt activatable");
+
+        vm.prank(RECEIPT_OPERATOR);
         receiptManager.activate(pendingReceiptId);
     }
 
@@ -65,5 +78,13 @@ contract ReceiptLifecycleTest is ProtocolKernelBase {
 
         ReceiptManager.Receipt memory receipt = receiptManager.getReceipt(challengedReceiptId);
         assertEq(uint256(uint8(receipt.state)), uint256(uint8(ReceiptManager.State.SLASHED)), "slashed");
+    }
+
+    function testAuditAndReceiptActivatabilityAgreeAfterWindowButBeforeExpiry() public {
+        _matureReceiptWindow(consensusTaskId);
+        vm.roll(block.number + 1);
+
+        assertTrue(auditManager.isReceiptActivatable(consensusTaskId), "audit ready");
+        assertTrue(receiptManager.isReceiptActivatable(pendingReceiptId), "receipt ready");
     }
 }
