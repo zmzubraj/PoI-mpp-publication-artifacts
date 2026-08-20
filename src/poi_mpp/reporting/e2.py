@@ -133,7 +133,9 @@ def summarize_e2_rows(
 
     canonical_rows = [
         validate_attack_receipt(
-            row if isinstance(row, E2ReceiptRow) else E2ReceiptRow.model_validate(row),
+            E2ReceiptRow.model_validate(
+                row.model_dump(mode="python") if isinstance(row, E2ReceiptRow) else row
+            ),
             require_replay_validation=True,
         )
         for row in rows
@@ -145,7 +147,8 @@ def summarize_e2_rows(
 
     seen_receipt_ids: set[str] = set()
     seen_observation_keys: set[str] = set()
-    unique_attack_seeds: set[int] = set()
+    seen_attack_instance_ids: set[str] = set()
+    unique_seed_sensitive_instances: set[str] = set()
     exact_denominator = 0
     exact_detected = 0
     empirical_denominator = 0
@@ -174,16 +177,20 @@ def summarize_e2_rows(
             raise ValueError(f"duplicate E2 observation_key: {observation_key}")
         seen_observation_keys.add(observation_key)
         assert row.attack_seed is not None
-        unique_attack_seeds.add(row.attack_seed)
         manifest = row.attack_manifest
+        assert manifest is not None
+        attack_instance_id = manifest.replay_proof.attack_instance_id
+        if attack_instance_id in seen_attack_instance_ids:
+            raise ValueError(f"duplicate E2 attack_instance_id: {attack_instance_id}")
+        seen_attack_instance_ids.add(attack_instance_id)
+        if manifest.replay_proof.seed_sensitive:
+            unique_seed_sensitive_instances.add(attack_instance_id)
         if family in {AttackFamily.CROSS_REQUEST_SPLICE, AttackFamily.REPLAY_NULLIFIER}:
             peer_receipt_id = row.peer_receipt_id
             if peer_receipt_id is None or not peer_receipt_id.strip():
                 raise ValueError("paired E2 attacks require peer_receipt_id")
             if peer_receipt_id == receipt_id:
                 raise ValueError("paired E2 attacks cannot reference the same receipt_id as peer")
-            if manifest is None:
-                raise ValueError("paired E2 attacks require an attack_manifest")
             manifest_parameters = manifest.parameters
             peer_values = [
                 str(parameter.value)
@@ -223,7 +230,7 @@ def summarize_e2_rows(
     overall_detected = exact_detected + empirical_detected
     if (
         denominator < MIN_E2_SUPPORTED_DENOMINATOR
-        or len(unique_attack_seeds) < MIN_E2_UNIQUE_ATTACK_SEEDS
+        or len(unique_seed_sensitive_instances) < MIN_E2_UNIQUE_ATTACK_SEEDS
     ):
         disposition = "INCONCLUSIVE"
     elif overall_detected != denominator:
@@ -237,7 +244,7 @@ def summarize_e2_rows(
         denominator=denominator,
         minimum_supported_denominator=MIN_E2_SUPPORTED_DENOMINATOR,
         minimum_unique_attack_seeds=MIN_E2_UNIQUE_ATTACK_SEEDS,
-        unique_attack_seed_count=len(unique_attack_seeds),
+        unique_attack_seed_count=len(unique_seed_sensitive_instances),
         exact_denominator=exact_denominator,
         exact_detected=exact_detected,
         exact_detection_rate=exact_rate,

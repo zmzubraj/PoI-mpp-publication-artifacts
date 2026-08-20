@@ -244,3 +244,56 @@ exit 0
 git diff --check -- src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py
 exit 0
 ```
+
+## Fix Round 3 — replay-proofed manifests and fixture-origin hard stop
+
+### Review finding addressed
+
+- Every attack manifest now carries canonical `replay_proof` data plus an
+  `attack_instance_id` derived from actual original material, actual attacked
+  material, family, location, true seed, numeric mode, parameters, and peer
+  witness material.
+- Manifest validation now deterministically replays the family transform from
+  preserved witness material and seed, then rejects any mismatched attacked
+  target hash, replay proof, or caller-forged seed mutation.
+- Aggregation now counts minimum-seed diversity from verified
+  `attack_instance_id` values only for seed-sensitive transforms; seed
+  insensitive splice/replay paths no longer inflate the frozen denominator
+  gate.
+- `build_fixture_bundle(...)` now rejects every origin except
+  `SYNTHETIC_NON_EVIDENCE`; fixture paths can no longer mint fake
+  `REAL_MODEL_EXECUTION` or `REPRODUCIBLE_SIMULATION` rows.
+
+### Additional RED coverage
+
+- forged seed via `model_validate(...)` with recomputed row hash still fails
+- forged seed via `model_validate_json(...)` with recomputed row hash still
+  fails
+- reloaded replay rows fail closed in publication-record construction
+- fixture builders reject non-synthetic origins
+
+### Fix-round verification
+
+Focused suite:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py -q
+20 passed
+```
+
+Full Python suite:
+
+```text
+./.venv/bin/python -m pytest
+247 passed in 2.60s
+```
+
+Static and diff hygiene:
+
+```text
+./.venv/bin/python -m compileall src tests experiments
+exit 0
+
+git diff --check -- src/poi_mpp/attacks/__init__.py src/poi_mpp/attacks/execution.py src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py
+exit 0
+```

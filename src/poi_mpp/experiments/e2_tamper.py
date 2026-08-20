@@ -355,6 +355,10 @@ def build_fixture_bundle(
     receipt_id: str = "receipt-0001",
     seed: int = 1,
 ) -> ExecutionAuditBundle:
+    if origin is not EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
+        raise ValueError(
+            "fixture bundles are limited to SYNTHETIC_NON_EVIDENCE; publication-authorized real execution must come from an explicit authorized boundary"
+        )
     run_config = RunConfig.model_validate(
         {
             "schema_version": "POI_MPP_RUN_CONFIG_V1",
@@ -453,6 +457,7 @@ def validate_attack_receipt(
     prior_nullifiers: Iterable[str] | object = _REPLAY_CONTEXT_UNSET,
     require_replay_validation: bool = False,
 ) -> E2ReceiptRow:
+    row = type(row).model_validate(row.model_dump(mode="python"))
     reasons: list[str] = []
     if not row.is_attacked:
         return row

@@ -9,25 +9,37 @@ import pytest
 from pydantic import ValidationError
 
 from poi_mpp.evidence import ArtifactValidationError, EvidenceOrigin, evaluate_publication_gate
-from poi_mpp.evidence.provenance import EnvironmentManifest, freeze_run
-from poi_mpp.evidence.validation import ProvenanceBundle
 
 
-def _publication_bundle(config) -> ProvenanceBundle:
-    environment = EnvironmentManifest(
-        python_implementation="CPython",
-        python_version="3.11.15",
-        os_name="Linux",
-        os_release="test",
-        machine="x86_64",
-        cpu_model=None,
-        gpu_model=None,
-        package_lock_hash="c" * 64,
-        compiler_version=None,
-        foundry_version=None,
-        code_revision="d" * 40,
+def _forged_seed_payload(row, *, new_seed: int) -> dict[str, object]:
+    from poi_mpp.attacks.execution import AttackManifest, AttackReplayProof
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, _observation_key, _row_hash_material
+
+    payload = {
+        field_name: getattr(row, field_name)
+        for field_name in type(row).model_fields
+    }
+    manifest = row.attack_manifest.model_dump(mode="python")
+    replay_proof = dict(manifest["replay_proof"])
+    manifest["replay_proof"] = AttackReplayProof.model_construct(**replay_proof)
+    manifest["seed"] = new_seed
+    payload["attack_manifest"] = AttackManifest.model_construct(**manifest)
+    payload["attack_seed"] = new_seed
+    payload["observation_key"] = _observation_key(
+        row.attack_family,
+        new_seed,
+        row.original_target_hash,
+        row.peer_receipt_id,
     )
-    return ProvenanceBundle(config=config, environment=environment, manifest=freeze_run(config, environment))
+    payload["row_hash"] = _row_hash_material(
+        E2ReceiptRow.model_construct(
+            **{
+                **payload,
+                "row_hash": "0x" + ("0" * 64),
+            }
+        )
+    )
+    return payload
 
 
 def test_attack_changes_target_but_not_original_commitment() -> None:
@@ -133,18 +145,30 @@ def test_supported_attack_cannot_be_relabelled_unsupported() -> None:
         )
 
 
-def test_model_validate_json_rejects_forged_attack_seed() -> None:
+def test_model_validate_rejects_forged_attack_seed_with_recomputed_row_hash() -> None:
     from poi_mpp.attacks.execution import apply_attack, AttackFamily
     from poi_mpp.experiments.e2_tamper import E2ReceiptRow, build_fixture_bundle, evaluate_receipt
 
     honest_bundle = build_fixture_bundle(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE)
     attacked, manifest = apply_attack(honest_bundle, AttackFamily.MODEL_ROOT_SUBSTITUTION, seed=33)
     row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.05, freivalds_rounds=8)
-    payload = row.model_dump(mode="json")
-    payload["attack_seed"] = int(payload["attack_seed"]) + 1
+    payload = _forged_seed_payload(row, new_seed=int(row.attack_seed) + 1)
 
     with pytest.raises(ValidationError):
-        E2ReceiptRow.model_validate_json(json.dumps(payload))
+        E2ReceiptRow.model_validate(payload)
+
+
+def test_model_validate_json_rejects_forged_attack_seed_with_recomputed_row_hash() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, build_fixture_bundle, evaluate_receipt
+
+    honest_bundle = build_fixture_bundle(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE)
+    attacked, manifest = apply_attack(honest_bundle, AttackFamily.MODEL_ROOT_SUBSTITUTION, seed=35)
+    row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.05, freivalds_rounds=8)
+    forged = E2ReceiptRow.model_construct(**_forged_seed_payload(row, new_seed=int(row.attack_seed) + 1))
+
+    with pytest.raises(ValidationError):
+        E2ReceiptRow.model_validate_json(json.dumps(forged.model_dump(mode="json")))
 
 
 def test_replay_attack_is_detected_when_nullifier_was_already_seen() -> None:
@@ -256,15 +280,15 @@ def test_publication_record_rejects_reloaded_replay_row_without_context_validati
         build_publication_record,
         evaluate_receipt,
     )
-    from poi_mpp.reporting.e2 import summarize_e2_rows
+    from poi_mpp.reporting.e2 import E2Summary
 
     honest_bundle = build_fixture_bundle(
-        origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
         receipt_id="receipt-0001",
         seed=1,
     )
     peer_bundle = build_fixture_bundle(
-        origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
         receipt_id="receipt-0002",
         seed=2,
     )
@@ -281,8 +305,29 @@ def test_publication_record_rejects_reloaded_replay_row_without_context_validati
         freivalds_rounds=8,
         prior_nullifiers=frozenset({peer_bundle.nullifier}),
     )
-    summary = summarize_e2_rows([validated])
     reloaded = E2ReceiptRow.model_validate_json(validated.model_dump_json())
+    summary = E2Summary(
+        claim_id="C2",
+        denominator=1,
+        minimum_supported_denominator=2,
+        minimum_unique_attack_seeds=2,
+        unique_attack_seed_count=0,
+        exact_denominator=1,
+        exact_detected=1,
+        exact_detection_rate=1.0,
+        exact_confidence_interval=(0.0, 1.0),
+        empirical_denominator=0,
+        empirical_detected=0,
+        empirical_detection_rate=0.0,
+        empirical_confidence_interval=(0.0, 1.0),
+        unsupported_attack_count=0,
+        honest_control_count=0,
+        false_positive_count=0,
+        false_positive_rate=0.0,
+        confidence_interval=(0.0, 1.0),
+        residual_surface_ledger=(),
+        claim_disposition="INCONCLUSIVE",
+    )
 
     with pytest.raises(ArtifactValidationError):
         build_publication_record(summary=summary, rows=[reloaded], run_config=honest_bundle.run_config)
@@ -417,67 +462,18 @@ def test_synthetic_rows_cannot_publish() -> None:
     assert any("synthetic non-evidence origin" in reason for reason in decision.reasons)
 
 
-def test_one_supported_row_cannot_freeze() -> None:
-    from poi_mpp.attacks.execution import apply_attack, AttackFamily
-    from poi_mpp.experiments.e2_tamper import (
-        PUBLICATION_EVIDENCE_AUTHORIZED,
-        build_fixture_bundle,
-        build_publication_record,
-        evaluate_receipt,
-    )
-    from poi_mpp.reporting.e2 import summarize_e2_rows
+@pytest.mark.parametrize(
+    ("origin",),
+    [
+        (EvidenceOrigin.REAL_MODEL_EXECUTION,),
+        (EvidenceOrigin.REPRODUCIBLE_SIMULATION,),
+    ],
+)
+def test_fixture_bundle_rejects_non_synthetic_origins(origin: EvidenceOrigin) -> None:
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle
 
-    bundle = build_fixture_bundle(origin=EvidenceOrigin.REAL_MODEL_EXECUTION)
-    published_config = bundle.run_config.model_copy(update={"authorization_scope": PUBLICATION_EVIDENCE_AUTHORIZED})
-    published_bundle = bundle.model_copy(update={"run_config": published_config})
-    attacked, manifest = apply_attack(published_bundle, AttackFamily.MODEL_ROOT_SUBSTITUTION, seed=53)
-    row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.05, freivalds_rounds=8)
-    summary = summarize_e2_rows([row])
-    provenance_bundle = _publication_bundle(published_config)
-    record = build_publication_record(
-        summary=summary,
-        rows=[row],
-        run_config=published_config,
-        provenance_bundle=provenance_bundle,
-    )
-
-    assert summary.claim_disposition == "INCONCLUSIVE"
-    assert record["stage"] == "SEMANTICALLY_VALID"
-
-
-def test_reproducible_simulation_can_freeze_with_matching_scope_and_provenance() -> None:
-    from poi_mpp.attacks.execution import apply_attack, AttackFamily
-    from poi_mpp.experiments.e2_tamper import (
-        PUBLICATION_EVIDENCE_AUTHORIZED,
-        build_fixture_bundle,
-        build_publication_record,
-        evaluate_receipt,
-    )
-    from poi_mpp.reporting.e2 import summarize_e2_rows
-
-    bundle_one = build_fixture_bundle(origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION, receipt_id="receipt-1", seed=11)
-    bundle_two = build_fixture_bundle(origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION, receipt_id="receipt-2", seed=12)
-    published_config = bundle_one.run_config.model_copy(update={"authorization_scope": PUBLICATION_EVIDENCE_AUTHORIZED})
-    published_one = bundle_one.model_copy(update={"run_config": published_config})
-    published_two = bundle_two.model_copy(update={"run_config": published_config, "run_id": published_config.run_id})
-    attacked_one, manifest_one = apply_attack(published_one, AttackFamily.MODEL_ROOT_SUBSTITUTION, seed=59)
-    attacked_two, manifest_two = apply_attack(published_two, AttackFamily.WEIGHT_CORRUPTION, seed=61)
-    rows = [
-        evaluate_receipt(attacked_one, attack_manifest=manifest_one, audit_rate=0.05, freivalds_rounds=8),
-        evaluate_receipt(attacked_two, attack_manifest=manifest_two, audit_rate=0.05, freivalds_rounds=8),
-    ]
-    summary = summarize_e2_rows(rows)
-    provenance_bundle = _publication_bundle(published_config)
-    record = build_publication_record(
-        summary=summary,
-        rows=rows,
-        run_config=published_config,
-        provenance_bundle=provenance_bundle,
-    )
-
-    assert record["stage"] == "FROZEN"
-    assert record["ci_required"] is True
-    assert "confidence_interval" in record
+    with pytest.raises(ValueError):
+        build_fixture_bundle(origin=origin)
 
 
 def test_cli_loads_config_then_stops_at_real_run_boundary() -> None:
