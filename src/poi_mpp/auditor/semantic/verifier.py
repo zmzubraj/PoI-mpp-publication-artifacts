@@ -22,14 +22,6 @@ from poi_mpp.auditor.semantic.models import (
 from poi_mpp.evidence.canonical import digest
 
 
-def _decision_for_outcome(outcome: SemanticOutcome) -> VerificationDecision:
-    if outcome is SemanticOutcome.AMBIGUOUS:
-        return VerificationDecision.ABSTAIN
-    if outcome is SemanticOutcome.SUPPORTED:
-        return VerificationDecision.ACCEPT
-    return VerificationDecision.REJECT
-
-
 def _compare_numeric(
     actual: Decimal,
     expectation: NumericExpectation,
@@ -69,12 +61,21 @@ def _evaluate_claim(
     records = tuple(citation_index[citation_id][0] for citation_id in claim.cited_citation_ids)
     support_count = 0
     contradiction_count = 0
-    neutral_count = 0
     reasons: list[str] = []
     evidence_ids: list[str] = []
+    untrusted_semantic_labels = False
 
     for record in records:
         evidence_ids.append(record.evidence_id)
+        if (
+            record.label_authority != "TRUSTED_GROUNDED_ANNOTATOR"
+            and (record.annotations or record.numeric_facts)
+        ):
+            untrusted_semantic_labels = True
+            reasons.append(
+                f"trusted semantic label authority not verified for citation {record.citation_id}"
+            )
+            continue
         kinds = {item.kind for item in record.annotations if item.claim_id == claim.claim_id}
         if EvidenceAnnotationKind.SUPPORTS in kinds and EvidenceAnnotationKind.CONTRADICTS in kinds:
             reasons.append(f"ambiguous annotation in citation {record.citation_id}")
@@ -84,9 +85,17 @@ def _evaluate_claim(
         elif EvidenceAnnotationKind.SUPPORTS in kinds:
             support_count += 1
         else:
-            neutral_count += 1
             reasons.append(f"citation {record.citation_id} provides no explicit support")
 
+    if untrusted_semantic_labels:
+        return ClaimVerificationOutcome(
+            claim_id=claim.claim_id,
+            outcome=SemanticOutcome.AMBIGUOUS,
+            decision=VerificationDecision.ABSTAIN,
+            citation_ids=claim.cited_citation_ids,
+            evidence_ids=tuple(evidence_ids),
+            reasons=tuple(reasons),
+        )
     if support_count and contradiction_count:
         reasons.append("mixed support and contradiction across cited evidence")
     if any(reason.startswith("ambiguous annotation") for reason in reasons) or (

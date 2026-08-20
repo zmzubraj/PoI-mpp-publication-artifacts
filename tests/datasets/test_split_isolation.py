@@ -224,6 +224,38 @@ def test_source_family_is_case_normalized_before_isolation():
         assert_confirmatory_isolation(development, confirmatory)
 
 
+def test_source_family_is_unicode_normalized_before_isolation():
+    development = DatasetManifest(
+        dataset_id="development",
+        split=DatasetSplit.DEVELOPMENT,
+        records=(
+            _record(
+                "dev-1",
+                split=DatasetSplit.DEVELOPMENT,
+                source_family=" Café-Paper ",
+                source_hash="a" * 64,
+                content_hash="1" * 64,
+            ),
+        ),
+    )
+    confirmatory = DatasetManifest(
+        dataset_id="confirmatory",
+        split=DatasetSplit.CONFIRMATORY,
+        records=(
+            _record(
+                "conf-1",
+                split=DatasetSplit.CONFIRMATORY,
+                source_family="cafe\u0301-paper",
+                source_hash="b" * 64,
+                content_hash="2" * 64,
+            ),
+        ),
+    )
+
+    with pytest.raises(DatasetLeakageError, match="source family overlap"):
+        assert_confirmatory_isolation(development, confirmatory)
+
+
 def test_manifest_rejects_missing_hashes():
     with pytest.raises(ValueError, match="source_hash"):
         DatasetRecord(

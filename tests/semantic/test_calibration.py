@@ -9,35 +9,84 @@ from poi_mpp.auditor.semantic import (
     EvidenceRecord,
     GroundedClaim,
     SemanticCalibrationArtifact,
-    SemanticLabelAuthority,
     VerificationMode,
     fit_development_calibration,
     verify_grounded,
 )
-from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence.models import EvidenceOrigin
+from poi_mpp.auditor.semantic.models import (
+    _issue_trusted_evidence,
+    semantic_annotation_payload_hash,
+    semantic_evidence_content_hash,
+)
+from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigin, RunManifest
+
+
+def _provenance(origin: EvidenceOrigin) -> RunManifest:
+    return RunManifest(
+        run_id="run-1",
+        experiment_id="experiment-1",
+        config_hash="a" * 64,
+        environment_hash="b" * 64,
+        code_revision="c" * 40,
+        origin=origin,
+        authorization_scope="semantic-fixture",
+    )
+
+
+def _trusted_artifact(citation_id: str) -> ArtifactRecord:
+    text = f"evidence::{citation_id}"
+    support = (
+        EvidenceAnnotation(
+            claim_id="claim-1",
+            kind=EvidenceAnnotationKind.SUPPORTS,
+            reason="supported by the citation",
+        ),
+    )
+    record = ArtifactRecord(
+        artifact_id=f"artifact-evidence-{citation_id}",
+        run_id="run-1",
+        experiment_id="experiment-1",
+        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        stage=ArtifactStage.GENERATED,
+        content_hash=semantic_evidence_content_hash(
+            citation_id=citation_id,
+            content=text,
+            source_family="paper-a",
+        ),
+        parent_hashes=(
+            semantic_annotation_payload_hash(
+                evidence_id=f"evidence-{citation_id}",
+                citation_id=citation_id,
+                source_family="paper-a",
+                annotations=support,
+                numeric_facts=(),
+            ),
+        ),
+    )
+    return (
+        record.advance_to(ArtifactStage.SCHEMA_VALID)
+        .advance_to(ArtifactStage.SEMANTICALLY_VALID)
+        .advance_to(ArtifactStage.FROZEN)
+    )
 
 
 def _evidence(citation_id: str) -> EvidenceRecord:
     text = f"evidence::{citation_id}"
-    return EvidenceRecord(
+    support = (
+        EvidenceAnnotation(
+            claim_id="claim-1",
+            kind=EvidenceAnnotationKind.SUPPORTS,
+            reason="supported by the citation",
+        ),
+    )
+    return _issue_trusted_evidence(
+        artifact=_trusted_artifact(citation_id),
+        provenance=_provenance(EvidenceOrigin.REAL_MODEL_EXECUTION),
         evidence_id=f"evidence-{citation_id}",
         citation_id=citation_id,
         source_family="paper-a",
-        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-        label_authority=SemanticLabelAuthority.TRUSTED_GROUNDED_ANNOTATOR,
         content=text,
-        content_hash=digest(
-            "SEMANTIC_EVIDENCE_CONTENT",
-            {"citation_id": citation_id, "content": text, "source_family": "paper-a"},
-        ),
-        annotations=(
-            EvidenceAnnotation(
-                claim_id="claim-1",
-                kind=EvidenceAnnotationKind.SUPPORTS,
-                reason="supported by the citation",
-            ),
-        ),
+        annotations=support,
     )
 
 

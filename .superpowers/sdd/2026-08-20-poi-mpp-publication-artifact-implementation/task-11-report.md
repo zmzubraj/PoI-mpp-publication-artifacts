@@ -60,3 +60,45 @@ $ git diff --check
 - The verifier is intentionally annotation-driven. It proves the contract for grounded claim adjudication, not a learned semantic model or real E3 measured performance.
 - Numeric checking is bounded to strict decimal strings and comparator checks; richer unit algebra or interval semantics remain out of scope for this task.
 - Verification used the repository-owned `./.venv/bin/python` interpreter because that is the configured project path.
+
+## Fix Round 2 — non-forgeable trust boundary and Unicode source-family normalization
+
+**Status:** DONE_WITH_CONCERNS
+
+### Delivered
+
+- Public `EvidenceRecord` construction, `model_validate`, and `model_copy` no longer self-authorize trusted semantic labels. Any caller-supplied trust fields are stripped unless a module-private issuance context is active.
+- Added a module-private trusted issuance path that requires:
+  - a terminal `ArtifactRecord`;
+  - matching `RunManifest` identity and origin;
+  - non-synthetic publication evidence origin;
+  - evidence content-hash equality; and
+  - trusted label-payload hash membership in `artifact.parent_hashes`.
+- Public reload of a previously trusted semantic record now downgrades to `UNTRUSTED_CALLER`.
+- `verify_grounded()` now treats untrusted annotations or numeric facts as a fail-closed `ABSTAIN` surface instead of accepting caller-asserted trust.
+- `source_family` now uses `NFKC` + `strip()` + `casefold()` before storage, hashing, and split-isolation comparison.
+
+### Focused verification
+
+```text
+$ ./.venv/bin/python -m pytest tests/semantic tests/datasets/test_split_isolation.py -v
+28 passed in 0.10s
+
+$ ./.venv/bin/python -m pytest tests -v
+217 passed in 2.94s
+
+$ PYTHONPATH=src ./.venv/bin/python -m compileall -q src tests
+$ git diff --check
+```
+
+### Additional regressions covered
+
+- Self-asserted `TRUSTED_GROUNDED_ANNOTATOR` via constructor, `model_validate`, and `model_copy` remains blocked and yields `ABSTAIN`.
+- Public reload of a trusted record downgrades to untrusted and yields `ABSTAIN`.
+- Legitimate test-only trusted issuance from a verified artifact/provenance path still yields `ACCEPT`.
+- Unicode-composed/decomposed and case-variant `source_family` aliases collide during confirmatory-isolation checks.
+
+### Residual concerns
+
+- The trusted issuance helper is intentionally module-private because the current evidence kernel does not yet expose an independently verified public semantic-label artifact surface. A later task may replace this with a stronger first-class verified issuer.
+- The trusted binding currently uses `artifact.parent_hashes` for label-payload commitment because Task 11 does not yet own a dedicated semantic-label artifact schema in the evidence kernel.

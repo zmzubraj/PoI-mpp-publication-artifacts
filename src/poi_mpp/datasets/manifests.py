@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from enum import StrEnum
 import re
+import unicodedata
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -32,6 +33,15 @@ class _FrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+def _normalize_source_family(value: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError("source_family must be a string")
+    normalized = unicodedata.normalize("NFKC", value).strip().casefold()
+    if not normalized:
+        raise ValueError("source_family must not be blank")
+    return normalized
+
+
 class DatasetRecord(_FrozenModel):
     record_id: str
     split: DatasetSplit
@@ -40,12 +50,17 @@ class DatasetRecord(_FrozenModel):
     source_hash: str
     content_hash: str
 
-    @field_validator("record_id", "source_family")
+    @field_validator("record_id")
     @classmethod
-    def reject_blank_strings(cls, value: str) -> str:
+    def reject_blank_record_id(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("dataset fields must not be blank")
-        return value.strip().lower()
+        return value
+
+    @field_validator("source_family")
+    @classmethod
+    def normalize_source_family_value(cls, value: str) -> str:
+        return _normalize_source_family(value)
 
     @field_validator("source_hash", "content_hash")
     @classmethod
