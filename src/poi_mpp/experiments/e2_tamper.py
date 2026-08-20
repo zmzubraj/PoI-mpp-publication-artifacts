@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
 
 from poi_mpp.attacks.execution import (
     AttackAnalysisSurface,
@@ -17,6 +18,7 @@ from poi_mpp.attacks.execution import (
     committed_target_hash,
     observed_target_hash,
 )
+from poi_mpp.auditor.reports import AuditResult
 from poi_mpp.auditor.algebraic.finite_field import verify_freivalds_field
 from poi_mpp.auditor.algebraic.floating_point import verify_freivalds_float
 from poi_mpp.auditor.exact.checks import verify_exact
@@ -39,19 +41,30 @@ PUBLICATION_EVIDENCE_AUTHORIZED = "PUBLICATION_EVIDENCE_AUTHORIZED"
 _FIELD_MODULUS = 2_147_483_647
 MIN_E2_SUPPORTED_DENOMINATOR = 2
 MIN_E2_UNIQUE_ATTACK_SEEDS = 2
+_REPLAY_CONTEXT_UNSET = object()
 
 
 class _FrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+class ReplayValidationDisposition(StrEnum):
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    UNVALIDATED = "UNVALIDATED"
+    CONFIRMED_REPLAY = "CONFIRMED_REPLAY"
+    VERIFIED_NOT_REPLAY = "VERIFIED_NOT_REPLAY"
+
+
 class E2ReceiptRow(_FrozenModel):
+    _replay_disposition_validated: bool = PrivateAttr(default=False)
+
     schema_version: str = "POI_MPP_E2_RECEIPT_ROW_V1"
     run_id: str
     experiment_id: str
     receipt_id: str
     task_id: int = Field(ge=0)
     origin: EvidenceOrigin
+    is_attacked: bool
     attack_family: AttackFamily | None = None
     attack_manifest: AttackManifest | None = None
     analysis_surface: str
@@ -72,6 +85,9 @@ class E2ReceiptRow(_FrozenModel):
     trace_root: str
     evidence_root: str
     nullifier: str
+    audit_result: AuditResult | None = None
+    replay_validation: str = ReplayValidationDisposition.NOT_APPLICABLE
+    row_hash: str
     residual_risk: tuple[str, ...] = ()
 
     def model_copy(
@@ -84,7 +100,10 @@ class E2ReceiptRow(_FrozenModel):
             return super().model_copy(deep=deep)
         merged = self.model_dump(mode="python")
         merged.update(update)
-        return type(self).model_validate(merged)
+        copied = type(self).model_validate(merged)
+        if self._replay_disposition_validated and copied.replay_validation == self.replay_validation:
+            object.__setattr__(copied, "_replay_disposition_validated", True)
+        return copied
 
     @field_validator(
         "run_id",
@@ -110,27 +129,189 @@ class E2ReceiptRow(_FrozenModel):
             raise ValueError("E2 row text fields must not be blank")
         return value
 
+    @field_validator("row_hash")
+    @classmethod
+    def require_row_hash(cls, value: str) -> str:
+        if not isinstance(value, str) or not value.startswith("0x") or len(value) != 66:
+            raise ValueError("row_hash must be a 32-byte hex word")
+        return value
+
     @model_validator(mode="after")
     def validate_attack_semantics(self) -> "E2ReceiptRow":
-        if self.attack_family is None:
-            if self.attack_manifest is not None:
-                raise ValueError("honest control rows cannot carry an attack manifest")
-        else:
-            if self.attack_manifest is not None and self.original_target_hash == self.observed_target_hash:
+        if self.audit_result is not None and self.audit_result.evidence_origin is not self.origin:
+            raise ValueError("audit_result.evidence_origin must equal row.origin")
+        if self.is_attacked != (self.attack_family is not None):
+            raise ValueError("is_attacked must equal whether attack_family is present")
+        if self.is_attacked:
+            if self.attack_manifest is None:
+                raise ValueError("attacked rows require attack_manifest")
+            if self.attack_manifest.family is not self.attack_family:
+                raise ValueError("attack_manifest.family must equal row.attack_family")
+            if self.attack_manifest.origin is not self.origin:
+                raise ValueError("attack_manifest.origin must equal row.origin")
+            if self.attack_manifest.original_commitment != self.original_commitment:
+                raise ValueError("attack_manifest.original_commitment must bind row.original_commitment")
+            if self.attack_manifest.original_target_hash != self.original_target_hash:
+                raise ValueError("attack_manifest.original_target_hash must bind row.original_target_hash")
+            if self.attack_manifest.attacked_target_hash != self.observed_target_hash:
+                raise ValueError("attack_manifest.attacked_target_hash must bind row.observed_target_hash")
+            if self.original_target_hash == self.observed_target_hash:
                 raise ValueError("attacked rows must change the targeted surface")
             if self.attack_seed is None:
                 raise ValueError("attacked rows require attack_seed")
+            if self.attack_seed != self.attack_manifest.seed:
+                raise ValueError("attack_seed must equal attack_manifest.seed")
             if self.observation_key is None:
                 raise ValueError("attacked rows require observation_key")
-        if self.abstained and self.detected:
-            raise ValueError("abstained rows cannot also count as detected")
-        if self.false_positive and self.attack_family is not None:
-            raise ValueError("false positives apply only to honest controls")
-        if self.attack_family is None and (
-            self.attack_seed is not None or self.peer_receipt_id is not None or self.observation_key is not None
-        ):
-            raise ValueError("honest control rows cannot carry attack observation metadata")
+            expected_peer_receipt_id = next(
+                (
+                    str(parameter.value)
+                    for parameter in self.attack_manifest.parameters
+                    if parameter.key == "peer_receipt_id"
+                ),
+                None,
+            )
+            if self.peer_receipt_id != expected_peer_receipt_id:
+                raise ValueError("peer_receipt_id must equal the canonical manifest peer binding")
+            expected_observation_key = _observation_key(
+                self.attack_manifest.family,
+                self.attack_manifest.seed,
+                self.attack_manifest.original_target_hash,
+                expected_peer_receipt_id,
+            )
+            if self.observation_key != expected_observation_key:
+                raise ValueError("observation_key must equal the canonical manifest observation key")
+            if self.attack_family is AttackFamily.UNSUPPORTED_KERNEL:
+                if self.audit_result is not None:
+                    raise ValueError("unsupported attack rows cannot carry audit_result")
+            else:
+                if self.audit_result is None:
+                    raise ValueError("supported attack rows require audit_result")
+                if self.analysis_surface in {
+                    AttackAnalysisSurface.EXACT_FIELD.value,
+                    AttackAnalysisSurface.EMPIRICAL_FLOAT.value,
+                }:
+                    if self.audit_result.rounds != self.freivalds_rounds:
+                        raise ValueError("algebraic audit_result.rounds must equal row.freivalds_rounds")
+                    if self.audit_result.seed != self.attack_seed:
+                        raise ValueError("algebraic audit_result.seed must equal row.attack_seed")
+        else:
+            if self.attack_manifest is not None:
+                raise ValueError("honest control rows cannot carry attack_manifest")
+            if self.attack_seed is not None or self.peer_receipt_id is not None or self.observation_key is not None:
+                raise ValueError("honest control rows cannot carry attack observation metadata")
+            if self.audit_result is None:
+                raise ValueError("honest control rows require audit_result")
+        expected = _expected_row_fields(self)
+        for field_name, expected_value in expected.items():
+            if getattr(self, field_name) != expected_value:
+                raise ValueError(f"{field_name} does not match the canonical row contract")
+        if self.row_hash != _row_hash_material(self):
+            raise ValueError("row_hash does not match canonical row material")
         return self
+
+
+def _replay_residual_risk(
+    audit_result: AuditResult,
+    replay_validation: str,
+) -> tuple[str, ...]:
+    base = tuple(audit_result.residual_risk)
+    if replay_validation == ReplayValidationDisposition.CONFIRMED_REPLAY:
+        return tuple(dict.fromkeys((*base, "observed nullifier already appeared in prior receipts")))
+    if replay_validation == ReplayValidationDisposition.VERIFIED_NOT_REPLAY:
+        return tuple(
+            dict.fromkeys(
+                (
+                    *base,
+                    "changed nullifier without prior membership is not replay and is excluded from replay detection",
+                )
+            )
+        )
+    if replay_validation == ReplayValidationDisposition.UNVALIDATED:
+        return tuple(dict.fromkeys((*base, "replay prior-nullifier validation pending")))
+    raise ValueError("invalid replay_validation for replay row")
+
+
+def _expected_row_fields(row: E2ReceiptRow) -> dict[str, object]:
+    if not row.is_attacked:
+        assert row.audit_result is not None
+        return {
+            "analysis_surface": AttackAnalysisSurface.EXACT_MATCH.value,
+            "assurance_class": row.audit_result.assurance_class.value,
+            "accepted": row.audit_result.accepted,
+            "abstained": False,
+            "detected": False,
+            "false_positive": not row.audit_result.accepted,
+            "replay_validation": ReplayValidationDisposition.NOT_APPLICABLE,
+            "residual_risk": tuple(row.audit_result.residual_risk),
+        }
+
+    assert row.attack_family is not None
+    assert row.attack_manifest is not None
+    expected_surface = canonical_attack_surface(
+        row.attack_manifest.family,
+        numeric_mode=row.attack_manifest.numeric_mode,
+    )
+    if row.attack_family is AttackFamily.UNSUPPORTED_KERNEL:
+        return {
+            "analysis_surface": expected_surface.value,
+            "assurance_class": AttackAnalysisSurface.UNSUPPORTED.value,
+            "accepted": False,
+            "abstained": True,
+            "detected": False,
+            "false_positive": False,
+            "residual_risk": ("unsupported kernel surface requires abstention",),
+        }
+
+    assert row.audit_result is not None
+    if row.attack_family is AttackFamily.REPLAY_NULLIFIER:
+        if row.replay_validation not in {
+            ReplayValidationDisposition.UNVALIDATED,
+            ReplayValidationDisposition.CONFIRMED_REPLAY,
+            ReplayValidationDisposition.VERIFIED_NOT_REPLAY,
+        }:
+            raise ValueError("replay rows require explicit replay_validation status")
+        accepted = row.replay_validation == ReplayValidationDisposition.VERIFIED_NOT_REPLAY
+        detected = row.replay_validation == ReplayValidationDisposition.CONFIRMED_REPLAY
+        return {
+            "analysis_surface": expected_surface.value,
+            "assurance_class": row.audit_result.assurance_class.value,
+            "accepted": accepted,
+            "abstained": False,
+            "detected": detected,
+            "false_positive": False,
+            "residual_risk": _replay_residual_risk(row.audit_result, row.replay_validation),
+        }
+
+    return {
+        "analysis_surface": expected_surface.value,
+        "assurance_class": row.audit_result.assurance_class.value,
+        "accepted": row.audit_result.accepted,
+        "abstained": False,
+        "detected": not row.audit_result.accepted,
+        "false_positive": False,
+        "replay_validation": ReplayValidationDisposition.NOT_APPLICABLE,
+        "residual_risk": tuple(row.audit_result.residual_risk),
+    }
+
+
+def _row_hash_material(row: E2ReceiptRow) -> str:
+    payload = row.model_dump(mode="python", exclude={"row_hash"})
+    payload["origin"] = row.origin.value
+    payload["attack_family"] = row.attack_family.value if row.attack_family is not None else None
+    payload["replay_validation"] = str(row.replay_validation)
+    payload["audit_result"] = (
+        row.audit_result.model_dump(mode="json")
+        if isinstance(row.audit_result, BaseModel)
+        else row.audit_result
+    )
+    payload["residual_risk"] = list(row.residual_risk)
+    payload["attack_manifest"] = (
+        row.attack_manifest.model_dump(mode="json")
+        if isinstance(row.attack_manifest, BaseModel)
+        else row.attack_manifest
+    )
+    return "0x" + digest("E2_RECEIPT_ROW", payload)
 
 
 def _word(label: str, payload: object) -> str:
@@ -266,66 +447,46 @@ def build_fixture_bundle(
     )
 
 
-def validate_attack_receipt(row: E2ReceiptRow) -> E2ReceiptRow:
+def validate_attack_receipt(
+    row: E2ReceiptRow,
+    *,
+    prior_nullifiers: Iterable[str] | object = _REPLAY_CONTEXT_UNSET,
+    require_replay_validation: bool = False,
+) -> E2ReceiptRow:
     reasons: list[str] = []
-    manifest = row.attack_manifest
-    expected_detected = False
-    expected_abstained = False
-    if row.attack_family is None:
-        if manifest is not None:
-            reasons.append("honest control rows cannot include attack manifests")
-        if row.analysis_surface != AttackAnalysisSurface.EXACT_MATCH.value:
-            reasons.append("honest control rows must use EXACT_MATCH analysis_surface")
-    else:
-        if manifest is None:
-            reasons.append("attacked rows require attack manifests")
-        else:
-            if manifest.family is not row.attack_family:
-                reasons.append("attack manifest family does not match row attack_family")
-            if manifest.origin is not row.origin:
-                reasons.append("attack manifest origin does not match row origin")
-            if manifest.original_commitment != row.original_commitment:
-                reasons.append("attack manifest original_commitment does not bind row commitment")
-            if manifest.original_target_hash != row.original_target_hash:
-                reasons.append("attack manifest original_target_hash does not match row target")
-            if manifest.attacked_target_hash != row.observed_target_hash:
-                reasons.append("attack manifest attacked_target_hash does not match row target")
-            expected_surface = canonical_attack_surface(
-                manifest.family,
-                numeric_mode=manifest.numeric_mode,
-            )
-            if row.analysis_surface != expected_surface.value:
-                reasons.append("row.analysis_surface does not match the canonical manifest surface")
-            expected_peer_receipt_id = next(
-                (
-                    str(parameter.value)
-                    for parameter in manifest.parameters
-                    if parameter.key == "peer_receipt_id"
-                ),
-                None,
-            )
-            if row.peer_receipt_id != expected_peer_receipt_id:
-                reasons.append("row.peer_receipt_id does not match the canonical manifest peer binding")
-            expected_observation_key = _observation_key(
-                manifest.family,
-                manifest.seed,
-                manifest.original_target_hash,
-                expected_peer_receipt_id,
-            )
-            if row.observation_key != expected_observation_key:
-                reasons.append("row.observation_key does not match the canonical manifest observation key")
-            if row.attack_seed != manifest.seed:
-                reasons.append("row.attack_seed does not match manifest.seed")
-            expected_abstained = expected_surface is AttackAnalysisSurface.UNSUPPORTED
-            expected_detected = not row.accepted and not expected_abstained
-            if expected_surface is AttackAnalysisSurface.UNSUPPORTED and row.accepted:
-                reasons.append("unsupported attack surfaces cannot be accepted")
-            if expected_surface is not AttackAnalysisSurface.UNSUPPORTED and row.abstained:
-                reasons.append("supported attack surfaces cannot abstain")
-    if row.detected != expected_detected:
-        reasons.append("row.detected is inconsistent with canonical acceptance/abstention")
-    if row.abstained != expected_abstained:
-        reasons.append("row.abstained is inconsistent with the canonical attack surface")
+    if not row.is_attacked:
+        return row
+    assert row.attack_family is not None
+    if row.attack_family is AttackFamily.REPLAY_NULLIFIER:
+        if prior_nullifiers is _REPLAY_CONTEXT_UNSET:
+            if row.replay_validation in {
+                ReplayValidationDisposition.CONFIRMED_REPLAY,
+                ReplayValidationDisposition.VERIFIED_NOT_REPLAY,
+            } and not row._replay_disposition_validated:
+                reasons.append("replay rows require explicit prior-nullifier validation before aggregation or freeze")
+            if require_replay_validation and row.replay_validation == ReplayValidationDisposition.UNVALIDATED:
+                reasons.append("replay rows require explicit prior-nullifier validation before aggregation or freeze")
+            if reasons:
+                raise ArtifactValidationError(tuple(dict.fromkeys(reasons)))
+            return row
+        prior_nullifier_set = frozenset(prior_nullifiers)
+        replay_validation = (
+            ReplayValidationDisposition.CONFIRMED_REPLAY
+            if row.nullifier in prior_nullifier_set
+            else ReplayValidationDisposition.VERIFIED_NOT_REPLAY
+        )
+        if row.replay_validation not in {
+            ReplayValidationDisposition.UNVALIDATED,
+            replay_validation,
+        }:
+            reasons.append("replay_validation does not match explicit prior-nullifier validation")
+        if reasons:
+            raise ArtifactValidationError(tuple(dict.fromkeys(reasons)))
+        validated = row.model_copy(update={"replay_validation": replay_validation})
+        object.__setattr__(validated, "_replay_disposition_validated", True)
+        return validated
+    if row.replay_validation != ReplayValidationDisposition.NOT_APPLICABLE:
+        reasons.append("non-replay rows must use NOT_APPLICABLE replay_validation")
     if reasons:
         raise ArtifactValidationError(tuple(dict.fromkeys(reasons)))
     return row
@@ -347,12 +508,12 @@ def _observation_key(
     )
 
 
-def _exact_row(
+def _exact_audit_result(
     bundle: ExecutionAuditBundle,
     *,
     family: AttackFamily | None,
     manifest: AttackManifest | None,
-) -> tuple[bool, str, tuple[str, ...]]:
+) -> AuditResult:
     if family is AttackFamily.MODEL_ROOT_SUBSTITUTION:
         audit = verify_exact(bundle.model_manifest.model_root[2:], bundle.model_root[2:], evidence_origin=bundle.origin)
     elif family is AttackFamily.WEIGHT_CORRUPTION:
@@ -401,11 +562,7 @@ def _exact_row(
         audit = verify_exact(bundle.committed_nullifier[2:], bundle.nullifier[2:], evidence_origin=bundle.origin)
     else:
         audit = verify_exact(bundle.commitment.response_hash[2:], bundle.response_hash[2:], evidence_origin=bundle.origin)
-    return (
-        audit.accepted,
-        audit.assurance_class.value,
-        tuple(audit.residual_risk),
-    )
+    return audit
 
 
 def evaluate_receipt(
@@ -414,7 +571,7 @@ def evaluate_receipt(
     attack_manifest: AttackManifest | None = None,
     audit_rate: float,
     freivalds_rounds: int,
-    prior_nullifiers: Iterable[str] = (),
+    prior_nullifiers: Iterable[str] | object = _REPLAY_CONTEXT_UNSET,
 ) -> E2ReceiptRow:
     family = attack_manifest.family if attack_manifest is not None else None
     analysis_surface = (
@@ -433,21 +590,16 @@ def evaluate_receipt(
         if family is not None
         else bundle.response_hash
     )
-    residual_risk: tuple[str, ...]
-    assurance_class: str
-    accepted: bool
-    abstained = False
+    audit_result: AuditResult | None
+    replay_validation = ReplayValidationDisposition.NOT_APPLICABLE
 
     if family is None:
-        accepted, assurance_class, residual_risk = _exact_row(bundle, family=None, manifest=None)
+        audit_result = _exact_audit_result(bundle, family=None, manifest=None)
         attack_seed = None
         peer_receipt_id = None
         observation_key = None
     elif analysis_surface is AttackAnalysisSurface.UNSUPPORTED:
-        accepted = False
-        abstained = True
-        assurance_class = analysis_surface.value
-        residual_risk = ("unsupported kernel surface requires abstention",)
+        audit_result = None
         attack_seed = attack_manifest.seed
         peer_receipt_id = next(
             (str(parameter.value) for parameter in attack_manifest.parameters if parameter.key == "peer_receipt_id"),
@@ -455,7 +607,7 @@ def evaluate_receipt(
         )
         observation_key = _observation_key(family, attack_manifest.seed, original_hash, peer_receipt_id)
     elif analysis_surface is AttackAnalysisSurface.EXACT_FIELD:
-        audit = verify_freivalds_field(
+        audit_result = verify_freivalds_field(
             bundle.field_matrix_a,
             bundle.field_matrix_b,
             bundle.field_matrix_c,
@@ -464,14 +616,11 @@ def evaluate_receipt(
             modulus=_FIELD_MODULUS,
             evidence_origin=bundle.origin,
         )
-        accepted = audit.accepted
-        assurance_class = audit.assurance_class.value
-        residual_risk = tuple(audit.residual_risk)
         attack_seed = attack_manifest.seed
         peer_receipt_id = None
         observation_key = _observation_key(family, attack_manifest.seed, original_hash, None)
     elif analysis_surface is AttackAnalysisSurface.EMPIRICAL_FLOAT:
-        audit = verify_freivalds_float(
+        audit_result = verify_freivalds_float(
             bundle.float_matrix_a,
             bundle.float_matrix_b,
             bundle.float_matrix_c,
@@ -481,14 +630,11 @@ def evaluate_receipt(
             rtol=1e-6,
             evidence_origin=bundle.origin,
         )
-        accepted = audit.accepted
-        assurance_class = audit.assurance_class.value
-        residual_risk = tuple(audit.residual_risk)
         attack_seed = attack_manifest.seed
         peer_receipt_id = None
         observation_key = _observation_key(family, attack_manifest.seed, original_hash, None)
     else:
-        accepted, assurance_class, residual_risk = _exact_row(
+        audit_result = _exact_audit_result(
             bundle,
             family=family,
             manifest=attack_manifest,
@@ -499,48 +645,39 @@ def evaluate_receipt(
             None,
         )
         observation_key = _observation_key(family, attack_manifest.seed, original_hash, peer_receipt_id)
-
     if family is AttackFamily.REPLAY_NULLIFIER:
-        prior_nullifier_set = frozenset(prior_nullifiers)
-        if bundle.nullifier in prior_nullifier_set:
-            accepted = False
-            residual_risk = tuple(
-                dict.fromkeys(
-                    (*residual_risk, "observed nullifier already appeared in prior receipts")
-                )
-            )
-        else:
-            accepted = True
-            residual_risk = tuple(
-                dict.fromkeys(
-                    (
-                        *residual_risk,
-                        "changed nullifier without prior membership is not replay and is excluded from replay detection",
-                    )
-                )
-            )
+        replay_validation = ReplayValidationDisposition.UNVALIDATED
+    if prior_nullifiers is not _REPLAY_CONTEXT_UNSET and family is AttackFamily.REPLAY_NULLIFIER:
+        replay_validation = (
+            ReplayValidationDisposition.CONFIRMED_REPLAY
+            if bundle.nullifier in frozenset(prior_nullifiers)
+            else ReplayValidationDisposition.VERIFIED_NOT_REPLAY
+        )
 
-    detected = family is not None and not accepted and not abstained
-    false_positive = family is None and not accepted
-    row = E2ReceiptRow(
+    skeleton = E2ReceiptRow.model_construct(
         run_id=bundle.run_id,
         experiment_id=bundle.experiment_id,
         receipt_id=bundle.receipt_id,
         task_id=bundle.task.task_id,
         origin=bundle.origin,
+        is_attacked=family is not None,
         attack_family=family,
         attack_manifest=attack_manifest,
         analysis_surface=analysis_surface.value,
-        assurance_class=assurance_class,
+        assurance_class=(
+            AttackAnalysisSurface.UNSUPPORTED.value
+            if analysis_surface is AttackAnalysisSurface.UNSUPPORTED
+            else audit_result.assurance_class.value
+        ),
         attack_seed=attack_seed,
         peer_receipt_id=peer_receipt_id,
         observation_key=observation_key,
         audit_rate=audit_rate,
         freivalds_rounds=freivalds_rounds,
-        detected=detected,
-        accepted=accepted,
-        abstained=abstained,
-        false_positive=false_positive,
+        detected=False,
+        accepted=False,
+        abstained=analysis_surface is AttackAnalysisSurface.UNSUPPORTED,
+        false_positive=False,
         original_commitment=bundle.commitment.commitment_hash,
         original_target_hash=original_hash,
         observed_target_hash=observed_hash,
@@ -548,9 +685,30 @@ def evaluate_receipt(
         trace_root=bundle.trace_root,
         evidence_root=bundle.evidence_root,
         nullifier=bundle.nullifier,
-        residual_risk=residual_risk,
+        audit_result=audit_result,
+        replay_validation=replay_validation,
+        row_hash="0x" + ("0" * 64),
+        residual_risk=(),
     )
-    return validate_attack_receipt(row)
+    expected = _expected_row_fields(skeleton)
+    payload = {
+        **{
+            field_name: getattr(skeleton, field_name)
+            for field_name in type(skeleton).model_fields
+        },
+        **expected,
+    }
+    payload.pop("row_hash", None)
+    payload["row_hash"] = _row_hash_material(
+        E2ReceiptRow.model_construct(
+            **payload,
+            row_hash="0x" + ("0" * 64),
+        )
+    )
+    canonical = E2ReceiptRow.model_validate(payload)
+    if family is AttackFamily.REPLAY_NULLIFIER and prior_nullifiers is not _REPLAY_CONTEXT_UNSET:
+        return validate_attack_receipt(canonical, prior_nullifiers=prior_nullifiers)
+    return canonical
 
 
 def build_publication_record(
@@ -560,11 +718,12 @@ def build_publication_record(
     run_config: RunConfig,
     provenance_bundle: ProvenanceBundle | None = None,
 ) -> dict[str, object]:
-    origins = {row.origin.value for row in rows}
+    canonical_rows = [validate_attack_receipt(row, require_replay_validation=True) for row in rows]
+    origins = {row.origin.value for row in canonical_rows}
     origin = next(iter(origins)) if len(origins) == 1 else "MIXED_ROW_ORIGINS"
     publication_reasons = _publication_precheck_reasons(
         summary=summary,
-        rows=rows,
+        rows=canonical_rows,
         run_config=run_config,
         provenance_bundle=provenance_bundle,
     )

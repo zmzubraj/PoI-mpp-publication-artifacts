@@ -125,11 +125,21 @@ def summarize_e2_rows(
     *,
     claim_id: str = "C2",
 ) -> E2Summary:
+    from poi_mpp.attacks.execution import AttackAnalysisSurface, AttackFamily
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, validate_attack_receipt
+
     if not rows:
         raise ValueError("E2 summary requires receipt rows")
 
-    run_ids = {_require_str(dict(row), "run_id") for row in rows}
-    experiment_ids = {_require_str(dict(row), "experiment_id") for row in rows}
+    canonical_rows = [
+        validate_attack_receipt(
+            row if isinstance(row, E2ReceiptRow) else E2ReceiptRow.model_validate(row),
+            require_replay_validation=True,
+        )
+        for row in rows
+    ]
+    run_ids = {row.run_id for row in canonical_rows}
+    experiment_ids = {row.experiment_id for row in canonical_rows}
     if len(run_ids) != 1 or len(experiment_ids) != 1:
         raise ValueError("E2 rows must share a single run_id and experiment_id")
 
@@ -145,69 +155,64 @@ def summarize_e2_rows(
     false_positive_count = 0
     residuals: list[str] = []
 
-    for raw in rows:
-        row = dict(raw)
-        receipt_id = _require_str(row, "receipt_id")
+    for row in canonical_rows:
+        receipt_id = row.receipt_id
         if receipt_id in seen_receipt_ids:
             raise ValueError(f"duplicate E2 receipt_id: {receipt_id}")
         seen_receipt_ids.add(receipt_id)
-        family = row.get("attack_family")
-        analysis_surface = _require_str(row, "analysis_surface")
-        detected = _require_bool(row, "detected")
-        abstained = _require_bool(row, "abstained")
-        false_positive = _require_bool(row, "false_positive")
-        if false_positive:
+        family = row.attack_family
+        if row.false_positive:
             false_positive_count += 1
-        residuals.extend(str(item) for item in row.get("residual_risk", ()) if str(item).strip())
+        residuals.extend(str(item) for item in row.residual_risk if str(item).strip())
 
         if family is None:
             honest_control_count += 1
             continue
-        observation_key = _require_str(row, "observation_key")
+        assert row.observation_key is not None
+        observation_key = row.observation_key
         if observation_key in seen_observation_keys:
             raise ValueError(f"duplicate E2 observation_key: {observation_key}")
         seen_observation_keys.add(observation_key)
-        attack_seed = row.get("attack_seed")
-        if isinstance(attack_seed, bool) or not isinstance(attack_seed, int) or attack_seed < 0:
-            raise ValueError("E2 attacked rows require non-negative attack_seed")
-        unique_attack_seeds.add(attack_seed)
-        manifest = _manifest_mapping(row)
-        if family in {"CROSS_REQUEST_SPLICE", "REPLAY_NULLIFIER"}:
-            peer_receipt_id = row.get("peer_receipt_id")
-            if not isinstance(peer_receipt_id, str) or not peer_receipt_id.strip():
+        assert row.attack_seed is not None
+        unique_attack_seeds.add(row.attack_seed)
+        manifest = row.attack_manifest
+        if family in {AttackFamily.CROSS_REQUEST_SPLICE, AttackFamily.REPLAY_NULLIFIER}:
+            peer_receipt_id = row.peer_receipt_id
+            if peer_receipt_id is None or not peer_receipt_id.strip():
                 raise ValueError("paired E2 attacks require peer_receipt_id")
             if peer_receipt_id == receipt_id:
                 raise ValueError("paired E2 attacks cannot reference the same receipt_id as peer")
             if manifest is None:
                 raise ValueError("paired E2 attacks require an attack_manifest")
-            manifest_parameters = manifest.get("parameters")
-            if not isinstance(manifest_parameters, tuple | list):
-                raise ValueError("paired E2 attacks require typed manifest parameters")
+            manifest_parameters = manifest.parameters
             peer_values = [
-                parameter.get("value")
+                str(parameter.value)
                 for parameter in manifest_parameters
-                if isinstance(parameter, Mapping) and parameter.get("key") == "peer_receipt_id"
+                if parameter.key == "peer_receipt_id"
             ]
             if peer_values != [peer_receipt_id]:
                 raise ValueError("paired E2 attacks require manifest peer_receipt_id parity")
-        if analysis_surface == "UNSUPPORTED_SURFACE":
-            if not abstained:
+        if row.analysis_surface == AttackAnalysisSurface.UNSUPPORTED.value:
+            if not row.abstained:
                 raise ValueError("unsupported E2 attacks must abstain")
             unsupported_attack_count += 1
             continue
-        if analysis_surface == "EXACT_MATCH":
+        if row.analysis_surface == AttackAnalysisSurface.EXACT_MATCH.value:
             exact_denominator += 1
-            exact_detected += int(detected)
+            exact_detected += int(row.detected)
             continue
-        if analysis_surface in {"EXACT_FIELD_SOUNDNESS", "EMPIRICAL_FLOAT_APPROXIMATION"}:
-            if analysis_surface == "EXACT_FIELD_SOUNDNESS":
+        if row.analysis_surface in {
+            AttackAnalysisSurface.EXACT_FIELD.value,
+            AttackAnalysisSurface.EMPIRICAL_FLOAT.value,
+        }:
+            if row.analysis_surface == AttackAnalysisSurface.EXACT_FIELD.value:
                 exact_denominator += 1
-                exact_detected += int(detected)
+                exact_detected += int(row.detected)
             else:
                 empirical_denominator += 1
-                empirical_detected += int(detected)
+                empirical_detected += int(row.detected)
             continue
-        raise ValueError(f"unknown E2 analysis_surface: {analysis_surface}")
+        raise ValueError(f"unknown E2 analysis_surface: {row.analysis_surface}")
 
     denominator = exact_denominator + empirical_denominator
     exact_rate = exact_detected / exact_denominator if exact_denominator else 0.0

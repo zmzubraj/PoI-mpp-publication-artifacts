@@ -199,3 +199,48 @@ exit 0
 git diff --check -- src/poi_mpp/attacks src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py src/poi_mpp/attacks/__init__.py
 exit 0
 ```
+
+## Fix Round 2 — self-validating rows and replay-validation enforcement
+
+### Review finding addressed
+
+- `E2ReceiptRow` now self-validates all context-free canonical bindings instead
+  of relying on caller-supplied row fields.
+- Replay dispositions now require explicit `validate_attack_receipt(..., prior_nullifiers=...)`
+  context before aggregation or publication freeze.
+- Aggregation and publication-record builders now canonically revalidate every
+  row and reject replay rows that were merely reloaded or caller-mutated.
+
+### Additional RED coverage
+
+- `model_copy(update=...)` rejects missing or mismatched attack manifests
+- supported rows cannot be relabeled to unsupported via row mutation
+- `model_validate_json(...)` rejects forged `attack_seed`
+- reloaded replay rows fail closed in `summarize_e2_rows(...)`
+- reloaded replay rows fail closed in `build_publication_record(...)`
+
+### Fix-round verification
+
+Focused suite:
+
+```text
+./.venv/bin/python -m pytest tests/experiments/test_e2_tamper.py -q
+19 passed
+```
+
+Full Python suite:
+
+```text
+./.venv/bin/python -m pytest
+246 passed in 2.70s
+```
+
+Static and diff hygiene:
+
+```text
+./.venv/bin/python -m compileall src tests experiments
+exit 0
+
+git diff --check -- src/poi_mpp/experiments/e2_tamper.py src/poi_mpp/reporting/e2.py tests/experiments/test_e2_tamper.py
+exit 0
+```

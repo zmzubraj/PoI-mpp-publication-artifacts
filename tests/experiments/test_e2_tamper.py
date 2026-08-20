@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import subprocess
 import sys
 
 import pytest
+from pydantic import ValidationError
 
 from poi_mpp.evidence import ArtifactValidationError, EvidenceOrigin, evaluate_publication_gate
 from poi_mpp.evidence.provenance import EnvironmentManifest, freeze_run
@@ -42,41 +44,32 @@ def test_attack_changes_target_but_not_original_commitment() -> None:
 
 def test_missing_attack_manifest_is_rejected() -> None:
     from poi_mpp.attacks.execution import corrupt_trace_node
-    from poi_mpp.experiments.e2_tamper import (
-        build_fixture_bundle,
-        evaluate_receipt,
-        validate_attack_receipt,
-    )
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle, evaluate_receipt
 
     honest_bundle = build_fixture_bundle(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE)
     attacked, manifest = corrupt_trace_node(honest_bundle, index=0, seed=3)
     row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.05, freivalds_rounds=8)
 
-    with pytest.raises(ArtifactValidationError):
-        validate_attack_receipt(row.model_copy(update={"attack_manifest": None}))
+    with pytest.raises(ValidationError):
+        row.model_copy(update={"attack_manifest": None})
 
 
 def test_mismatched_attack_manifest_is_rejected() -> None:
     from poi_mpp.attacks.execution import corrupt_trace_node
-    from poi_mpp.experiments.e2_tamper import (
-        build_fixture_bundle,
-        evaluate_receipt,
-        validate_attack_receipt,
-    )
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle, evaluate_receipt
 
     honest_bundle = build_fixture_bundle(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE)
     attacked, manifest = corrupt_trace_node(honest_bundle, index=2, seed=5)
     row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.1, freivalds_rounds=8)
-    mismatched = row.model_copy(
-        update={
-            "attack_manifest": row.attack_manifest.model_copy(
-                update={"attacked_target_hash": "0x" + ("f" * 64)}
-            )
-        }
-    )
 
-    with pytest.raises(ArtifactValidationError):
-        validate_attack_receipt(mismatched)
+    with pytest.raises(ValidationError):
+        row.model_copy(
+            update={
+                "attack_manifest": row.attack_manifest.model_copy(
+                    update={"attacked_target_hash": "0x" + ("f" * 64)}
+                )
+            }
+        )
 
 
 def test_same_attack_seed_replays_deterministically() -> None:
@@ -123,26 +116,35 @@ def test_tensor_attack_wrong_surface_label_is_rejected() -> None:
 
 def test_supported_attack_cannot_be_relabelled_unsupported() -> None:
     from poi_mpp.attacks.execution import apply_attack, AttackFamily
-    from poi_mpp.experiments.e2_tamper import (
-        build_fixture_bundle,
-        evaluate_receipt,
-        validate_attack_receipt,
-    )
+    from poi_mpp.experiments.e2_tamper import build_fixture_bundle, evaluate_receipt
 
     honest_bundle = build_fixture_bundle(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE)
     attacked, manifest = apply_attack(honest_bundle, AttackFamily.MODEL_ROOT_SUBSTITUTION, seed=29)
     row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.05, freivalds_rounds=8)
 
-    tampered = row.model_copy(
-        update={
-            "analysis_surface": "UNSUPPORTED_SURFACE",
-            "accepted": False,
-            "abstained": True,
-            "detected": False,
-        }
-    )
-    with pytest.raises(ArtifactValidationError):
-        validate_attack_receipt(tampered)
+    with pytest.raises(ValidationError):
+        row.model_copy(
+            update={
+                "analysis_surface": "UNSUPPORTED_SURFACE",
+                "accepted": False,
+                "abstained": True,
+                "detected": False,
+            }
+        )
+
+
+def test_model_validate_json_rejects_forged_attack_seed() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, build_fixture_bundle, evaluate_receipt
+
+    honest_bundle = build_fixture_bundle(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE)
+    attacked, manifest = apply_attack(honest_bundle, AttackFamily.MODEL_ROOT_SUBSTITUTION, seed=33)
+    row = evaluate_receipt(attacked, attack_manifest=manifest, audit_rate=0.05, freivalds_rounds=8)
+    payload = row.model_dump(mode="json")
+    payload["attack_seed"] = int(payload["attack_seed"]) + 1
+
+    with pytest.raises(ValidationError):
+        E2ReceiptRow.model_validate_json(json.dumps(payload))
 
 
 def test_replay_attack_is_detected_when_nullifier_was_already_seen() -> None:
@@ -210,6 +212,80 @@ def test_replay_attack_requires_prior_nullifier_membership() -> None:
     assert row.detected is False
     assert row.accepted is True
     assert any("not replay" in reason for reason in row.residual_risk)
+
+
+def test_summary_rejects_reloaded_replay_row_without_context_validation() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import E2ReceiptRow, build_fixture_bundle, evaluate_receipt
+    from poi_mpp.reporting.e2 import summarize_e2_rows
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=45,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+    reloaded = E2ReceiptRow.model_validate_json(validated.model_dump_json())
+
+    with pytest.raises(ArtifactValidationError):
+        summarize_e2_rows([reloaded])
+
+
+def test_publication_record_rejects_reloaded_replay_row_without_context_validation() -> None:
+    from poi_mpp.attacks.execution import apply_attack, AttackFamily
+    from poi_mpp.experiments.e2_tamper import (
+        E2ReceiptRow,
+        build_fixture_bundle,
+        build_publication_record,
+        evaluate_receipt,
+    )
+    from poi_mpp.reporting.e2 import summarize_e2_rows
+
+    honest_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+        receipt_id="receipt-0001",
+        seed=1,
+    )
+    peer_bundle = build_fixture_bundle(
+        origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+        receipt_id="receipt-0002",
+        seed=2,
+    )
+    attacked, manifest = apply_attack(
+        honest_bundle,
+        AttackFamily.REPLAY_NULLIFIER,
+        seed=49,
+        peer_bundle=peer_bundle,
+    )
+    validated = evaluate_receipt(
+        attacked,
+        attack_manifest=manifest,
+        audit_rate=0.05,
+        freivalds_rounds=8,
+        prior_nullifiers=frozenset({peer_bundle.nullifier}),
+    )
+    summary = summarize_e2_rows([validated])
+    reloaded = E2ReceiptRow.model_validate_json(validated.model_dump_json())
+
+    with pytest.raises(ArtifactValidationError):
+        build_publication_record(summary=summary, rows=[reloaded], run_config=honest_bundle.run_config)
 
 
 def test_unsupported_kernel_abstains_and_stays_out_of_detection_denominator() -> None:
