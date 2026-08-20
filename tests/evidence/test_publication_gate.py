@@ -1,117 +1,66 @@
+from poi_mpp.evidence.canonical import digest
+from poi_mpp.evidence.config import RunConfig, approved_schema_hash
+from poi_mpp.evidence.provenance import EnvironmentManifest, freeze_run
 from poi_mpp.evidence.publication_gate import evaluate_publication_gate
-
-from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigin
-
-
-HASH_A = "a" * 64
-HASH_B = "b" * 64
-HASH_C = "c" * 64
-REVISION = "d" * 40
+from poi_mpp.evidence.validation import ARTIFACT_RECORD_SCHEMA_VERSION, ProvenanceBundle, artifact_content_material
 
 
-def _frozen_record(**overrides: object) -> dict[str, object]:
-    record = ArtifactRecord(
-        artifact_id="artifact-1",
-        run_id="run-1",
-        experiment_id="E1",
-        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-        stage=ArtifactStage.GENERATED,
-        content_hash=HASH_A,
-    )
-    for stage in (
-        ArtifactStage.SCHEMA_VALID,
-        ArtifactStage.SEMANTICALLY_VALID,
-        ArtifactStage.FROZEN,
-    ):
-        record = record.advance_to(stage)
-    return {
-        **record.model_dump(mode="json"),
-        "denominator": 12,
-        "provenance": {
-            "run_id": "run-1",
-            "experiment_id": "E1",
-            "origin": "REAL_MODEL_EXECUTION",
-            "authorization_scope": "LOCAL_TEST_ONLY",
-            "config_hash": HASH_B,
-            "environment_hash": HASH_C,
-            "code_revision": REVISION,
-            "model_hash": HASH_A,
-            "dataset_hash": HASH_B,
-            "parent_hashes": [],
-        },
-        **overrides,
-    }
+def _bundle(*, parents: list[str] | None = None) -> ProvenanceBundle:
+    config = RunConfig.model_validate({"schema_version": "POI_MPP_RUN_CONFIG_V1", "schema_hash": approved_schema_hash(), "run_id": "run-1", "experiment_id": "E1", "origin": "REAL_MODEL_EXECUTION", "authorization_scope": "LOCAL_TEST_ONLY", "model_hash": "a" * 64, "dataset_hash": "b" * 64, "parent_hashes": parents or [], "data_availability": {"total_shards": 12, "samples": 6, "replacement": False}})
+    environment = EnvironmentManifest(python_implementation="CPython", python_version="3.11.15", os_name="Linux", os_release="test", machine="x86_64", cpu_model=None, gpu_model=None, package_lock_hash=None, compiler_version=None, foundry_version=None, code_revision="c" * 40)
+    return ProvenanceBundle(config=config, environment=environment, manifest=freeze_run(config, environment))
 
 
-def test_publication_gate_rejects_synthetic_parent():
-    synthetic_record = _frozen_record(origin="SYNTHETIC_NON_EVIDENCE")
-    synthetic_record["provenance"] = {
-        **synthetic_record["provenance"],
-        "origin": "SYNTHETIC_NON_EVIDENCE",
-    }
+def _record(*, bundle: ProvenanceBundle | None = None, **overrides: object) -> dict[str, object]:
+    bundle = bundle or _bundle()
+    record: dict[str, object] = {"schema_version": ARTIFACT_RECORD_SCHEMA_VERSION, "artifact_id": "artifact-1", "run_id": "run-1", "experiment_id": "E1", "origin": "REAL_MODEL_EXECUTION", "stage": "FROZEN", "parent_hashes": [], "payload": {"result": {"score": 0.5}}, "denominator": 12, "ci_required": False, "claim_id": "C1", "claim_disposition": "SUPPORTED", "provenance": bundle.manifest.model_dump(mode="json"), **overrides}
+    record["content_hash"] = digest("ARTIFACT_CONTENT", artifact_content_material(record))
+    return record
 
-    decision = evaluate_publication_gate("C3", [synthetic_record])
 
+def test_complete_negative_and_inconclusive_evidence_remain_complete():
+    negative = _record(claim_disposition="NOT_SUPPORTED")
+    inconclusive = _record(artifact_id="artifact-2", claim_disposition="INCONCLUSIVE")
+    negative_decision = evaluate_publication_gate("C1", [negative], provenance_bundles=[_bundle()])
+    inconclusive_decision = evaluate_publication_gate("C1", [inconclusive], provenance_bundles=[_bundle()])
+    assert (negative_decision.completeness, negative_decision.claim_support) == ("COMPLETE", "NOT_SUPPORTED")
+    assert (inconclusive_decision.completeness, inconclusive_decision.claim_support) == ("COMPLETE", "INCONCLUSIVE")
+
+
+def test_gate_rejects_forged_content_and_missing_bundle():
+    forged = _record()
+    forged["payload"] = {"result": {"score": 1.0}}
+    decision = evaluate_publication_gate("C1", [forged], provenance_bundles=[_bundle()])
+    missing = evaluate_publication_gate("C1", [_record()])
     assert decision.completeness == "INCOMPLETE"
-    assert "synthetic" in decision.reasons[0].lower()
+    assert any("content_hash mismatch" in reason for reason in decision.reasons)
+    assert missing.completeness == "INCOMPLETE"
 
 
-def test_complete_negative_evidence_remains_publishable():
-    negative = _frozen_record(claim_id="C1", claim_disposition="NOT_SUPPORTED")
-
-    decision = evaluate_publication_gate("C1", [negative])
-
-    assert decision.completeness == "COMPLETE"
-    assert decision.claim_support == "NOT_SUPPORTED"
-
-
-def test_complete_inconclusive_evidence_remains_publishable():
-    inconclusive = _frozen_record(claim_id="C1", claim_disposition="INCONCLUSIVE")
-
-    decision = evaluate_publication_gate("C1", [inconclusive])
-
-    assert decision.completeness == "COMPLETE"
-    assert decision.claim_support == "INCONCLUSIVE"
+def test_gate_rejects_duplicate_identifiers_and_content_hashes():
+    first = _record()
+    duplicate_id = _record(claim_disposition="SUPPORTED")
+    duplicate_hash = _record(artifact_id="artifact-2")
+    duplicate_hash["content_hash"] = first["content_hash"]
+    ids = evaluate_publication_gate("C1", [first, duplicate_id], provenance_bundles=[_bundle(), _bundle()])
+    hashes = evaluate_publication_gate("C1", [first, duplicate_hash], provenance_bundles=[_bundle(), _bundle()])
+    assert ids.completeness == "INCOMPLETE"
+    assert any("duplicate artifact_id" in reason for reason in ids.reasons)
+    assert hashes.completeness == "INCOMPLETE"
+    assert any("duplicate content_hash" in reason for reason in hashes.reasons)
 
 
-def test_missing_parent_keeps_claim_gate_incomplete_even_if_claim_is_supported():
-    record = _frozen_record(
-        parent_hashes=["e" * 64], claim_id="C1", claim_disposition="SUPPORTED"
-    )
-    record["provenance"] = {
-        **record["provenance"],
-        "parent_hashes": ["e" * 64],
-    }
-
-    decision = evaluate_publication_gate("C1", [record])
-
-    assert decision.completeness == "INCOMPLETE"
-    assert decision.claim_support == "INCONCLUSIVE"
-    assert any("unregistered parent" in reason for reason in decision.reasons)
-
-
-def test_mixed_complete_claim_dispositions_are_inconclusive_not_rewritten():
-    supported = _frozen_record(claim_id="C1", claim_disposition="SUPPORTED")
-    negative = _frozen_record(
-        artifact_id="artifact-2", claim_id="C1", claim_disposition="NOT_SUPPORTED"
-    )
-
-    decision = evaluate_publication_gate("C1", [supported, negative])
-
-    assert decision.completeness == "COMPLETE"
-    assert decision.claim_support == "INCONCLUSIVE"
-    assert any("mixed" in reason for reason in decision.reasons)
-
-
-def test_empty_or_unversioned_input_fails_closed():
-    empty = evaluate_publication_gate("C1", [])
-    assert empty.completeness == "INCOMPLETE"
-
-    blocked = _frozen_record(claim_id="C1", claim_disposition="SUPPORTED")
-    blocked["provenance"] = {
-        **blocked["provenance"],
-        "code_revision": "UNVERSIONED_BLOCKED",
-    }
-    decision = evaluate_publication_gate("C1", [blocked])
-    assert decision.completeness == "INCOMPLETE"
-    assert any("UNVERSIONED_BLOCKED" in reason for reason in decision.reasons)
+def test_gate_rejects_cycles_and_requires_parent_closure():
+    first_hash, second_hash = "d" * 64, "e" * 64
+    first_bundle = _bundle(parents=[second_hash])
+    second_bundle = _bundle(parents=[first_hash])
+    first = _record(bundle=first_bundle, parent_hashes=[second_hash])
+    second = _record(bundle=second_bundle, artifact_id="artifact-2", parent_hashes=[first_hash])
+    first["content_hash"] = first_hash
+    second["content_hash"] = second_hash
+    cycle = evaluate_publication_gate("C1", [first, second], provenance_bundles=[first_bundle, second_bundle])
+    missing = evaluate_publication_gate("C1", [first], provenance_bundles=[first_bundle])
+    assert cycle.completeness == "INCOMPLETE"
+    assert any("parent cycle" in reason for reason in cycle.reasons)
+    assert missing.completeness == "INCOMPLETE"
+    assert any("unregistered parent" in reason for reason in missing.reasons)

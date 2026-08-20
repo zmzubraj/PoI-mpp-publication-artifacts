@@ -19,13 +19,18 @@ from poi_mpp.evidence.provenance import (
 from poi_mpp.evidence.publication_gate import GateDecision, evaluate_publication_gate
 from poi_mpp.evidence.registry import ArtifactRegistry
 from poi_mpp.evidence.validation import (
+    ARTIFACT_RECORD_SCHEMA_VERSION,
     ArtifactValidationError,
+    ProvenanceBundle,
     ValidationReport,
+    artifact_content_material,
+    provenance_bundle_from_json,
     validate_artifact,
 )
 
 __all__ = [
     "ArtifactRecord",
+    "ARTIFACT_RECORD_SCHEMA_VERSION",
     "ArtifactRegistry",
     "ArtifactStage",
     "ArtifactValidationError",
@@ -33,11 +38,13 @@ __all__ = [
     "EvidenceOrigin",
     "EnvironmentManifest",
     "RunManifest",
+    "ProvenanceBundle",
     "GateDecision",
     "ValidationReport",
     "RunConfig",
     "UNVERSIONED_BLOCKED",
     "approved_schema_hash",
+    "artifact_content_material",
     "canonical_bytes",
     "collect_environment",
     "config_hash",
@@ -46,5 +53,6 @@ __all__ = [
     "evaluate_publication_gate",
     "freeze_run",
     "load_run_config",
+    "provenance_bundle_from_json",
     "validate_artifact",
 ]

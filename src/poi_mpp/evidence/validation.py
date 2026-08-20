@@ -1,10 +1,4 @@
-"""Fail-closed semantic validation for publication evidence artifacts.
-
-This module intentionally separates *artifact completeness* from the later
-scientific claim decision.  A valid negative or inconclusive result can be
-complete; no claim result can repair a missing provenance, parent, or numeric
-binding.
-"""
+"""Fail-closed validation for content-addressed publication artifacts."""
 
 from __future__ import annotations
 
@@ -15,287 +9,305 @@ import math
 import re
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
-from poi_mpp.evidence.models import ArtifactStage, EvidenceOrigin
-from poi_mpp.evidence.provenance import UNVERSIONED_BLOCKED
+from poi_mpp.evidence.canonical import digest
+from poi_mpp.evidence.config import RunConfig
+from poi_mpp.evidence.models import ArtifactStage, EvidenceOrigin, RunManifest
+from poi_mpp.evidence.provenance import UNVERSIONED_BLOCKED, EnvironmentManifest, freeze_run
 
 
+ARTIFACT_RECORD_SCHEMA_VERSION = "POI_MPP_ARTIFACT_RECORD_V1"
 CompletenessDisposition = Literal["COMPLETE", "INCOMPLETE"]
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
-_GIT_REVISION = re.compile(r"[0-9a-f]{40}\Z")
 _MISSING = object()
-_TERMINAL_STAGES = frozenset(
-    {ArtifactStage.FROZEN.value, ArtifactStage.PUBLICATION_ELIGIBLE.value}
-)
+_TERMINAL_STAGES = frozenset({ArtifactStage.FROZEN.value, ArtifactStage.PUBLICATION_ELIGIBLE.value})
+_STATE_FLAGS = frozenset({"interrupted", "partial", "silently_omitted_inputs", "omitted_inputs", "has_invalid_rows"})
+_CI_FLAGS = frozenset({"ci_required", "confidence_interval_required", "ci_applicable"})
+_ROOT_REQUIRED = frozenset({"schema_version", "artifact_id", "run_id", "experiment_id", "origin", "stage", "content_hash", "parent_hashes", "payload", "denominator", "ci_required", "provenance"})
+_ROOT_ALLOWED = _ROOT_REQUIRED | frozenset({"confidence_interval", "claim_id", "claim_disposition", "claim_dispositions"})
+_MATERIAL_FIELDS = ("schema_version", "artifact_id", "run_id", "experiment_id", "origin", "parent_hashes", "payload", "denominator", "ci_required", "confidence_interval", "claim_id", "claim_disposition", "claim_dispositions")
 
 
 class ArtifactValidationError(ValueError):
-    """A structured, deterministic rejection of an incomplete artifact."""
+    """A deterministic semantic rejection with machine-readable reasons."""
 
     def __init__(self, reasons: Iterable[str]):
-        ordered = tuple(dict.fromkeys(str(reason) for reason in reasons))
-        self.reasons = ordered
-        super().__init__("; ".join(ordered) if ordered else "artifact validation failed")
+        self.reasons = tuple(dict.fromkeys(str(reason) for reason in reasons))
+        super().__init__("; ".join(self.reasons) if self.reasons else "artifact validation failed")
+
+
+@dataclass(frozen=True)
+class ProvenanceBundle:
+    """The only authority accepted to bind a record to Task 2/3 provenance."""
+
+    config: RunConfig
+    environment: EnvironmentManifest
+    manifest: RunManifest
 
 
 @dataclass(frozen=True)
 class ValidationReport:
-    """The semantic completeness result and canonical normalized record."""
-
     completeness: CompletenessDisposition
     reasons: tuple[str, ...]
     record: dict[str, Any]
+    provenance_bundle: dict[str, Any] | None
 
     @property
     def is_complete(self) -> bool:
         return self.completeness == "COMPLETE"
 
 
-def _as_json_mapping(value: object, *, label: str) -> dict[str, Any]:
-    """Return a detached finite JSON mapping without coercing input values."""
-
+def _json_mapping(value: object, *, label: str) -> dict[str, Any]:
     if isinstance(value, BaseModel):
-        raw: object = value.model_dump(mode="json")
-    elif isinstance(value, Mapping):
-        raw = dict(value)
-    else:
-        raise ArtifactValidationError((f"{label} must be a typed record or mapping",))
+        value = value.model_dump(mode="json")
+    if not isinstance(value, Mapping):
+        raise ArtifactValidationError((f"{label} must be a mapping",))
     try:
-        serialized = json.dumps(raw, allow_nan=False, ensure_ascii=False, sort_keys=True)
-        parsed = json.loads(serialized)
+        parsed = json.loads(json.dumps(dict(value), allow_nan=False, ensure_ascii=False, sort_keys=True))
     except (TypeError, ValueError, json.JSONDecodeError) as error:
         raise ArtifactValidationError((f"{label} contains non-finite or non-JSON data",)) from error
     if not isinstance(parsed, dict):
-        raise ArtifactValidationError((f"{label} must serialize to an object",))
+        raise ArtifactValidationError((f"{label} must be an object",))
     return parsed
-
-
-def _value(mapping: Mapping[str, Any], key: str) -> Any:
-    return mapping.get(key, _MISSING)
 
 
 def _is_hash(value: object) -> bool:
     return isinstance(value, str) and _SHA256.fullmatch(value) is not None
 
 
-def _finite_reasons(value: Any, *, path: str = "record") -> list[str]:
-    reasons: list[str] = []
+def artifact_content_material(record: object) -> dict[str, Any]:
+    """Return the exact material committed by ``content_hash``.
+
+    Lifecycle status, ``content_hash`` itself, and the independently verified
+    provenance bundle are deliberately excluded.  Every result-bearing payload,
+    denominator, CI declaration, parent, and claim disposition is included.
+    """
+
+    normalized = _json_mapping(record, label="artifact record")
+    return {field: normalized.get(field) for field in _MATERIAL_FIELDS}
+
+
+def _bundle_json(bundle: ProvenanceBundle) -> dict[str, Any]:
+    return {
+        "config": bundle.config.model_dump(mode="json"),
+        "environment": bundle.environment.model_dump(mode="json"),
+        "manifest": bundle.manifest.model_dump(mode="json"),
+    }
+
+
+def provenance_bundle_from_json(value: object) -> ProvenanceBundle:
+    raw = _json_mapping(value, label="provenance bundle")
+    if set(raw) != {"config", "environment", "manifest"}:
+        raise ArtifactValidationError(("provenance bundle has an invalid schema",))
+    try:
+        bundle = ProvenanceBundle(
+            config=RunConfig.model_validate(raw["config"]),
+            environment=EnvironmentManifest.model_validate(raw["environment"]),
+            manifest=RunManifest.model_validate(raw["manifest"]),
+        )
+    except (ValidationError, TypeError, ValueError) as error:
+        raise ArtifactValidationError(("provenance bundle is not typed and valid",)) from error
+    _verified_bundle_json(bundle)
+    return bundle
+
+
+def _verified_bundle_json(bundle: object) -> dict[str, Any]:
+    if not isinstance(bundle, ProvenanceBundle):
+        raise ArtifactValidationError(("typed provenance bundle is required",))
+    if not isinstance(bundle.config, RunConfig) or not isinstance(bundle.environment, EnvironmentManifest) or not isinstance(bundle.manifest, RunManifest):
+        raise ArtifactValidationError(("typed provenance bundle is required",))
+    try:
+        config = RunConfig.model_validate(bundle.config.model_dump(mode="json"))
+        environment = EnvironmentManifest.model_validate(bundle.environment.model_dump(mode="json"))
+        expected = freeze_run(config, environment)
+    except (ValidationError, TypeError, ValueError) as error:
+        raise ArtifactValidationError(("provenance bundle fails approved run configuration schema",)) from error
+    if expected.code_revision == UNVERSIONED_BLOCKED:
+        raise ArtifactValidationError(("provenance.code_revision is UNVERSIONED_BLOCKED",))
+    supplied = bundle.manifest.model_dump(mode="json")
+    if supplied != expected.model_dump(mode="json"):
+        raise ArtifactValidationError(("provenance manifest does not equal recomputed freeze_run",))
+    return _bundle_json(ProvenanceBundle(config=config, environment=environment, manifest=expected))
+
+
+def _finite_reasons(value: Any, path: str = "record") -> list[str]:
     if isinstance(value, float) and not math.isfinite(value):
         return [f"non-finite numeric value at {path}"]
     if isinstance(value, Mapping):
-        for key in sorted(value, key=lambda item: str(item)):
-            reasons.extend(_finite_reasons(value[key], path=f"{path}.{key}"))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            reasons.extend(_finite_reasons(item, path=f"{path}[{index}]"))
-    return reasons
+        return [reason for key in sorted(value, key=str) for reason in _finite_reasons(value[key], f"{path}.{key}")]
+    if isinstance(value, list):
+        return [reason for index, item in enumerate(value) for reason in _finite_reasons(item, f"{path}[{index}]")]
+    return []
 
 
-def _state_reasons(value: Any, *, path: str = "record") -> list[str]:
-    """Reject explicit interruption/partial/omission evidence anywhere in input."""
-
+def _nested_semantic_reasons(value: Any, path: str = "record") -> list[str]:
     reasons: list[str] = []
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            reasons.extend(_nested_semantic_reasons(item, f"{path}[{index}]"))
+        return reasons
     if not isinstance(value, Mapping):
         return reasons
-    for key in sorted(value, key=lambda item: str(item)):
+    for key in sorted(value, key=str):
         item = value[key]
-        normalized_key = str(key).lower().replace("-", "_")
+        key_name = str(key).lower().replace("-", "_")
         item_path = f"{path}.{key}"
-        if normalized_key in {
-            "interrupted",
-            "partial",
-            "silently_omitted_inputs",
-            "omitted_inputs",
-            "has_invalid_rows",
-        } and item is True:
-            reasons.append(f"incomplete input state at {item_path}")
-        if normalized_key in {"valid", "is_valid"} and item is False:
-            reasons.append(f"invalid input state at {item_path}")
-        if normalized_key in {"status", "input_status", "run_status", "row_status"} and isinstance(item, str):
-            if item.upper() in {"FAILED", "INTERRUPTED", "PARTIAL", "OMITTED", "INVALID"}:
-                reasons.append(f"incomplete input state at {item_path}")
-        if normalized_key in {"invalid_rows", "omitted_rows", "missing_rows"}:
-            if isinstance(item, bool) or not isinstance(item, int) or item != 0:
-                reasons.append(f"invalid or omitted rows at {item_path}")
-        if normalized_key in {"omitted_input_ids", "missing_input_ids"}:
-            if not isinstance(item, list) or item:
-                reasons.append(f"invalid or omitted inputs at {item_path}")
-        reasons.extend(_state_reasons(item, path=item_path))
+        if key_name in _STATE_FLAGS:
+            if not isinstance(item, bool):
+                reasons.append(f"state flag must be boolean at {item_path}")
+            elif item:
+                reasons.append(f"incomplete state flag at {item_path}")
+        if key_name in _CI_FLAGS:
+            if not isinstance(item, bool):
+                reasons.append(f"confidence interval applicability must be boolean at {item_path}")
+            elif item and "confidence_interval" not in value:
+                reasons.append(f"missing required confidence interval at {path}")
+        if key_name == "confidence_interval":
+            if not isinstance(item, list) or len(item) != 2 or any(isinstance(bound, bool) or not isinstance(bound, (int, float)) or not math.isfinite(bound) for bound in item):
+                reasons.append(f"confidence interval must contain two finite bounds at {item_path}")
+            elif item[0] > item[1]:
+                reasons.append(f"confidence interval lower bound exceeds upper bound at {item_path}")
+        if key_name == "denominator" and (isinstance(item, bool) or not isinstance(item, int) or item <= 0):
+            reasons.append(f"invalid denominator at {item_path}")
+        reasons.extend(_nested_semantic_reasons(item, item_path))
     return reasons
 
 
-def _denominator_reasons(record: Mapping[str, Any]) -> list[str]:
-    denominators: list[tuple[str, Any]] = []
-
-    def collect(value: Any, path: str) -> None:
-        if isinstance(value, Mapping):
-            for key in sorted(value, key=lambda item: str(item)):
-                item_path = f"{path}.{key}"
-                if "denominator" in str(key).lower():
-                    denominators.append((item_path, value[key]))
-                collect(value[key], item_path)
-        elif isinstance(value, list):
-            for index, item in enumerate(value):
-                collect(item, f"{path}[{index}]")
-
-    collect(record, "record")
-    if not denominators:
-        return ("missing denominator",)
+def _record_shape_reasons(record: Mapping[str, Any]) -> list[str]:
     reasons: list[str] = []
-    for name, value in denominators:
-        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-            reasons.append(f"invalid denominator at {name}")
+    missing = sorted(_ROOT_REQUIRED - set(record))
+    if missing:
+        reasons.extend(f"missing required field: {field}" for field in missing)
+    unknown = sorted(set(record) - _ROOT_ALLOWED)
+    if unknown:
+        reasons.extend(f"unknown artifact field: {field}" for field in unknown)
+    if record.get("schema_version") != ARTIFACT_RECORD_SCHEMA_VERSION:
+        reasons.append("invalid artifact schema_version")
+    for field in ("artifact_id", "run_id", "experiment_id"):
+        if not isinstance(record.get(field), str) or not record[field].strip():
+            reasons.append(f"missing or invalid {field}")
+    if record.get("origin") not in {item.value for item in EvidenceOrigin}:
+        reasons.append("missing or invalid origin")
+    if record.get("origin") == EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value:
+        reasons.append("synthetic non-evidence origin is not publication evidence")
+    if record.get("stage") not in _TERMINAL_STAGES:
+        reasons.append("artifact is nonterminal")
+    if not _is_hash(record.get("content_hash")):
+        reasons.append("missing or invalid content_hash")
+    parents = record.get("parent_hashes")
+    if not isinstance(parents, list) or any(not _is_hash(parent) for parent in parents):
+        reasons.append("parent_hashes must contain lowercase SHA-256 hashes")
+    elif len(set(parents)) != len(parents):
+        reasons.append("parent_hashes must not contain duplicates")
+    if not isinstance(record.get("payload"), Mapping) or not record.get("payload"):
+        reasons.append("payload must be a non-empty mapping")
+    denominator = record.get("denominator")
+    if isinstance(denominator, bool) or not isinstance(denominator, int) or denominator <= 0:
+        reasons.append("missing top-level denominator or invalid denominator")
+    if not isinstance(record.get("ci_required"), bool):
+        reasons.append("confidence interval applicability must be boolean at record.ci_required")
+    direct_claim = "claim_id" in record or "claim_disposition" in record
+    matrix_claim = "claim_dispositions" in record
+    if direct_claim and matrix_claim:
+        reasons.append("claim disposition must use either direct or matrix form")
+    elif direct_claim:
+        if not isinstance(record.get("claim_id"), str) or not record["claim_id"].strip() or record.get("claim_disposition") not in {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"}:
+            reasons.append("invalid direct claim disposition")
+    elif matrix_claim:
+        matrix = record.get("claim_dispositions")
+        if not isinstance(matrix, Mapping) or not matrix or any(not isinstance(key, str) or not key.strip() or disposition not in {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"} for key, disposition in matrix.items()):
+            reasons.append("invalid claim disposition matrix")
+    else:
+        reasons.append("missing claim disposition")
     return reasons
 
 
-def _confidence_interval_reasons(record: Mapping[str, Any]) -> list[str]:
-    required = _value(record, "ci_required")
-    if required is _MISSING:
-        required = _value(record, "confidence_interval_required")
-    if required is _MISSING:
-        required = _value(record, "ci_applicable")
-    interval = _value(record, "confidence_interval")
+def _provenance_reasons(record: Mapping[str, Any], bundle_json: dict[str, Any]) -> list[str]:
+    manifest = bundle_json["manifest"]
+    if record.get("provenance") != manifest:
+        return ["embedded provenance does not exactly match verified manifest"]
     reasons: list[str] = []
-    if required is not _MISSING and not isinstance(required, bool):
-        reasons.append("confidence interval applicability must be a boolean")
-    if required is True and interval is _MISSING:
-        reasons.append("missing required confidence interval")
-    if interval is not _MISSING:
-        if not isinstance(interval, list) or len(interval) != 2:
-            reasons.append("confidence interval must contain exactly two finite bounds")
-        elif any(
-            isinstance(bound, bool)
-            or not isinstance(bound, (int, float))
-            or not math.isfinite(bound)
-            for bound in interval
-        ):
-            reasons.append("confidence interval must contain exactly two finite bounds")
-        elif interval[0] > interval[1]:
-            reasons.append("confidence interval lower bound exceeds upper bound")
-    return reasons
-
-
-def _provenance_reasons(record: Mapping[str, Any], provenance: Mapping[str, Any]) -> list[str]:
-    reasons: list[str] = []
-    for field in ("run_id", "experiment_id", "origin", "authorization_scope", "parent_hashes"):
-        if _value(provenance, field) is _MISSING:
-            reasons.append(f"missing provenance.{field}")
-    for field in ("config_hash", "environment_hash", "model_hash", "dataset_hash"):
-        value = _value(provenance, field)
-        if value is _MISSING:
-            reasons.append(f"missing provenance.{field}")
-        elif not _is_hash(value):
-            reasons.append(f"invalid provenance.{field}")
-    code_revision = _value(provenance, "code_revision")
-    if code_revision is _MISSING:
-        reasons.append("missing provenance.code_revision")
-    elif code_revision == UNVERSIONED_BLOCKED:
-        reasons.append("provenance.code_revision is UNVERSIONED_BLOCKED")
-    elif not isinstance(code_revision, str) or _GIT_REVISION.fullmatch(code_revision) is None:
-        reasons.append("invalid provenance.code_revision")
-
-    if _value(provenance, "authorization_scope") is not _MISSING:
-        authorization = provenance["authorization_scope"]
-        if not isinstance(authorization, str) or not authorization.strip():
-            reasons.append("invalid provenance.authorization_scope")
-    for field in ("run_id", "experiment_id", "origin"):
-        if _value(provenance, field) is not _MISSING and provenance[field] != record.get(field):
-            reasons.append(f"provenance.{field} does not bind record.{field}")
-
-    record_parents = record.get("parent_hashes")
-    provenance_parents = _value(provenance, "parent_hashes")
-    if provenance_parents is not _MISSING and provenance_parents != record_parents:
-        reasons.append("provenance.parent_hashes does not bind record.parent_hashes")
+    for field in ("run_id", "experiment_id", "origin", "parent_hashes"):
+        if record.get(field) != manifest.get(field):
+            reasons.append(f"verified manifest does not bind record.{field}")
     return reasons
 
 
 def _parent_reasons(record: Mapping[str, Any], known_parent_hashes: Iterable[str] | None) -> list[str]:
     parents = record.get("parent_hashes")
-    if not isinstance(parents, list):
-        return ["parent_hashes must be a list"]
-    if any(not _is_hash(parent) for parent in parents):
-        return ["parent_hashes must contain lowercase SHA-256 hashes"]
-    if len(set(parents)) != len(parents):
-        return ["parent_hashes must not contain duplicates"]
-    own_hash = record.get("content_hash")
-    if own_hash in parents:
+    if not isinstance(parents, list) or any(not _is_hash(parent) for parent in parents):
+        return []
+    if record.get("content_hash") in parents:
         return ["artifact cannot list its own content_hash as a parent"]
     if not parents:
         return []
     if known_parent_hashes is None:
         return ["parent closure unavailable for declared parents"]
     known = set(known_parent_hashes)
-    invalid_known = sorted(parent for parent in known if not _is_hash(parent))
-    if invalid_known:
-        return ["registered parent hash set contains an invalid hash"]
-    missing = sorted(parent for parent in parents if parent not in known)
-    return [f"unregistered parent hash: {parent}" for parent in missing]
+    return [f"unregistered parent hash: {parent}" for parent in sorted(parents) if parent not in known]
 
 
-def validate_artifact(
-    record: object,
-    *,
-    known_parent_hashes: Iterable[str] | None = None,
-    manifest: object | None = None,
-    raise_on_error: bool = True,
-) -> ValidationReport:
-    """Validate one artifact without filling, correcting, or inferring data.
+def validate_artifact(record: object, *, provenance_bundle: ProvenanceBundle | None = None, known_parent_hashes: Iterable[str] | None = None, raise_on_error: bool = True) -> ValidationReport:
+    """Validate one artifact without trusting supplied hashes or provenance."""
 
-    ``manifest`` is accepted only as an explicit, serialized provenance binding.
-    The returned canonical ``record`` contains that binding so a registry can
-    preserve it in the frozen artifact.  With ``raise_on_error=False`` callers
-    receive an ``INCOMPLETE`` report suitable for aggregate gate evaluation.
-    """
-
-    normalized = _as_json_mapping(record, label="artifact record")
-    explicit_manifest = _as_json_mapping(manifest, label="run manifest") if manifest is not None else None
-    embedded_provenance = normalized.get("provenance")
-    reasons: list[str] = []
-
-    # Synthetic provenance is the first reason by design: it must never look
-    # like ordinary missing metadata that a caller might attempt to repair.
-    origin = normalized.get("origin")
-    if origin == EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value:
-        reasons.append("synthetic non-evidence origin is not publication evidence")
-
-    for field in ("artifact_id", "run_id", "experiment_id"):
-        value = _value(normalized, field)
-        if not isinstance(value, str) or not value.strip():
-            reasons.append(f"missing or invalid {field}")
-    if origin not in {candidate.value for candidate in EvidenceOrigin}:
-        reasons.append("missing or invalid origin")
-    stage = normalized.get("stage")
-    if stage not in _TERMINAL_STAGES:
-        reasons.append("artifact is nonterminal; FROZEN provenance is required")
-    if not _is_hash(normalized.get("content_hash")):
-        reasons.append("missing or invalid content_hash")
-
-    if explicit_manifest is not None:
-        if embedded_provenance is not None and embedded_provenance != explicit_manifest:
-            reasons.append("embedded provenance does not match supplied run manifest")
-        normalized["provenance"] = explicit_manifest
-        provenance: object = explicit_manifest
-    else:
-        provenance = embedded_provenance
-    if not isinstance(provenance, Mapping):
-        reasons.append("missing provenance binding")
-    else:
-        if provenance.get("origin") == EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value:
-            reasons.append("synthetic non-evidence provenance is not publication evidence")
-        reasons.extend(_provenance_reasons(normalized, provenance))
-
+    normalized = _json_mapping(record, label="artifact record")
+    reasons = _record_shape_reasons(normalized)
+    bundle_json: dict[str, Any] | None = None
+    try:
+        bundle_json = _verified_bundle_json(provenance_bundle)
+    except ArtifactValidationError as error:
+        reasons.extend(error.reasons)
+    if bundle_json is not None:
+        reasons.extend(_provenance_reasons(normalized, bundle_json))
+    if _is_hash(normalized.get("content_hash")):
+        expected_hash = digest("ARTIFACT_CONTENT", artifact_content_material(normalized))
+        if normalized["content_hash"] != expected_hash:
+            reasons.append("content_hash mismatch for artifact content material")
     reasons.extend(_finite_reasons(normalized))
-    reasons.extend(_state_reasons(normalized))
-    reasons.extend(_denominator_reasons(normalized))
-    reasons.extend(_confidence_interval_reasons(normalized))
+    reasons.extend(_nested_semantic_reasons(normalized))
     reasons.extend(_parent_reasons(normalized, known_parent_hashes))
-    reasons = list(dict.fromkeys(reasons))
-    report = ValidationReport(
-        completeness="COMPLETE" if not reasons else "INCOMPLETE",
-        reasons=tuple(reasons),
-        record=normalized,
-    )
-    if reasons and raise_on_error:
+    report = ValidationReport("COMPLETE" if not reasons else "INCOMPLETE", tuple(dict.fromkeys(reasons)), normalized, bundle_json)
+    if report.reasons and raise_on_error:
         raise ArtifactValidationError(report.reasons)
     return report
+
+
+def validate_artifact_graph(records: Iterable[Mapping[str, Any]]) -> tuple[str, ...]:
+    """Validate unique IDs/hashes, closure, and acyclicity in deterministic order."""
+
+    items = list(records)
+    reasons: list[str] = []
+    for field in ("artifact_id", "content_hash"):
+        values = [item.get(field) for item in items if isinstance(item.get(field), str)]
+        for value in sorted({value for value in values if values.count(value) > 1}, key=str):
+            reasons.append(f"duplicate {field}: {value}")
+    hashes = {item.get("content_hash") for item in items if _is_hash(item.get("content_hash"))}
+    graph: dict[str, list[str]] = {}
+    for item in items:
+        node = item.get("content_hash")
+        parents = item.get("parent_hashes")
+        if not _is_hash(node) or not isinstance(parents, list):
+            continue
+        graph[node] = sorted(parent for parent in parents if _is_hash(parent))
+        for parent in graph[node]:
+            if parent not in hashes:
+                reasons.append(f"unregistered parent hash: {parent}")
+    visiting: list[str] = []
+    visited: set[str] = set()
+    def visit(node: str) -> None:
+        if node in visiting:
+            cycle = visiting[visiting.index(node):] + [node]
+            reasons.append("parent cycle: " + " -> ".join(cycle))
+            return
+        if node in visited:
+            return
+        visiting.append(node)
+        for parent in graph.get(node, []):
+            if parent in graph:
+                visit(parent)
+        visiting.pop()
+        visited.add(node)
+    for node in sorted(graph):
+        visit(node)
+    return tuple(dict.fromkeys(reasons))
