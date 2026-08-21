@@ -33,3 +33,4 @@
 ## Ledger candidate
 
 - Task 16: fix round 1 complete (added typed watcher/dispute simulation and reporting, enforced independent closed-form boundaries, accounted for failed-challenge bond loss, added bonded-auditor backstop modeling, validated confirmatory scope/CLI authority stop; 7 targeted E5 tests PASS, full `tests/experiments` suite PASS, compileall PASS, git diff --check PASS).
+- Task 16: fix round 2 complete (publication support now requires canonical E5 confirmatory scope on every row, homogeneous reproducible-simulation origin, canonical config/scenario contract hashes, and unique scenario identifiers; bribery/subsidy now requires declared colluding recipients when attacker bribes are modeled and preserves subsidy-only noncolluder effects; 10 targeted E5 tests PASS, full `tests/experiments` suite PASS, compileall PASS, git diff --check PASS).

@@ -7,6 +7,7 @@ from poi_mpp.reporting.e4 import E4Summary, f8_points, summarize_e4_rows, t9_row
 from poi_mpp.reporting.e5 import (
     E5Summary,
     invalid_maturity_sensitivity_points,
+    publication_precheck_reasons,
     summarize_e5_rows,
     t10_rows,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "E5Summary",
     "f8_points",
     "invalid_maturity_sensitivity_points",
+    "publication_precheck_reasons",
     "semantic_metrics",
     "summarize_e5_rows",
     "summarize_e4_rows",

@@ -13,6 +13,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from poi_mpp.auditor.availability import ModelAssumptionError
+from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.config import RunConfig
 from poi_mpp.evidence.models import EvidenceOrigin
 
@@ -239,6 +240,8 @@ class WatcherScenario(_FrozenModel):
                 raise ValueError("bribery/subsidy scenarios require BRIBERY_SUBSIDY_DECLARED")
             if self.attacker_bribe_micros == 0 and self.challenge_subsidy_micros == 0:
                 raise ValueError("bribery/subsidy scenarios require a bribe or subsidy parameter")
+            if self.attacker_bribe_micros > 0 and self.colluding_watchers <= 0:
+                raise ValueError("bribery/subsidy scenarios with attacker_bribe_micros require colluding_watchers > 0")
         elif self.family is WatcherScenarioFamily.BONDED_AUDITOR:
             if self.assumption_label is not WatcherAssumption.BONDED_AUDITOR_BACKSTOP_DECLARED:
                 raise ValueError("bonded auditor scenarios require BONDED_AUDITOR_BACKSTOP_DECLARED")
@@ -265,6 +268,22 @@ class E5SimulationConfig(_FrozenModel):
         return self
 
 
+def simulation_config_contract_hash(config: E5SimulationConfig) -> str:
+    return digest(
+        "E5_SIMULATION_CONFIG",
+        {
+            "schema_version": "POI_MPP_E5_SIMULATION_CONFIG_V1",
+            "simulations": config.simulations,
+            "origin": config.origin.value,
+            "publication_scope": config.publication_scope,
+        },
+    )
+
+
+def scenario_contract_hash(scenario: WatcherScenario) -> str:
+    return digest("E5_WATCHER_SCENARIO", scenario.model_dump(mode="json"))
+
+
 class E5ScenarioRow(_FrozenModel):
     schema_version: str = "POI_MPP_E5_SCENARIO_ROW_V1"
     run_id: str
@@ -283,6 +302,20 @@ class E5ScenarioRow(_FrozenModel):
     challenge_subsidy_micros: int = Field(ge=0)
     attacker_bribe_micros: int = Field(ge=0)
     watcher_count: int = Field(gt=0)
+    per_watcher_online_probability: float = Field(ge=0.0, le=1.0)
+    per_watcher_discovery_probability: float = Field(ge=0.0, le=1.0)
+    per_watcher_challenge_probability: float = Field(ge=0.0, le=1.0)
+    declared_challenge_success_probability: float = Field(ge=0.0, le=1.0)
+    shared_outage_probability: float = Field(ge=0.0, le=1.0)
+    shared_infrastructure_failure_probability: float = Field(ge=0.0, le=1.0)
+    colluding_watchers: int = Field(ge=0)
+    bonded_auditor_detection_probability: float = Field(ge=0.0, le=1.0)
+    bonded_auditor_success_probability: float = Field(ge=0.0, le=1.0)
+    bonded_auditor_cost_micros: int = Field(ge=0)
+    bonded_auditor_reward_micros: int = Field(ge=0)
+    watcher_cost_micros_by_watcher: tuple[int, ...] | None = None
+    config_contract_hash: str
+    scenario_contract_hash: str
     no_challenge_probability: float = Field(ge=0.0, le=1.0)
     invalid_maturity_probability: float = Field(ge=0.0, le=1.0)
     challenge_probability: float = Field(ge=0.0, le=1.0)
@@ -307,6 +340,8 @@ class E5ScenarioRow(_FrozenModel):
         "run_id",
         "experiment_id",
         "scenario_id",
+        "config_contract_hash",
+        "scenario_contract_hash",
         "watcher_expected_utility_micros",
         "bonded_auditor_expected_utility_micros",
         "convergence_reference",
@@ -345,6 +380,13 @@ class E5ScenarioRow(_FrozenModel):
             raise ValueError("decimal intervals must be ordered")
         return value
 
+    @field_validator("config_contract_hash", "scenario_contract_hash")
+    @classmethod
+    def validate_contract_hash_shape(cls, value: str) -> str:
+        if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+            raise ValueError("contract hashes must be lowercase SHA-256 hex digests")
+        return value
+
     @model_validator(mode="after")
     def validate_probabilities(self) -> "E5ScenarioRow":
         if self.challenge_success_probability > self.challenge_probability:
@@ -361,6 +403,47 @@ class E5ScenarioRow(_FrozenModel):
             raise ValueError("invalid_maturity_probability must equal 1 - challenge_success_probability")
         if self.currency_precision != "MICROS_DECIMAL":
             raise ValueError("currency_precision must equal MICROS_DECIMAL")
+        expected_config_hash = digest(
+            "E5_SIMULATION_CONFIG",
+            {
+                "schema_version": "POI_MPP_E5_SIMULATION_CONFIG_V1",
+                "simulations": self.simulations,
+                "origin": self.origin.value,
+                "publication_scope": self.publication_scope,
+            },
+        )
+        if self.config_contract_hash != expected_config_hash:
+            raise ValueError("config_contract_hash must match canonical E5 simulation-config material")
+        expected_scenario_hash = digest(
+            "E5_WATCHER_SCENARIO",
+            {
+                "scenario_id": self.scenario_id,
+                "family": self.family.value,
+                "assumption_label": self.assumption_label.value,
+                "correlation_model": self.correlation_model.value,
+                "watcher_count": self.watcher_count,
+                "fraud_value_micros": self.fraud_value_micros,
+                "watch_cost_micros": self.watch_cost_micros,
+                "challenge_bond_micros": self.challenge_bond_micros,
+                "challenge_reward_micros": self.challenge_reward_micros,
+                "challenge_subsidy_micros": self.challenge_subsidy_micros,
+                "attacker_bribe_micros": self.attacker_bribe_micros,
+                "per_watcher_online_probability": self.per_watcher_online_probability,
+                "per_watcher_discovery_probability": self.per_watcher_discovery_probability,
+                "per_watcher_challenge_probability": self.per_watcher_challenge_probability,
+                "challenge_success_probability": self.declared_challenge_success_probability,
+                "shared_outage_probability": self.shared_outage_probability,
+                "shared_infrastructure_failure_probability": self.shared_infrastructure_failure_probability,
+                "colluding_watchers": self.colluding_watchers,
+                "bonded_auditor_detection_probability": self.bonded_auditor_detection_probability,
+                "bonded_auditor_success_probability": self.bonded_auditor_success_probability,
+                "bonded_auditor_cost_micros": self.bonded_auditor_cost_micros,
+                "bonded_auditor_reward_micros": self.bonded_auditor_reward_micros,
+                "watcher_cost_micros_by_watcher": self.watcher_cost_micros_by_watcher,
+            },
+        )
+        if self.scenario_contract_hash != expected_scenario_hash:
+            raise ValueError("scenario_contract_hash must match canonical E5 scenario material")
         return self
 
 
@@ -583,12 +666,26 @@ def run_watcher_scenario(
         assumption_label=scenario.assumption_label,
         correlation_model=scenario.correlation_model,
         fraud_value_micros=scenario.fraud_value_micros,
-        watch_cost_micros=_mean_watch_costs(scenario),
+        watch_cost_micros=scenario.watch_cost_micros,
         challenge_bond_micros=scenario.challenge_bond_micros,
         challenge_reward_micros=scenario.challenge_reward_micros,
         challenge_subsidy_micros=scenario.challenge_subsidy_micros,
         attacker_bribe_micros=scenario.attacker_bribe_micros,
         watcher_count=scenario.watcher_count,
+        per_watcher_online_probability=scenario.per_watcher_online_probability,
+        per_watcher_discovery_probability=scenario.per_watcher_discovery_probability,
+        per_watcher_challenge_probability=scenario.per_watcher_challenge_probability,
+        declared_challenge_success_probability=scenario.challenge_success_probability,
+        shared_outage_probability=scenario.shared_outage_probability,
+        shared_infrastructure_failure_probability=scenario.shared_infrastructure_failure_probability,
+        colluding_watchers=scenario.colluding_watchers,
+        bonded_auditor_detection_probability=scenario.bonded_auditor_detection_probability,
+        bonded_auditor_success_probability=scenario.bonded_auditor_success_probability,
+        bonded_auditor_cost_micros=scenario.bonded_auditor_cost_micros,
+        bonded_auditor_reward_micros=scenario.bonded_auditor_reward_micros,
+        watcher_cost_micros_by_watcher=scenario.watcher_cost_micros_by_watcher,
+        config_contract_hash=simulation_config_contract_hash(config),
+        scenario_contract_hash=scenario_contract_hash(scenario),
         no_challenge_probability=no_challenge_probability,
         invalid_maturity_probability=invalid_maturity_probability,
         challenge_probability=challenge_probability,
@@ -636,4 +733,3 @@ def assert_cli_authority_boundary(
         "explicit publication freeze and artifact routing remain manual for E5; "
         "validated reproducible-simulation authority but will not auto-run publication artifacts"
     )
-

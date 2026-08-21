@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from poi_mpp.evidence.models import EvidenceOrigin
-from poi_mpp.experiments.e5_watcher import E5ScenarioRow
+from poi_mpp.experiments.e5_watcher import E5ScenarioRow, E5_CONFIRMATORY_SCOPE
 
 
 MIN_E5_SUPPORTED_SCENARIOS = 2
@@ -75,6 +77,40 @@ class E5Summary(_FrozenModel):
         return self
 
 
+def _revalidate_row(row: object) -> E5ScenarioRow:
+    if isinstance(row, BaseModel):
+        payload = row.model_dump(mode="json")
+    elif isinstance(row, Mapping):
+        payload = dict(row)
+    else:
+        payload = row
+    return E5ScenarioRow.model_validate(payload)
+
+
+def publication_precheck_reasons(
+    rows: tuple[E5ScenarioRow, ...] | list[E5ScenarioRow],
+) -> tuple[str, ...]:
+    if not rows:
+        return ("E5 publication precheck requires at least one row",)
+    canonical_rows = tuple(_revalidate_row(row) for row in rows)
+    reasons: list[str] = []
+    if len({row.origin for row in canonical_rows}) != 1:
+        reasons.append("rows must share one origin")
+    elif canonical_rows[0].origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
+        reasons.append("rows.origin must equal REPRODUCIBLE_SIMULATION")
+    if len({row.publication_scope for row in canonical_rows}) != 1:
+        reasons.append("rows must share one publication_scope")
+    elif canonical_rows[0].publication_scope != E5_CONFIRMATORY_SCOPE:
+        reasons.append(f"rows.publication_scope must equal {E5_CONFIRMATORY_SCOPE}")
+    if len({row.config_contract_hash for row in canonical_rows}) != 1:
+        reasons.append("rows must share one config_contract_hash")
+    if len({row.scenario_id for row in canonical_rows}) != len(canonical_rows):
+        reasons.append("rows must use unique scenario_id values")
+    if len({row.scenario_contract_hash for row in canonical_rows}) != len(canonical_rows):
+        reasons.append("rows must use unique scenario_contract_hash values")
+    return tuple(dict.fromkeys(reasons))
+
+
 def t10_rows(rows: tuple[E5ScenarioRow, ...] | list[E5ScenarioRow]) -> tuple[T10Row, ...]:
     return tuple(
         T10Row(
@@ -116,33 +152,35 @@ def summarize_e5_rows(
 ) -> E5Summary:
     if not rows:
         raise ValueError("E5 summary requires at least one row")
-    if len({(row.scenario_id, row.seed) for row in rows}) != len(rows):
-        raise ValueError("E5 rows require unique scenario_id/seed pairs")
-    origins = tuple(sorted({row.origin.value for row in rows}))
-    families = tuple(sorted({row.family.value for row in rows}))
-    assumption_ledger = tuple(sorted({entry for row in rows for entry in row.assumption_ledger}))
+    canonical_rows = tuple(_revalidate_row(row) for row in rows)
+    if len({row.scenario_id for row in canonical_rows}) != len(canonical_rows):
+        raise ValueError("E5 rows require unique scenario_id values")
+    origins = tuple(sorted({row.origin.value for row in canonical_rows}))
+    families = tuple(sorted({row.family.value for row in canonical_rows}))
+    assumption_ledger = tuple(sorted({entry for row in canonical_rows for entry in row.assumption_ledger}))
     supported_rows = [
         row
-        for row in rows
+        for row in canonical_rows
         if (row.invalid_maturity_interval[1] - row.invalid_maturity_interval[0]) <= MAX_E5_INTERVAL_WIDTH
         and (row.no_challenge_interval[1] - row.no_challenge_interval[0]) <= MAX_E5_INTERVAL_WIDTH
     ]
+    publication_reasons = publication_precheck_reasons(canonical_rows)
     claim_disposition = (
         "SUPPORTED"
-        if len(rows) >= MIN_E5_SUPPORTED_SCENARIOS
-        and len(supported_rows) == len(rows)
-        and EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value not in origins
+        if len(canonical_rows) >= MIN_E5_SUPPORTED_SCENARIOS
+        and len(supported_rows) == len(canonical_rows)
+        and not publication_reasons
         else "INCONCLUSIVE"
     )
     return E5Summary(
         claim_id=claim_id,
-        denominator=len(rows),
-        scenario_count=len(rows),
+        denominator=len(canonical_rows),
+        scenario_count=len(canonical_rows),
         origins=origins,
         families=families,
         assumption_ledger=assumption_ledger,
         minimum_supported_scenarios=MIN_E5_SUPPORTED_SCENARIOS,
-        minimum_supported_simulations=min(row.simulations for row in rows),
+        minimum_supported_simulations=min(row.simulations for row in canonical_rows),
         maximum_supported_interval_width=MAX_E5_INTERVAL_WIDTH,
         supported_scenario_count=len(supported_rows),
         claim_disposition=claim_disposition,

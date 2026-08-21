@@ -181,7 +181,12 @@ def test_reporting_requires_unique_scenario_seed_pairs_and_marks_synthetic_rows_
         run_id="run-e5",
         experiment_id="E5",
         scenario=_scenario(scenario_id="report-1"),
-        config=E5SimulationConfig(simulations=4096, seed=7, origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=7,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
     )
     synthetic = run_watcher_scenario(
         run_id="run-e5",
@@ -197,8 +202,152 @@ def test_reporting_requires_unique_scenario_seed_pairs_and_marks_synthetic_rows_
     summary = summarize_e5_rows((reproducible, synthetic))
     assert summary.claim_disposition == "INCONCLUSIVE"
 
-    with pytest.raises(ValueError, match="unique scenario_id/seed pairs"):
+    with pytest.raises(ValueError, match="unique scenario_id"):
         summarize_e5_rows((reproducible, reproducible))
+
+
+def test_publication_support_requires_exact_scope_reproducible_origin_and_contract_hashes():
+    from poi_mpp.experiments.e5_watcher import E5SimulationConfig, run_watcher_scenario
+    from poi_mpp.reporting.e5 import publication_precheck_reasons, summarize_e5_rows
+
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="pub-1"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=17,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    second = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="pub-2", fraud_value_micros=9_000_000),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=19,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+
+    supported = summarize_e5_rows((first, second))
+    assert supported.claim_disposition == "SUPPORTED"
+    assert publication_precheck_reasons((first, second)) == ()
+
+    wrong_scope = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="pub-3", fraud_value_micros=5_000_000),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=23,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="WRONG_SCOPE",
+        ),
+    )
+    assert summarize_e5_rows((first, wrong_scope)).claim_disposition == "INCONCLUSIVE"
+    assert publication_precheck_reasons((first, wrong_scope))
+
+    forged_hash = second.model_copy(update={"scenario_contract_hash": "0" * 64})
+    with pytest.raises(ValueError, match="scenario_contract_hash"):
+        summarize_e5_rows((first, forged_hash))
+
+
+def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios():
+    from poi_mpp.experiments.e5_watcher import E5SimulationConfig, run_watcher_scenario
+    from poi_mpp.reporting.e5 import summarize_e5_rows
+
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="replicate"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=3,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    replicate = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="replicate"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=4,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="unique scenario_id"):
+        summarize_e5_rows((first, replicate))
+
+
+def test_bribery_requires_declared_recipients_and_changes_modeled_economics():
+    from poi_mpp.experiments.e5_watcher import (
+        E5SimulationConfig,
+        WatcherAssumption,
+        WatcherCorrelationModel,
+        run_watcher_scenario,
+    )
+
+    with pytest.raises(ValueError, match="colluding_watchers > 0"):
+        _scenario(
+            scenario_id="bad-bribe",
+            family="BRIBERY_SUBSIDY",
+            assumption_label=WatcherAssumption.BRIBERY_SUBSIDY_DECLARED,
+            correlation_model=WatcherCorrelationModel.COLLUSION,
+            attacker_bribe_micros=50_000,
+            colluding_watchers=0,
+        )
+
+    collusion = _scenario(
+        scenario_id="plain-collusion",
+        family="COLLUSION",
+        assumption_label=WatcherAssumption.COLLUSION_DECLARED,
+        correlation_model=WatcherCorrelationModel.COLLUSION,
+        colluding_watchers=2,
+        per_watcher_online_probability=1.0,
+        per_watcher_discovery_probability=1.0,
+        per_watcher_challenge_probability=1.0,
+        challenge_success_probability=1.0,
+        watch_cost_micros=0,
+    )
+    bribed = _scenario(
+        scenario_id="bribed-collusion",
+        family="BRIBERY_SUBSIDY",
+        assumption_label=WatcherAssumption.BRIBERY_SUBSIDY_DECLARED,
+        correlation_model=WatcherCorrelationModel.COLLUSION,
+        colluding_watchers=2,
+        attacker_bribe_micros=50_000,
+        challenge_subsidy_micros=25_000,
+        per_watcher_online_probability=1.0,
+        per_watcher_discovery_probability=1.0,
+        per_watcher_challenge_probability=1.0,
+        challenge_success_probability=1.0,
+        watch_cost_micros=0,
+    )
+    config = E5SimulationConfig(simulations=4096, seed=29, origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION)
+    collusion_result = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=collusion,
+        config=config,
+    )
+    bribed_result = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=bribed,
+        config=config,
+    )
+
+    assert Decimal(bribed_result.watcher_expected_utility_micros) > Decimal(
+        collusion_result.watcher_expected_utility_micros
+    )
 
 
 def test_cli_validates_confirmatory_scope_then_stops_before_auto_publication(tmp_path: Path):

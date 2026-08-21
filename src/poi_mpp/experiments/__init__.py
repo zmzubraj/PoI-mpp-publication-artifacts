@@ -55,6 +55,8 @@ from poi_mpp.experiments.e5_watcher import (
     independent_no_challenge_probability,
     load_e5_confirmatory_scope,
     run_watcher_scenario,
+    scenario_contract_hash,
+    simulation_config_contract_hash,
  )
 
 __all__ = [
@@ -103,5 +105,7 @@ __all__ = [
     "run_e1_cost_experiment",
     "run_watcher_scenario",
     "run_two_run_baseline",
+    "scenario_contract_hash",
+    "simulation_config_contract_hash",
     "validate_attack_receipt",
 ]
