@@ -12,22 +12,22 @@ minimum_negative_controls: 2
 seed_policy: FIXED_PER_SCENARIO
 allowed_scenarios:
   - scenario_id: support-capacity-committed-1
-    scenario_contract_hash: "1111111111111111111111111111111111111111111111111111111111111111"
+    scenario_contract_hash: "0dcc7ce59d8ea9c04a24a63b09ad2eb8f5e5d16f72e4ab207137c72627f31e3e"
     required_seed: 17
   - scenario_id: support-capacity-committed-64
-    scenario_contract_hash: "2222222222222222222222222222222222222222222222222222222222222222"
+    scenario_contract_hash: "ba16146b84fe3b00e1878ae23e8e7f1aa6d7092a233b4e6e84caa5d075d5f089"
     required_seed: 17
   - scenario_id: support-operator-slot-1
-    scenario_contract_hash: "3333333333333333333333333333333333333333333333333333333333333333"
+    scenario_contract_hash: "101b65882eb2c6e50990a90509abec11b9602332696fc2c0eafef9e1c78969d6"
     required_seed: 17
   - scenario_id: support-operator-slot-64
-    scenario_contract_hash: "4444444444444444444444444444444444444444444444444444444444444444"
+    scenario_contract_hash: "09a97945fdd559290d1443266260de203b68b46b233b4d692674ba3373466068"
     required_seed: 17
   - scenario_id: negative-identity-uniform-1
-    scenario_contract_hash: "5555555555555555555555555555555555555555555555555555555555555555"
+    scenario_contract_hash: "b7405d60a1bc87bd19871d3bea42bac014653dd2632b0309a4be731e40c60729"
     required_seed: 17
   - scenario_id: negative-identity-uniform-64
-    scenario_contract_hash: "6666666666666666666666666666666666666666666666666666666666666666"
+    scenario_contract_hash: "024127e26a04e4ee9433c6810f4663aacb9cefb6fe1f8ed1eba66269f03306d2"
     required_seed: 17
 notes:
   - E6 publication evidence is limited to reproducible simulation under the frozen MPP authority boundary.
