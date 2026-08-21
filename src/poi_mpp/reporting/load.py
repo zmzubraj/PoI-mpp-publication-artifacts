@@ -130,6 +130,19 @@ class InputEntry:
 
 
 @dataclass(frozen=True)
+class GeneratedOutput:
+    artifact_id: str
+    relative_path: str
+    kind: str
+    schema_version: str | None
+    run_id: str | None
+    config_hash: str | None
+    source_closure_hash: str | None
+    derives_to_artifact_ids: tuple[str, ...]
+    derived_from_input_paths: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class LoadedExperiment:
     experiment_id: str
     table_ids: tuple[str, ...]
@@ -150,6 +163,7 @@ class LoadedExperiment:
     limits: tuple[str, ...]
     omission_reason: str | None
     input_entries: tuple[InputEntry, ...]
+    generated_outputs: tuple[GeneratedOutput, ...]
 
 
 @dataclass(frozen=True)
@@ -338,6 +352,7 @@ def _missing_experiment(experiment_id: str, reason: str) -> LoadedExperiment:
         limits=(),
         omission_reason=reason,
         input_entries=(),
+        generated_outputs=(),
     )
 
 
@@ -404,6 +419,7 @@ def _e8_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
                 config_hash=rows[0].run_config_hash,
             ),
         ),
+        generated_outputs=(),
     )
 
 
@@ -420,6 +436,21 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
             timeout=source.timeout_seconds,
         )
         summary = result.summary.model_dump(mode="json")
+        run_config_hash = _path_hash(run_config_path)
+        input_entries = (
+            _entry(
+                experiment_id="E7",
+                input_role="run_config",
+                path=run_config_path,
+                root=root,
+                sha256=run_config_hash,
+                schema_version=str(run_config.schema_version),
+                origin=run_config.origin.value,
+                disposition=str(summary["claim_disposition"]),
+                run_id=run_config.run_id,
+                config_hash=result.bundle.run_config_hash,
+            ),
+        )
         return LoadedExperiment(
             experiment_id="E7",
             table_ids=("T12",),
@@ -445,18 +476,18 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
             uncertainty="N/A_single_measurement",
             limits=(),
             omission_reason=None,
-            input_entries=(
-                _entry(
-                    experiment_id="E7",
-                    input_role="run_config",
-                    path=run_config_path,
-                    root=root,
-                    sha256=_path_hash(run_config_path),
-                    schema_version=str(run_config.schema_version),
-                    origin=run_config.origin.value,
-                    disposition=str(summary["claim_disposition"]),
-                    run_id=run_config.run_id,
+            input_entries=input_entries,
+            generated_outputs=(
+                GeneratedOutput(
+                    artifact_id="RAW_E7_LIVE_BUNDLE",
+                    relative_path="raw/E7_live_bundle.json",
+                    kind="raw",
+                    schema_version=str(result.bundle.schema_version),
+                    run_id=result.bundle.run_config_snapshot.run_id,
                     config_hash=result.bundle.run_config_hash,
+                    source_closure_hash=result.parity_verification.source_closure_hash,
+                    derives_to_artifact_ids=("T12", "F12"),
+                    derived_from_input_paths=tuple(entry.relative_path for entry in input_entries),
                 ),
             ),
         )
@@ -524,6 +555,7 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
         limits=(),
         omission_reason="stored E7 bundle metadata is non-authoritative; live collection is required",
         input_entries=tuple(input_entries),
+        generated_outputs=(),
     )
 
 
@@ -587,6 +619,7 @@ def _e6_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
                 config_hash=rows[0].run_config_hash,
             ),
         ),
+        generated_outputs=(),
     )
 
 
@@ -649,6 +682,7 @@ def _e5_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
                 config_hash=rows[0].run_config_hash,
             ),
         ),
+        generated_outputs=(),
     )
 
 

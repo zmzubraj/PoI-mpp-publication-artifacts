@@ -116,3 +116,38 @@
 - `./.venv/bin/python -m pytest -q`
 - `./.venv/bin/python -m compileall -q src tests experiments scripts`
 - `git diff --check`
+
+## Fix round 2
+
+- The live E7 closure is now explicit and exact: `raw/E7_live_bundle.json` is recorded in the manifest as non-paper evidence artifact `RAW_E7_LIVE_BUNDLE` with:
+  - anchored output path
+  - SHA-256
+  - kind `raw`
+  - experiment `E7`
+  - origin/disposition inherited from the live E7 publication run
+  - bundle schema version
+  - run id
+  - config hash
+  - live parity source-closure hash
+  - derivation targets `T12` and `F12`
+  - derived input path `e7_run_config.json`
+- Build closure now includes generated authoritative intermediates in addition to paper tables/figures. Missing or tampered `raw/E7_live_bundle.json` now invalidates manifest validation.
+- Manifest output records were generalized from paper-only identifiers to artifact identifiers so non-paper closure members can be represented without masquerading as publication tables/figures.
+- Strict canonical POSIX relative-path validation now applies to manifest input and output paths plus derived input paths:
+  - nonempty only
+  - no absolute/root/drive paths
+  - no backslashes or NUL
+  - no empty components
+  - no `.` or `..`
+  - normalized path string must equal the serialized manifest value
+- Runtime joins for manifest inputs/outputs now go through validated lexical root joins before anchored no-follow reads, so `../escape.json` style reviewer mutations fail closed even if the manifest self-digest is recomputed.
+- Validation evidence: one attempted parallel verification wave caused a transient Foundry raw-report race between two simultaneous live E7 suites; rerunning the relevant/full suites serially eliminated the environment collision and passed cleanly.
+
+### Fix-round verification
+
+- `./.venv/bin/python -m pytest tests/reporting/test_publication_reporting.py -k live_e7 -vv`
+- `./.venv/bin/python -m pytest tests/reporting -q`
+- `./.venv/bin/python -m pytest tests/reporting tests/experiments/test_e7_evm.py tests/experiments/test_e8_consensus.py -q`
+- `./.venv/bin/python -m pytest -q`
+- `./.venv/bin/python -m compileall -q src tests experiments scripts`
+- `git diff --check`

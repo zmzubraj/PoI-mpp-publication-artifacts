@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -63,6 +64,27 @@ def _valid_e8_spec(tmp_path: Path) -> ReportBuildSpec:
                 "E8": {
                     "rows_path": str(rows_path.resolve()),
                     "contract_path": str(contract_path.resolve()),
+                }
+            },
+        }
+    )
+
+
+def _valid_live_e7_spec(tmp_path: Path) -> ReportBuildSpec:
+    artifact_root = tmp_path / "inputs"
+    artifact_root.mkdir(parents=True)
+    run_config_path = _write_json(
+        artifact_root / "e7_run_config.json",
+        _run_config(run_id="run-e7-live-reporting").model_dump(mode="json"),
+    )
+    return ReportBuildSpec.model_validate(
+        {
+            "artifact_root": str(artifact_root.resolve()),
+            "output_root": str((tmp_path / "out").resolve()),
+            "sources": {
+                "E7": {
+                    "run_config_path": str(run_config_path.resolve()),
+                    "contracts_root": str(_contracts_root().resolve()),
                 }
             },
         }
@@ -271,6 +293,72 @@ def test_output_symlink_root_and_leaf_are_rejected(tmp_path: Path):
     target.symlink_to(replacement.name)
     with pytest.raises(PublicationEligibilityError):
         validate_existing_manifest(output_root)
+
+
+def test_manifest_rejects_noncanonical_relative_paths(tmp_path: Path):
+    spec = _valid_e8_spec(tmp_path)
+    build_publication_report(spec)
+    manifest_path = Path(spec.output_root) / "artifact_manifest.json"
+    payload = _read_manifest(manifest_path)
+
+    outside = tmp_path / "escape.json"
+    outside.write_text('{"rows":[]}', encoding="utf-8")
+    payload["inputs"][0]["relative_path"] = "../escape.json"
+    payload["inputs"][0]["sha256"] = hashlib.sha256(outside.read_bytes()).hexdigest()
+    _write_manifest(manifest_path, payload)
+    with pytest.raises(PublicationEligibilityError, match="relative_path"):
+        validate_existing_manifest(Path(spec.output_root))
+
+    spec = _valid_e8_spec(tmp_path / "output-escape")
+    build_publication_report(spec)
+    manifest_path = Path(spec.output_root) / "artifact_manifest.json"
+    payload = _read_manifest(manifest_path)
+    payload["outputs"][0]["relative_path"] = "../escape.json"
+    payload["outputs"][0]["sha256"] = "0" * 64
+    _write_manifest(manifest_path, payload)
+    with pytest.raises(PublicationEligibilityError):
+        validate_existing_manifest(Path(spec.output_root))
+
+
+@pytest.mark.skipif(not (_contracts_root() / "foundry.toml").is_file(), reason="contracts workspace unavailable")
+def test_live_e7_raw_bundle_is_manifested_and_validated(tmp_path: Path):
+    spec = _valid_live_e7_spec(tmp_path)
+    manifest = build_publication_report(spec)
+    validated = validate_existing_manifest(Path(spec.output_root))
+    manifest_path = Path(spec.output_root) / "artifact_manifest.json"
+    payload = _read_manifest(manifest_path)
+
+    raw_outputs = [item for item in payload["outputs"] if item["artifact_id"] == "RAW_E7_LIVE_BUNDLE"]
+    assert len(raw_outputs) == 1
+    raw_output = raw_outputs[0]
+    assert raw_output["kind"] == "raw"
+    assert raw_output["relative_path"] == "raw/E7_live_bundle.json"
+    assert raw_output["experiment_id"] == "E7"
+    assert raw_output["schema_version"] == "POI_MPP_E7_BUNDLE_V1"
+    assert raw_output["run_id"] == "run-e7-live-reporting"
+    assert raw_output["config_hash"]
+    assert raw_output["source_closure_hash"]
+    assert raw_output["derives_to_artifact_ids"] == ["T12", "F12"]
+    assert raw_output["derived_from_input_paths"] == ["e7_run_config.json"]
+    assert any(entry.artifact_id == "RAW_E7_LIVE_BUNDLE" for entry in manifest.outputs)
+    assert any(entry.artifact_id == "RAW_E7_LIVE_BUNDLE" for entry in validated.outputs)
+
+
+@pytest.mark.skipif(not (_contracts_root() / "foundry.toml").is_file(), reason="contracts workspace unavailable")
+def test_live_e7_raw_bundle_tamper_or_removal_invalidates_manifest(tmp_path: Path):
+    spec = _valid_live_e7_spec(tmp_path)
+    build_publication_report(spec)
+    raw_bundle_path = Path(spec.output_root) / "raw" / "E7_live_bundle.json"
+    raw_bundle_path.write_text(raw_bundle_path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    with pytest.raises(PublicationEligibilityError):
+        validate_existing_manifest(Path(spec.output_root))
+
+    spec = _valid_live_e7_spec(tmp_path / "missing")
+    build_publication_report(spec)
+    raw_bundle_path = Path(spec.output_root) / "raw" / "E7_live_bundle.json"
+    raw_bundle_path.unlink()
+    with pytest.raises(PublicationEligibilityError):
+        validate_existing_manifest(Path(spec.output_root))
 
 
 def test_artifact_mapping_covers_t4_t6_t13_and_f5_f12():
