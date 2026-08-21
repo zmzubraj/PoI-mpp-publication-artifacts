@@ -11,6 +11,8 @@ from poi_mpp.reporting.e5 import (
     summarize_e5_rows,
     t10_rows,
 )
+from poi_mpp.reporting.load import PublicationEligibilityError, ReportBuildSpec, load_publication_inputs
+from poi_mpp.reporting.manifest import build_publication_report, validate_existing_manifest
 
 __all__ = [
     "E1Summary",
@@ -27,6 +29,11 @@ __all__ = [
     "summarize_e4_rows",
     "summarize_e1_rows",
     "summarize_e2_rows",
+    "PublicationEligibilityError",
+    "ReportBuildSpec",
+    "build_publication_report",
+    "load_publication_inputs",
     "t10_rows",
     "t9_rows",
+    "validate_existing_manifest",
 ]
