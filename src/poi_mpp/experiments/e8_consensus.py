@@ -226,6 +226,63 @@ class E8SupportAssertions(_FrozenModel):
     max_attacker_seat_probability_ge_two_thirds: float = Field(ge=0.0, le=1.0)
     max_attacker_seat_probability_ge_two_thirds_upper_bound: float = Field(ge=0.0, le=1.0)
 
+    @model_validator(mode="after")
+    def validate_coherence(self) -> "E8SupportAssertions":
+        probability_caps = (
+            self.max_attacker_active_weight_share,
+            self.max_attacker_weight_probability_ge_one_third,
+            self.max_attacker_weight_probability_ge_one_third_upper_bound,
+            self.max_attacker_weight_probability_ge_two_thirds,
+            self.max_attacker_weight_probability_ge_two_thirds_upper_bound,
+            self.max_attacker_seat_probability_ge_one_third,
+            self.max_attacker_seat_probability_ge_one_third_upper_bound,
+            self.max_attacker_seat_probability_ge_two_thirds,
+            self.max_attacker_seat_probability_ge_two_thirds_upper_bound,
+        )
+        if any(value >= 1.0 for value in probability_caps):
+            raise ValueError("support assertion probability caps must be strictly less than 1.0")
+        if (
+            self.max_attacker_weight_probability_ge_one_third_upper_bound
+            < self.max_attacker_weight_probability_ge_one_third
+        ):
+            raise ValueError("weight >=1/3 upper-bound cap must be >= the point cap")
+        if (
+            self.max_attacker_weight_probability_ge_two_thirds_upper_bound
+            < self.max_attacker_weight_probability_ge_two_thirds
+        ):
+            raise ValueError("weight >=2/3 upper-bound cap must be >= the point cap")
+        if (
+            self.max_attacker_seat_probability_ge_one_third_upper_bound
+            < self.max_attacker_seat_probability_ge_one_third
+        ):
+            raise ValueError("seat >=1/3 upper-bound cap must be >= the point cap")
+        if (
+            self.max_attacker_seat_probability_ge_two_thirds_upper_bound
+            < self.max_attacker_seat_probability_ge_two_thirds
+        ):
+            raise ValueError("seat >=2/3 upper-bound cap must be >= the point cap")
+        if (
+            self.max_attacker_weight_probability_ge_two_thirds
+            > self.max_attacker_weight_probability_ge_one_third
+        ):
+            raise ValueError("weight >=2/3 point cap must be <= the weight >=1/3 point cap")
+        if (
+            self.max_attacker_weight_probability_ge_two_thirds_upper_bound
+            > self.max_attacker_weight_probability_ge_one_third_upper_bound
+        ):
+            raise ValueError("weight >=2/3 upper-bound cap must be <= the weight >=1/3 upper-bound cap")
+        if (
+            self.max_attacker_seat_probability_ge_two_thirds
+            > self.max_attacker_seat_probability_ge_one_third
+        ):
+            raise ValueError("seat >=2/3 point cap must be <= the seat >=1/3 point cap")
+        if (
+            self.max_attacker_seat_probability_ge_two_thirds_upper_bound
+            > self.max_attacker_seat_probability_ge_one_third_upper_bound
+        ):
+            raise ValueError("seat >=2/3 upper-bound cap must be <= the seat >=1/3 upper-bound cap")
+        return self
+
 
 class E8BoundaryAssertions(_FrozenModel):
     required_sampling_disposition: SamplingDisposition
@@ -258,6 +315,23 @@ class E8NegativeAssertions(_FrozenModel):
         if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
             raise ValueError("negative-control assertion hashes must be lowercase SHA-256 hex digests")
         return value
+
+    @model_validator(mode="after")
+    def validate_nonvacuous_deltas(self) -> "E8NegativeAssertions":
+        if self.min_attacker_active_weight_share_delta <= 0.0:
+            raise ValueError("negative-control attacker active-weight-share delta must be nonzero")
+        optional_deltas = (
+            self.min_attacker_weight_probability_ge_one_third_lower_advantage,
+            self.min_attacker_weight_probability_ge_two_thirds_lower_advantage,
+            self.min_attacker_seat_probability_ge_one_third_lower_advantage,
+            self.min_attacker_seat_probability_ge_two_thirds_lower_advantage,
+        )
+        if all(value is None for value in optional_deltas):
+            raise ValueError("negative-control assertions must include at least one non-null probabilistic delta")
+        for value in optional_deltas:
+            if value is not None and value <= 0.0:
+                raise ValueError("negative-control probabilistic deltas must be strictly positive when declared")
+        return self
 
 
 class E8ConfirmatoryContract(_FrozenModel):

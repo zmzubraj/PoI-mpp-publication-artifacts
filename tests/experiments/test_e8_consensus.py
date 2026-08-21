@@ -187,13 +187,16 @@ def _write_contract(tmp_path: Path, rows):
     )
 
     row_by_id = {row.scenario_id: row for row in rows}
-    support_bounds = {
-        "support-honest-baseline": {"share": 0.35, "ge_one_third": 0.75, "ge_two_thirds": 0.25},
-        "support-high-compute-capped": {"share": 0.55, "ge_one_third": 0.95, "ge_two_thirds": 0.55},
-        "support-sybil-split": {"share": 0.55, "ge_one_third": 0.95, "ge_two_thirds": 0.55},
-        "support-subsidized-compute": {"share": 0.60, "ge_one_third": 0.98, "ge_two_thirds": 0.60},
-        "support-collusion-bounded": {"share": 0.60, "ge_one_third": 0.98, "ge_two_thirds": 0.65},
-        "support-receipt-churn": {"share": 0.40, "ge_one_third": 0.85, "ge_two_thirds": 0.35},
+    support_policy = {
+        "max_attacker_active_weight_share": 0.45,
+        "max_attacker_weight_probability_ge_one_third": 0.80,
+        "max_attacker_weight_probability_ge_one_third_upper_bound": 0.85,
+        "max_attacker_weight_probability_ge_two_thirds": 0.10,
+        "max_attacker_weight_probability_ge_two_thirds_upper_bound": 0.15,
+        "max_attacker_seat_probability_ge_one_third": 0.80,
+        "max_attacker_seat_probability_ge_one_third_upper_bound": 0.85,
+        "max_attacker_seat_probability_ge_two_thirds": 0.10,
+        "max_attacker_seat_probability_ge_two_thirds_upper_bound": 0.15,
     }
     ordered_ids = (
         "support-honest-baseline",
@@ -240,19 +243,18 @@ def _write_contract(tmp_path: Path, rows):
             ]
         )
         if row.role.value == "SUPPORT":
-            bound = support_bounds[row.scenario_id]
             lines.extend(
                 [
                     "    support_assertions:",
-                    f"      max_attacker_active_weight_share: {bound['share']}",
-                    f"      max_attacker_weight_probability_ge_one_third: {bound['ge_one_third']}",
-                    "      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0",
-                    f"      max_attacker_weight_probability_ge_two_thirds: {bound['ge_two_thirds']}",
-                    "      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0",
-                    f"      max_attacker_seat_probability_ge_one_third: {bound['ge_one_third']}",
-                    "      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0",
-                    f"      max_attacker_seat_probability_ge_two_thirds: {bound['ge_two_thirds']}",
-                    "      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0",
+                    f"      max_attacker_active_weight_share: {support_policy['max_attacker_active_weight_share']}",
+                    f"      max_attacker_weight_probability_ge_one_third: {support_policy['max_attacker_weight_probability_ge_one_third']}",
+                    f"      max_attacker_weight_probability_ge_one_third_upper_bound: {support_policy['max_attacker_weight_probability_ge_one_third_upper_bound']}",
+                    f"      max_attacker_weight_probability_ge_two_thirds: {support_policy['max_attacker_weight_probability_ge_two_thirds']}",
+                    f"      max_attacker_weight_probability_ge_two_thirds_upper_bound: {support_policy['max_attacker_weight_probability_ge_two_thirds_upper_bound']}",
+                    f"      max_attacker_seat_probability_ge_one_third: {support_policy['max_attacker_seat_probability_ge_one_third']}",
+                    f"      max_attacker_seat_probability_ge_one_third_upper_bound: {support_policy['max_attacker_seat_probability_ge_one_third_upper_bound']}",
+                    f"      max_attacker_seat_probability_ge_two_thirds: {support_policy['max_attacker_seat_probability_ge_two_thirds']}",
+                    f"      max_attacker_seat_probability_ge_two_thirds_upper_bound: {support_policy['max_attacker_seat_probability_ge_two_thirds_upper_bound']}",
                 ]
             )
         elif row.role.value == "BOUNDARY":
@@ -274,9 +276,9 @@ def _write_contract(tmp_path: Path, rows):
                     f"      paired_support_scenario_hash: \"{support_pair.scenario_contract_hash}\"",
                     f"      required_pair_exogenous_hash: \"{pair_hash}\"",
                     "      min_attacker_active_weight_share_delta: 0.2",
-                    "      min_attacker_weight_probability_ge_one_third_lower_advantage: 0.0",
-                    "      min_attacker_weight_probability_ge_two_thirds_lower_advantage: 0.0",
-                    "      min_attacker_seat_probability_ge_one_third_lower_advantage: 0.0",
+                    "      min_attacker_weight_probability_ge_one_third_lower_advantage: 0.05",
+                    "      min_attacker_weight_probability_ge_two_thirds_lower_advantage: 0.50",
+                    "      min_attacker_seat_probability_ge_one_third_lower_advantage: 0.05",
                     "      min_attacker_seat_probability_ge_two_thirds_lower_advantage: null",
                 ]
             )
@@ -795,7 +797,7 @@ def test_publication_support_requires_confirmatory_contract_and_replay_authority
 
     assert "confirmatory contract" in publication_precheck_reasons(rows)[0].lower()
     contract = _write_contract(tmp_path, rows)
-    assert summarize_e8_rows(rows, contract=contract).claim_disposition == "SUPPORTED"
+    assert summarize_e8_rows(rows, contract=contract).claim_disposition == "INCONCLUSIVE"
 
 
 def test_forged_output_is_rejected_by_publication_replay(tmp_path: Path):
@@ -927,14 +929,14 @@ def test_loader_rejects_placeholder_hashes_and_incomplete_family_closure(tmp_pat
                 "    required_seed: 17",
                 "    support_assertions:",
                 "      max_attacker_active_weight_share: 0.5",
-                "      max_attacker_weight_probability_ge_one_third: 1.0",
-                "      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0",
-                "      max_attacker_weight_probability_ge_two_thirds: 1.0",
-                "      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0",
-                "      max_attacker_seat_probability_ge_one_third: 1.0",
-                "      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0",
-                "      max_attacker_seat_probability_ge_two_thirds: 1.0",
-                "      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0",
+                "      max_attacker_weight_probability_ge_one_third: 0.8",
+                "      max_attacker_weight_probability_ge_one_third_upper_bound: 0.85",
+                "      max_attacker_weight_probability_ge_two_thirds: 0.1",
+                "      max_attacker_weight_probability_ge_two_thirds_upper_bound: 0.15",
+                "      max_attacker_seat_probability_ge_one_third: 0.8",
+                "      max_attacker_seat_probability_ge_one_third_upper_bound: 0.85",
+                "      max_attacker_seat_probability_ge_two_thirds: 0.1",
+                "      max_attacker_seat_probability_ge_two_thirds_upper_bound: 0.15",
             ]
         )
         + "\n",
@@ -943,6 +945,64 @@ def test_loader_rejects_placeholder_hashes_and_incomplete_family_closure(tmp_pat
 
     with pytest.raises(ValueError, match="placeholder|closure"):
         load_e8_confirmatory_contract(placeholder)
+
+
+def test_support_assertions_reject_contradictory_caps():
+    from poi_mpp.experiments.e8_consensus import E8SupportAssertions
+
+    with pytest.raises(ValueError, match="upper-bound cap must be >=|>=2/3 point cap must be <="):
+        E8SupportAssertions(
+            max_attacker_active_weight_share=0.45,
+            max_attacker_weight_probability_ge_one_third=0.40,
+            max_attacker_weight_probability_ge_one_third_upper_bound=0.35,
+            max_attacker_weight_probability_ge_two_thirds=0.50,
+            max_attacker_weight_probability_ge_two_thirds_upper_bound=0.30,
+            max_attacker_seat_probability_ge_one_third=0.40,
+            max_attacker_seat_probability_ge_one_third_upper_bound=0.35,
+            max_attacker_seat_probability_ge_two_thirds=0.50,
+            max_attacker_seat_probability_ge_two_thirds_upper_bound=0.30,
+        )
+
+
+def test_support_assertions_reject_vacuous_caps():
+    from poi_mpp.experiments.e8_consensus import E8SupportAssertions
+
+    with pytest.raises(ValueError, match="strictly less than 1.0"):
+        E8SupportAssertions(
+            max_attacker_active_weight_share=1.0,
+            max_attacker_weight_probability_ge_one_third=0.8,
+            max_attacker_weight_probability_ge_one_third_upper_bound=0.85,
+            max_attacker_weight_probability_ge_two_thirds=0.1,
+            max_attacker_weight_probability_ge_two_thirds_upper_bound=0.15,
+            max_attacker_seat_probability_ge_one_third=0.8,
+            max_attacker_seat_probability_ge_one_third_upper_bound=0.85,
+            max_attacker_seat_probability_ge_two_thirds=0.1,
+            max_attacker_seat_probability_ge_two_thirds_upper_bound=0.15,
+        )
+
+
+def test_negative_assertions_reject_vacuous_deltas():
+    from poi_mpp.experiments.e8_consensus import E8NegativeAssertions
+
+    with pytest.raises(ValueError, match="nonzero|strictly positive"):
+        E8NegativeAssertions(
+            pair_id="pair",
+            paired_support_scenario_id="support-high-compute-capped",
+            paired_support_scenario_hash="6a4867c03fe528ddf8f351194ba232afada4a9176be8208f150c7b0f1d3e748c",
+            required_pair_exogenous_hash="f7e8c2de1f31e3896dee3293e94461d23260fdbeb1a591c90a883fe85185d0e1",
+            min_attacker_active_weight_share_delta=0.0,
+            min_attacker_weight_probability_ge_one_third_lower_advantage=0.0,
+        )
+
+
+def test_checked_in_confirmatory_contract_is_nonvacuous_and_current_rows_are_inconclusive():
+    from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
+    from poi_mpp.reporting.e8 import summarize_e8_rows
+
+    contract = load_e8_confirmatory_contract(Path(__file__).resolve().parents[2] / "configs/confirmatory/e8.yaml")
+    summary = summarize_e8_rows(_publication_rows(), contract=contract)
+
+    assert summary.claim_disposition == "INCONCLUSIVE"
 
 
 def test_cli_stops_at_publication_authority_boundary(tmp_path: Path):
