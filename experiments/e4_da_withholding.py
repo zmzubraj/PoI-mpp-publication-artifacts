@@ -1,10 +1,31 @@
-import argparse, csv, random
-p=argparse.ArgumentParser(); p.add_argument('--trials',type=int,default=10000); p.add_argument('--k',type=int,default=8); p.add_argument('--out',default='../results/raw/e4_da.csv'); a=p.parse_args()
-r=random.Random(4)
-with open(a.out,'w',newline='') as f:
-    w=csv.writer(f); w.writerow(['withheld_fraction','k','empirical_miss','theoretical_miss'])
-    for frac in [0.05,0.10,0.20,0.30,0.50]:
-        miss=0
-        for _ in range(a.trials):
-            if all(r.random()>=frac for __ in range(a.k)): miss+=1
-        w.writerow([frac,a.k,miss/a.trials,(1-frac)**a.k])
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from poi_mpp.evidence import load_run_config
+from poi_mpp.experiments.e4_da import AuthorityBoundaryError, assert_cli_authority_boundary
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="E4 DA wrapper with explicit authority boundary.")
+    parser.add_argument("--config", required=True, help="Path to a frozen E4 run configuration.")
+    args = parser.parse_args(argv)
+
+    try:
+        run_config = load_run_config(Path(args.config))
+        assert_cli_authority_boundary(run_config)
+    except (AuthorityBoundaryError, ValueError) as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -32,6 +32,13 @@ from poi_mpp.experiments.e3_semantic import (
     run_confirmatory_semantic,
     run_synthetic_plumbing_semantic,
 )
+from poi_mpp.experiments.e4_da import (
+    AuthorityBoundaryError,
+    AvailabilityScenario,
+    E4ScenarioRow,
+    assert_cli_authority_boundary,
+    build_e4_row,
+)
 
 __all__ = [
     "E1ExecutionSample",
@@ -49,9 +56,14 @@ __all__ = [
     "E3SyntheticPlumbingConfig",
     "E3SyntheticPlumbingEvaluator",
     "E3SyntheticPlumbingResult",
+    "E4ScenarioRow",
     "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+    "AuthorityBoundaryError",
+    "AvailabilityScenario",
     "PublicationEligibilityError",
+    "assert_cli_authority_boundary",
     "build_fixture_bundle",
+    "build_e4_row",
     "build_publication_record",
     "evaluate_receipt",
     "load_e3_confirmatory_schema",

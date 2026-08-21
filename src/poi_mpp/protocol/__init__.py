@@ -1,6 +1,15 @@
 """Python reference protocol kernel for commitments, audits, and receipts."""
 
 from poi_mpp.protocol.audit_compiler import AuditPolicy, compile_audit
+from poi_mpp.protocol.availability import (
+    ErasureParameters,
+    LocalShardStore,
+    SampleCertificate,
+    SamplingAssumption,
+    SamplingMode,
+    ShardLayout,
+    issue_sample_certificate,
+)
 from poi_mpp.protocol.committee import sample_committee
 from poi_mpp.protocol.commitment import commit_response
 from poi_mpp.protocol.credit import CreditAllocation, allocate_credit, derive_active_weight
@@ -32,7 +41,9 @@ __all__ = [
     "AuditPolicy",
     "CreditAllocation",
     "ExpireReceipt",
+    "ErasureParameters",
     "InvalidTransition",
+    "LocalShardStore",
     "ModelManifest",
     "OpenChallenge",
     "Receipt",
@@ -40,7 +51,11 @@ __all__ = [
     "RecordAudit",
     "RecordDataAvailability",
     "ResponseCommitment",
+    "SampleCertificate",
+    "SamplingAssumption",
+    "SamplingMode",
     "SlashReceipt",
+    "ShardLayout",
     "TaskClass",
     "TaskSpec",
     "TransitionContext",
@@ -48,6 +63,7 @@ __all__ = [
     "commit_response",
     "compile_audit",
     "derive_active_weight",
+    "issue_sample_certificate",
     "sample_committee",
     "transition",
 ]
