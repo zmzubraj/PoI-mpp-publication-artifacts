@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -128,7 +129,7 @@ def test_plumbing_report_parses_but_stays_non_authoritative(tmp_path: Path):
     assert bundle.manifest.storage_measurement_surface == "POST_CALL_SLOT_DIFF_VS_FRESH_BASELINE_BYTES_UPPER_BOUND"
 
 
-def test_publication_support_requires_canonical_collector_contract_parity_and_authorized_config(tmp_path: Path):
+def test_stored_bundle_summary_remains_inconclusive_even_with_contract_and_attachment(tmp_path: Path):
     from poi_mpp.experiments.e7_evm import (
         default_measurement_contract,
         load_default_parity_attachment,
@@ -151,10 +152,10 @@ def test_publication_support_requires_canonical_collector_contract_parity_and_au
         run_config=_run_config(),
     )
 
-    assert "measurement contract" in publication_precheck_reasons(bundle)[0].lower()
+    assert "metadata cannot mint supported" in publication_precheck_reasons(bundle)[0].lower()
     parity = load_default_parity_attachment(Path(__file__).resolve().parents[2])
     reasons = publication_precheck_reasons(bundle, contract=contract, parity_attachment=parity)
-    assert any("canonical collector-owned" in reason for reason in reasons)
+    assert any("metadata cannot mint supported" in reason.lower() for reason in reasons)
     assert summarize_e7_bundle(bundle, contract=contract, parity_attachment=parity).claim_disposition == "INCONCLUSIVE"
 
     unauthorized_bundle = parse_foundry_measurement_report(
@@ -169,6 +170,45 @@ def test_publication_support_requires_canonical_collector_contract_parity_and_au
             parity_attachment=parity,
         )
     )
+
+
+def test_model_construct_and_model_copy_cannot_mint_supported(tmp_path: Path):
+    from poi_mpp.experiments.e7_evm import (
+        E7CollectorCapability,
+        E7ReportAuthority,
+        default_measurement_contract,
+        load_default_parity_attachment,
+        parse_foundry_measurement_report,
+    )
+    from poi_mpp.reporting.e7 import publication_precheck_reasons, summarize_e7_bundle
+
+    contract = default_measurement_contract()
+    report = _write_report(
+        tmp_path / "forged-support.json",
+        measurements=[
+            _measurement(item.operation, item.batch_size, 35_000 + index, 3)
+            for index, item in enumerate(contract.expected_measurements)
+        ],
+    )
+    bundle = parse_foundry_measurement_report(
+        report_path=report,
+        contracts_root=_contracts_root(),
+        run_config=_run_config(),
+    )
+    forged_capability = E7CollectorCapability.model_construct(
+        schema_version="POI_MPP_E7_COLLECTOR_CAPABILITY_V1",
+        report_authority=E7ReportAuthority.CANONICAL_COLLECTOR_REPORT,
+        observed_report_path=str(report.resolve()),
+        canonical_report_path=str(report.resolve()),
+        anchored_no_follow=True,
+        symlink_free=True,
+    )
+    forged_bundle = bundle.model_copy(update={"collector_capability": forged_capability})
+    parity = load_default_parity_attachment(Path(__file__).resolve().parents[2]).model_copy()
+
+    reasons = publication_precheck_reasons(forged_bundle, contract=contract, parity_attachment=parity)
+    assert any("metadata cannot mint supported" in reason.lower() for reason in reasons)
+    assert summarize_e7_bundle(forged_bundle, contract=contract, parity_attachment=parity).claim_disposition == "INCONCLUSIVE"
 
 
 def test_symlinked_report_is_rejected(tmp_path: Path):
@@ -221,7 +261,12 @@ def test_forged_rows_do_not_mint_support(tmp_path: Path):
         contract=contract,
         parity_attachment=load_default_parity_attachment(Path(__file__).resolve().parents[2]),
     )
-    assert any("canonical" in reason.lower() or "raw report" in reason.lower() for reason in reasons)
+    assert any(
+        "metadata cannot mint supported" in reason.lower()
+        or "canonical" in reason.lower()
+        or "raw report" in reason.lower()
+        for reason in reasons
+    )
 
 
 def test_gas_harness_has_no_pre_measurement_vm_load():
@@ -248,24 +293,40 @@ def test_gas_harness_has_no_pre_measurement_vm_load():
         assert "vm.load(" not in contents[start:gas_before], f"{witness_name} must not pre-warm measured storage"
 
 
+def test_current_parity_source_closure_hash_changes_on_source_drift(tmp_path: Path):
+    from poi_mpp.experiments.e7_evm import current_e7_parity_source_closure_hash, e7_parity_source_relative_paths
+
+    root = Path(__file__).resolve().parents[2]
+    shadow_root = tmp_path / "shadow"
+    for relative_path in e7_parity_source_relative_paths():
+        source = root / relative_path
+        destination = shadow_root / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    drift_target = shadow_root / e7_parity_source_relative_paths()[0]
+    drift_target.write_text(drift_target.read_text(encoding="utf-8") + "\n# drift\n", encoding="utf-8")
+
+    assert current_e7_parity_source_closure_hash(root) != current_e7_parity_source_closure_hash(shadow_root)
+
+
 @pytest.mark.skipif(not (_contracts_root() / "foundry.toml").is_file(), reason="contracts workspace unavailable")
-def test_local_collection_runs_with_foundry(tmp_path: Path):
-    from poi_mpp.experiments.e7_evm import (
-        E7ReportAuthority,
-        collect_foundry_measurements,
-        default_measurement_contract,
-    )
+def test_collect_and_summarize_publication_runs_live_boundary(tmp_path: Path):
+    from poi_mpp.experiments.e7_evm import current_e7_parity_source_closure_hash
+    from poi_mpp.reporting.e7 import collect_and_summarize_e7_publication
 
-    bundle = collect_foundry_measurements(
+    result = collect_and_summarize_e7_publication(
         contracts_root=_contracts_root(),
-        run_config=_run_config(),
-        output_path=tmp_path / "bundle.json",
-        measurement_contract=default_measurement_contract(),
+        run_config=_run_config(run_id="run-e7-live-publication"),
+        bundle_output_path=tmp_path / "bundle.json",
     )
 
-    assert len(bundle.rows) == len(default_measurement_contract().expected_measurements)
-    assert all(row.origin is EvidenceOrigin.FOUNDRY_MEASUREMENT for row in bundle.rows)
-    assert bundle.manifest.foundry_version.startswith("forge Version:")
-    assert bundle.collector_capability.report_authority is E7ReportAuthority.CANONICAL_COLLECTOR_REPORT
-    assert bundle.collector_capability.anchored_no_follow is True
-    assert bundle.collector_capability.symlink_free is True
+    assert result.summary.claim_disposition == "SUPPORTED"
+    assert result.summary.parity_bound is True
+    assert all(row.origin is EvidenceOrigin.FOUNDRY_MEASUREMENT for row in result.bundle.rows)
+    assert result.bundle.manifest.foundry_version.startswith("forge Version:")
+    assert result.parity_verification.source_closure_hash == current_e7_parity_source_closure_hash(
+        Path(__file__).resolve().parents[2]
+    )
+    assert result.parity_verification.export_vectors_transcript.command
+    assert result.parity_verification.hashvectors_test_transcript.command
+    assert result.parity_verification.python_parity_transcript.command

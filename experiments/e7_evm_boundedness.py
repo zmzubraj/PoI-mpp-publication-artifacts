@@ -15,11 +15,8 @@ from poi_mpp.experiments.e7_evm import (
     AuthorityBoundaryError,
     _atomic_write_json,
     assert_cli_authority_boundary,
-    collect_foundry_measurements,
-    default_measurement_contract,
-    load_default_parity_attachment,
 )
-from poi_mpp.reporting.e7 import f12_points, summarize_e7_bundle, t12_rows
+from poi_mpp.reporting.e7 import collect_and_summarize_e7_publication, f12_points, t12_rows
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,26 +34,23 @@ def main(argv: list[str] | None = None) -> int:
     try:
         run_config = load_run_config(Path(args.run_config))
         assert_cli_authority_boundary(run_config)
-        bundle = collect_foundry_measurements(
+        publication_result = collect_and_summarize_e7_publication(
             contracts_root=Path(args.contracts_root),
             run_config=run_config,
-            output_path=Path(args.bundle_out),
-            measurement_contract=default_measurement_contract(),
-        )
-        parity = load_default_parity_attachment(REPO_ROOT)
-        summary = summarize_e7_bundle(
-            bundle,
-            contract=default_measurement_contract(),
-            parity_attachment=parity,
+            bundle_output_path=Path(args.bundle_out),
         )
     except (AuthorityBoundaryError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 2
 
+    bundle = publication_result.bundle
+    summary = publication_result.summary
+
     payload = {
         "bundle_path": str(Path(args.bundle_out).resolve()),
         "t12_rows": [row.model_dump(mode="json") for row in t12_rows(bundle.rows)],
         "f12_points": [point.model_dump(mode="json") for point in f12_points(bundle.rows)],
+        "parity_verification": publication_result.parity_verification.model_dump(mode="json"),
         "summary": summary.model_dump(mode="json"),
     }
     output_path = Path(args.summary_out)

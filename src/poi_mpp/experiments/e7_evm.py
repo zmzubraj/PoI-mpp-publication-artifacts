@@ -29,6 +29,8 @@ E7_REPORT_SCHEMA_VERSION = "POI_MPP_E7_FOUNDRY_REPORT_V1"
 E7_BUNDLE_SCHEMA_VERSION = "POI_MPP_E7_BUNDLE_V1"
 E7_PARITY_SCHEMA_VERSION = "POI_MPP_E7_PARITY_ATTACHMENT_V1"
 E7_COLLECTOR_CAPABILITY_SCHEMA_VERSION = "POI_MPP_E7_COLLECTOR_CAPABILITY_V1"
+E7_COMMAND_TRANSCRIPT_SCHEMA_VERSION = "POI_MPP_E7_COMMAND_TRANSCRIPT_V1"
+E7_PARITY_VERIFICATION_SCHEMA_VERSION = "POI_MPP_E7_PARITY_VERIFICATION_V1"
 _ROOT = Path(__file__).resolve().parents[3]
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _GIT_SHA = re.compile(r"[0-9a-f]{40}\Z")
@@ -42,6 +44,27 @@ _E7_ARTIFACTS = (
     ("ReceiptManager", "src/ReceiptManager.sol", "out/ReceiptManager.sol/ReceiptManager.json"),
     ("CreditEngine", "src/CreditEngine.sol", "out/CreditEngine.sol/CreditEngine.json"),
     ("GasSnapshots", "test/GasSnapshots.t.sol", "out/GasSnapshots.t.sol/GasSnapshots.json"),
+)
+_E7_PARITY_SOURCES = (
+    Path("src/poi_mpp/evidence/canonical.py"),
+    Path("src/poi_mpp/protocol/commitment.py"),
+    Path("src/poi_mpp/protocol/credit.py"),
+    Path("src/poi_mpp/protocol/receipt.py"),
+    Path("src/poi_mpp/protocol/reference_machine.py"),
+    Path("src/poi_mpp/protocol/types.py"),
+    Path("contracts/src/PolicyRegistry.sol"),
+    Path("contracts/src/ModelRegistry.sol"),
+    Path("contracts/src/TaskManager.sol"),
+    Path("contracts/src/CommitmentHub.sol"),
+    Path("contracts/src/AuditManager.sol"),
+    Path("contracts/src/ReceiptManager.sol"),
+    Path("contracts/src/CreditEngine.sol"),
+    Path("contracts/test/ProtocolRoles.t.sol"),
+    Path("contracts/test/HashVectors.t.sol"),
+    Path("contracts/script/ProtocolVectorWitness.s.sol"),
+    Path("scripts/export_solidity_vectors.py"),
+    Path("tests/integration/test_python_solidity_parity.py"),
+    Path("tests/fixtures/protocol_vectors.json"),
 )
 
 
@@ -421,6 +444,72 @@ class E7ParityAttachment(_FrozenModel):
         return value
 
 
+class E7CommandTranscript(_FrozenModel):
+    schema_version: str = E7_COMMAND_TRANSCRIPT_SCHEMA_VERSION
+    command: tuple[str, ...]
+    cwd: str
+    stdout_hash: str
+    stderr_hash: str
+    stdout_size: int = Field(ge=0)
+    stderr_size: int = Field(ge=0)
+    returncode: int = 0
+
+    @field_validator("cwd")
+    @classmethod
+    def require_nonblank_cwd(cls, value: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("cwd must not be blank")
+        return value
+
+    @field_validator("stdout_hash", "stderr_hash")
+    @classmethod
+    def require_digest(cls, value: str, info: ValidationInfo) -> str:
+        if not _SHA256.fullmatch(value):
+            raise ValueError(f"{info.field_name} must be a lowercase SHA-256 hex digest")
+        return value
+
+    @model_validator(mode="after")
+    def validate_command(self) -> "E7CommandTranscript":
+        if not self.command:
+            raise ValueError("command must not be empty")
+        if self.returncode != 0:
+            raise ValueError("returncode must equal 0")
+        return self
+
+
+class E7ParityVerification(_FrozenModel):
+    schema_version: str = E7_PARITY_VERIFICATION_SCHEMA_VERSION
+    source_closure_hash: str
+    source_paths: tuple[str, ...]
+    protocol_vectors_path: str
+    protocol_vectors_hash: str
+    protocol_witness_path: str
+    protocol_witness_hash: str
+    export_vectors_transcript: E7CommandTranscript
+    hashvectors_test_transcript: E7CommandTranscript
+    python_parity_transcript: E7CommandTranscript
+
+    @field_validator("source_closure_hash", "protocol_vectors_hash", "protocol_witness_hash")
+    @classmethod
+    def require_hash(cls, value: str, info: ValidationInfo) -> str:
+        if not _SHA256.fullmatch(value):
+            raise ValueError(f"{info.field_name} must be a lowercase SHA-256 hex digest")
+        return value
+
+    @field_validator("protocol_vectors_path", "protocol_witness_path")
+    @classmethod
+    def require_nonblank_path(cls, value: str, info: ValidationInfo) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @model_validator(mode="after")
+    def validate_parity(self) -> "E7ParityVerification":
+        if not self.source_paths:
+            raise ValueError("source_paths must not be empty")
+        return self
+
+
 def _path_hash(path: Path) -> str:
     try:
         return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -485,6 +574,47 @@ def _read_canonical_report_bytes(contracts_root: Path) -> bytes:
     finally:
         os.close(descriptor)
     return contents
+
+
+def _python_executable(repo_root: Path) -> str:
+    candidate = repo_root / ".venv" / "bin" / "python"
+    if candidate.is_file():
+        return str(candidate)
+    return sys.executable
+
+
+def _completed_transcript(completed: subprocess.CompletedProcess[str], *, cwd: Path) -> E7CommandTranscript:
+    stdout = completed.stdout if isinstance(completed.stdout, str) else ""
+    stderr = completed.stderr if isinstance(completed.stderr, str) else ""
+    return E7CommandTranscript(
+        command=tuple(str(part) for part in completed.args),
+        cwd=str(cwd.resolve()),
+        stdout_hash=_bytes_hash(stdout.encode("utf-8")),
+        stderr_hash=_bytes_hash(stderr.encode("utf-8")),
+        stdout_size=len(stdout.encode("utf-8")),
+        stderr_size=len(stderr.encode("utf-8")),
+        returncode=completed.returncode,
+    )
+
+
+def e7_parity_source_relative_paths() -> tuple[Path, ...]:
+    return _E7_PARITY_SOURCES
+
+
+def current_e7_parity_source_closure_hash(repo_root: str | Path | None = None) -> str:
+    root = Path(repo_root) if repo_root is not None else _ROOT
+    entries: list[dict[str, str]] = []
+    for relative_path in _E7_PARITY_SOURCES:
+        absolute_path = root / relative_path
+        if not absolute_path.is_file():
+            raise ArtifactValidationError((f"E7 parity source is missing: {relative_path}",))
+        entries.append(
+            {
+                "path": relative_path.as_posix(),
+                "sha256": _path_hash(absolute_path),
+            }
+        )
+    return digest("E7_PARITY_SOURCE_CLOSURE", {"files": entries})
 
 
 def _artifact_json(path: Path) -> dict[str, object]:
@@ -706,19 +836,7 @@ def load_default_parity_attachment(repo_root: str | Path | None = None) -> E7Par
     )
     if not vectors.is_file() or not report.is_file():
         raise ArtifactValidationError(("Task 8 parity artifacts are missing",))
-    try:
-        payload = json.loads(vectors.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ArtifactValidationError(("Task 8 protocol vectors are invalid JSON",)) from error
-    if not isinstance(payload, dict):
-        raise ArtifactValidationError(("Task 8 protocol vectors must be a JSON object",))
-    if payload.get("artifact_origin") != "TEST_VECTOR_NON_EVIDENCE":
-        raise ArtifactValidationError(("Task 8 protocol vectors must remain TEST_VECTOR_NON_EVIDENCE",))
-    if payload.get("evidence_origin") != "SYNTHETIC_NON_EVIDENCE":
-        raise ArtifactValidationError(("Task 8 protocol vectors must remain SYNTHETIC_NON_EVIDENCE",))
-    witness = payload.get("solidity_witness_source")
-    if not isinstance(witness, Mapping) or witness.get("contract") != "HashVectors":
-        raise ArtifactValidationError(("Task 8 protocol vectors must bind Solidity witness contract HashVectors",))
+    payload = _load_protocol_vectors_fixture(vectors)
     report_text = report.read_text(encoding="utf-8")
     required_fragments = (
         "tests/integration/test_python_solidity_parity.py",
@@ -734,6 +852,64 @@ def load_default_parity_attachment(repo_root: str | Path | None = None) -> E7Par
         protocol_vectors_hash=_path_hash(vectors),
         task8_report_path=str(report.resolve()),
         task8_report_hash=_path_hash(report),
+    )
+
+
+def _load_protocol_vectors_fixture(path: Path) -> dict[str, object]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ArtifactValidationError(("Task 8 protocol vectors are invalid JSON",)) from error
+    if not isinstance(payload, dict):
+        raise ArtifactValidationError(("Task 8 protocol vectors must be a JSON object",))
+    if payload.get("artifact_origin") != "TEST_VECTOR_NON_EVIDENCE":
+        raise ArtifactValidationError(("Task 8 protocol vectors must remain TEST_VECTOR_NON_EVIDENCE",))
+    if payload.get("evidence_origin") != "SYNTHETIC_NON_EVIDENCE":
+        raise ArtifactValidationError(("Task 8 protocol vectors must remain SYNTHETIC_NON_EVIDENCE",))
+    witness = payload.get("solidity_witness_source")
+    if not isinstance(witness, Mapping) or witness.get("contract") != "HashVectors":
+        raise ArtifactValidationError(("Task 8 protocol vectors must bind Solidity witness contract HashVectors",))
+    return payload
+
+
+def verify_current_e7_parity(
+    *,
+    repo_root: str | Path | None = None,
+    contracts_root: str | Path | None = None,
+    timeout: int = 120,
+) -> E7ParityVerification:
+    root = Path(repo_root) if repo_root is not None else _ROOT
+    contracts_dir = Path(contracts_root) if contracts_root is not None else root / "contracts"
+    export_completed = _run_command(
+        (_python_executable(root), "scripts/export_solidity_vectors.py"),
+        cwd=root,
+        timeout=timeout,
+    )
+    hashvectors_completed = _run_command(
+        ("forge", "test", "--match-contract", "HashVectors", "-q"),
+        cwd=contracts_dir,
+        timeout=timeout,
+    )
+    parity_completed = _run_command(
+        (_python_executable(root), "-m", "pytest", "tests/integration/test_python_solidity_parity.py", "-q"),
+        cwd=root,
+        timeout=timeout,
+    )
+    vectors_path = root / "tests" / "fixtures" / "protocol_vectors.json"
+    witness_path = contracts_dir / "out" / "protocol_witnesses.json"
+    _load_protocol_vectors_fixture(vectors_path)
+    if not witness_path.is_file():
+        raise ArtifactValidationError(("Task 8 protocol witness file is missing after exporter run",))
+    return E7ParityVerification(
+        source_closure_hash=current_e7_parity_source_closure_hash(root),
+        source_paths=tuple(relative_path.as_posix() for relative_path in _E7_PARITY_SOURCES),
+        protocol_vectors_path=str(vectors_path.resolve()),
+        protocol_vectors_hash=_path_hash(vectors_path),
+        protocol_witness_path=str(witness_path.resolve()),
+        protocol_witness_hash=_path_hash(witness_path),
+        export_vectors_transcript=_completed_transcript(export_completed, cwd=root),
+        hashvectors_test_transcript=_completed_transcript(hashvectors_completed, cwd=contracts_dir),
+        python_parity_transcript=_completed_transcript(parity_completed, cwd=root),
     )
 
 
