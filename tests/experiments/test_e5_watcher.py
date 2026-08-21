@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 from poi_mpp.auditor.availability import ModelAssumptionError
-from poi_mpp.evidence.config import approved_schema_hash
+from poi_mpp.evidence.config import RunConfig, approved_schema_hash
 from poi_mpp.evidence.models import EvidenceOrigin
 
 
@@ -68,6 +68,33 @@ def _run_config_text(
             "  samples: 8",
             "  replacement: false",
         ]
+    )
+
+
+def _run_config(
+    *,
+    run_id: str = "run-e5",
+    experiment_id: str = "E5",
+    origin: EvidenceOrigin = EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+    authorization_scope: str = "PUBLICATION_EVIDENCE_AUTHORIZED",
+) -> RunConfig:
+    return RunConfig.model_validate(
+        {
+            "schema_version": "POI_MPP_RUN_CONFIG_V1",
+            "schema_hash": approved_schema_hash(),
+            "run_id": run_id,
+            "experiment_id": experiment_id,
+            "origin": origin,
+            "authorization_scope": authorization_scope,
+            "model_hash": "1" * 64,
+            "dataset_hash": "2" * 64,
+            "parent_hashes": (),
+            "data_availability": {
+                "total_shards": 16,
+                "samples": 8,
+                "replacement": False,
+            },
+        }
     )
 
 
@@ -142,8 +169,21 @@ def test_independent_baseline_matches_closed_form_and_simulation_is_reproducible
     assert independent_no_challenge_probability(scenario) == pytest.approx(expected)
 
     config = E5SimulationConfig(simulations=4096, seed=17, origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION)
-    first = run_watcher_scenario(run_id="run-e5", experiment_id="E5", scenario=scenario, config=config)
-    second = run_watcher_scenario(run_id="run-e5", experiment_id="E5", scenario=scenario, config=config)
+    run_config = _run_config()
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=run_config,
+        scenario=scenario,
+        config=config,
+    )
+    second = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=run_config,
+        scenario=scenario,
+        config=config,
+    )
 
     assert first == second
     assert first.no_challenge_probability == pytest.approx(expected, abs=0.02)
@@ -166,8 +206,21 @@ def test_failed_challenges_reduce_expected_utility_when_bond_is_positive():
     positive_bond = _scenario(scenario_id="utility-positive-bond", challenge_bond_micros=400_000, **shared)
 
     config = E5SimulationConfig(simulations=4096, seed=5, origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION)
-    zero_result = run_watcher_scenario(run_id="run-e5", experiment_id="E5", scenario=zero_bond, config=config)
-    positive_result = run_watcher_scenario(run_id="run-e5", experiment_id="E5", scenario=positive_bond, config=config)
+    run_config = _run_config()
+    zero_result = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=run_config,
+        scenario=zero_bond,
+        config=config,
+    )
+    positive_result = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=run_config,
+        scenario=positive_bond,
+        config=config,
+    )
 
     assert Decimal(positive_result.watcher_expected_utility_micros) < Decimal(
         zero_result.watcher_expected_utility_micros
@@ -202,8 +255,21 @@ def test_bonded_auditor_backstop_reduces_invalid_maturity_probability():
     )
 
     config = E5SimulationConfig(simulations=4096, seed=11, origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION)
-    base_result = run_watcher_scenario(run_id="run-e5", experiment_id="E5", scenario=base, config=config)
-    backstop_result = run_watcher_scenario(run_id="run-e5", experiment_id="E5", scenario=backstop, config=config)
+    run_config = _run_config()
+    base_result = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=run_config,
+        scenario=base,
+        config=config,
+    )
+    backstop_result = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=run_config,
+        scenario=backstop,
+        config=config,
+    )
 
     assert backstop_result.invalid_maturity_probability < base_result.invalid_maturity_probability
 
@@ -215,6 +281,7 @@ def test_reporting_requires_unique_scenario_seed_pairs_and_marks_synthetic_rows_
     reproducible = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="report-1"),
         config=E5SimulationConfig(
             simulations=4096,
@@ -226,6 +293,7 @@ def test_reporting_requires_unique_scenario_seed_pairs_and_marks_synthetic_rows_
     synthetic = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE),
         scenario=_scenario(scenario_id="report-2", fraud_value_micros=8_000_000),
         config=E5SimulationConfig(simulations=4096, seed=8, origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE),
     )
@@ -248,6 +316,7 @@ def test_publication_support_requires_exact_scope_reproducible_origin_and_contra
     first = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="pub-1"),
         config=E5SimulationConfig(
             simulations=4096,
@@ -259,6 +328,7 @@ def test_publication_support_requires_exact_scope_reproducible_origin_and_contra
     second = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="pub-2", fraud_value_micros=9_000_000),
         config=E5SimulationConfig(
             simulations=4096,
@@ -278,6 +348,7 @@ def test_publication_support_requires_exact_scope_reproducible_origin_and_contra
     wrong_scope = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="pub-3", fraud_value_micros=5_000_000),
         config=E5SimulationConfig(
             simulations=4096,
@@ -294,6 +365,60 @@ def test_publication_support_requires_exact_scope_reproducible_origin_and_contra
         summarize_e5_rows((first, forged_hash), contract=contract)
 
 
+def test_publication_support_requires_bound_publication_authorization(tmp_path: Path):
+    from poi_mpp.experiments.e5_watcher import E5SimulationConfig, run_watcher_scenario
+    from poi_mpp.reporting.e5 import summarize_e5_rows
+
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=_run_config(),
+        scenario=_scenario(scenario_id="auth-1"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=41,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    second = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=_run_config(),
+        scenario=_scenario(scenario_id="auth-2", fraud_value_micros=7_000_000),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=43,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    contract = _write_contract(tmp_path, (first, second))
+
+    missing_authority = first.model_dump(mode="python")
+    missing_authority.pop("run_config_snapshot")
+    missing_authority.pop("run_config_hash")
+    assert summarize_e5_rows((missing_authority, second), contract=contract).claim_disposition == "INCONCLUSIVE"
+
+    mismatched_authority = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=_run_config(authorization_scope="LOCAL_TEST_ONLY"),
+        scenario=_scenario(scenario_id="auth-1"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=41,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    assert summarize_e5_rows((mismatched_authority, second), contract=contract).claim_disposition == "INCONCLUSIVE"
+
+    forged_authority = first.model_dump(mode="python")
+    forged_authority["run_config_hash"] = "0" * 64
+    assert summarize_e5_rows((forged_authority, second), contract=contract).claim_disposition == "INCONCLUSIVE"
+
+
 def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios():
     from poi_mpp.experiments.e5_watcher import E5SimulationConfig, run_watcher_scenario
     from poi_mpp.reporting.e5 import summarize_e5_rows
@@ -301,6 +426,7 @@ def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios(
     first = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="replicate"),
         config=E5SimulationConfig(
             simulations=4096,
@@ -312,6 +438,7 @@ def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios(
     replicate = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="replicate"),
         config=E5SimulationConfig(
             simulations=4096,
@@ -323,6 +450,59 @@ def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios(
 
     with pytest.raises(ValueError, match="unique scenario_id"):
         summarize_e5_rows((first, replicate))
+
+
+def test_publication_precheck_rejects_oversized_rows_before_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    from poi_mpp.experiments.e5_watcher import E5ConfirmatoryContract, E5SimulationConfig, run_watcher_scenario
+    from poi_mpp.reporting.e5 import summarize_e5_rows
+
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=_run_config(),
+        scenario=_scenario(scenario_id="cap-1"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=51,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    second = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        run_config=_run_config(),
+        scenario=_scenario(scenario_id="cap-2", fraud_value_micros=5_500_000),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=53,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    contract = _write_contract(tmp_path, (first, second))
+    replay_calls = {"count": 0}
+
+    def _forbid_replay(*args, **kwargs):
+        replay_calls["count"] += 1
+        raise AssertionError("replay_row should not be called for oversized rows")
+
+    monkeypatch.setattr("poi_mpp.reporting.e5.replay_row", _forbid_replay)
+
+    oversized_global = first.model_dump(mode="python")
+    oversized_global["simulations"] = 8193
+    with pytest.raises(ValueError, match="hard replay maximum"):
+        summarize_e5_rows((oversized_global, second), contract=contract)
+    assert replay_calls["count"] == 0
+
+    capped_contract = E5ConfirmatoryContract.model_validate(
+        {**contract.model_dump(mode="python"), "maximum_replay_simulations": 4096}
+    )
+    oversized_contract = first.model_dump(mode="python")
+    oversized_contract["simulations"] = 4097
+    with pytest.raises(ValueError, match="confirmatory contract replay maximum"):
+        summarize_e5_rows((oversized_contract, second), contract=capped_contract)
+    assert replay_calls["count"] == 0
 
 
 def test_summary_rejects_forged_result_outputs_by_replaying_canonical_simulator(tmp_path: Path):
@@ -337,6 +517,7 @@ def test_summary_rejects_forged_result_outputs_by_replaying_canonical_simulator(
     first = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="replay-1"),
         config=E5SimulationConfig(
             simulations=4096,
@@ -348,6 +529,7 @@ def test_summary_rejects_forged_result_outputs_by_replaying_canonical_simulator(
     second = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="replay-2", fraud_value_micros=4_500_000),
         config=E5SimulationConfig(
             simulations=4096,
@@ -358,6 +540,7 @@ def test_summary_rejects_forged_result_outputs_by_replaying_canonical_simulator(
     )
     contract = _write_contract(tmp_path, (first, second))
     payload = second.model_dump(mode="python")
+    payload["run_config_snapshot"] = second.run_config_snapshot
     payload["watcher_expected_utility_micros"] = "999999.000000"
     provisional = E5ScenarioRow.model_construct(**{**payload, "result_contract_hash": "0" * 64})
     payload["result_contract_hash"] = result_contract_hash(provisional)
@@ -374,6 +557,7 @@ def test_contract_closure_rejects_unlisted_or_mismatched_scenarios_and_simulatio
     first = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="contract-1"),
         config=E5SimulationConfig(
             simulations=4096,
@@ -385,6 +569,7 @@ def test_contract_closure_rejects_unlisted_or_mismatched_scenarios_and_simulatio
     second = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=_run_config(),
         scenario=_scenario(scenario_id="contract-2", fraud_value_micros=6_000_000),
         config=E5SimulationConfig(
             simulations=4096,
@@ -448,15 +633,18 @@ def test_bribery_requires_declared_recipients_and_changes_modeled_economics():
         watch_cost_micros=0,
     )
     config = E5SimulationConfig(simulations=4096, seed=29, origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION)
+    run_config = _run_config()
     collusion_result = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=run_config,
         scenario=collusion,
         config=config,
     )
     bribed_result = run_watcher_scenario(
         run_id="run-e5",
         experiment_id="E5",
+        run_config=run_config,
         scenario=bribed,
         config=config,
     )

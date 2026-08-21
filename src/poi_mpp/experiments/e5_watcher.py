@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validat
 
 from poi_mpp.auditor.availability import ModelAssumptionError
 from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence.config import RunConfig
+from poi_mpp.evidence.config import RunConfig, config_hash
 from poi_mpp.evidence.models import EvidenceOrigin
 
 
@@ -352,6 +352,7 @@ def _result_contract_material(row: E5ScenarioRow) -> dict[str, object]:
         "schema_version": row.schema_version,
         "run_id": row.run_id,
         "experiment_id": row.experiment_id,
+        "run_config_hash": row.run_config_hash,
         "scenario_id": row.scenario_id,
         "seed": row.seed,
         "simulations": row.simulations,
@@ -388,9 +389,11 @@ class E5ScenarioRow(_FrozenModel):
     schema_version: str = "POI_MPP_E5_SCENARIO_ROW_V1"
     run_id: str
     experiment_id: str
+    run_config_snapshot: RunConfig
+    run_config_hash: str
     scenario_id: str
     seed: int = Field(ge=0)
-    simulations: int = Field(ge=MIN_SUPPORTED_SIMULATIONS)
+    simulations: int = Field(ge=MIN_SUPPORTED_SIMULATIONS, le=MAX_REPLAY_SIMULATIONS)
     origin: EvidenceOrigin
     family: WatcherScenarioFamily
     assumption_label: WatcherAssumption
@@ -441,6 +444,7 @@ class E5ScenarioRow(_FrozenModel):
     @field_validator(
         "run_id",
         "experiment_id",
+        "run_config_hash",
         "scenario_id",
         "simulation_model_version",
         "config_contract_hash",
@@ -484,7 +488,7 @@ class E5ScenarioRow(_FrozenModel):
             raise ValueError("decimal intervals must be ordered")
         return value
 
-    @field_validator("config_contract_hash", "scenario_contract_hash", "result_contract_hash")
+    @field_validator("run_config_hash", "config_contract_hash", "scenario_contract_hash", "result_contract_hash")
     @classmethod
     def validate_contract_hash_shape(cls, value: str) -> str:
         if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
@@ -509,6 +513,14 @@ class E5ScenarioRow(_FrozenModel):
             raise ValueError("currency_precision must equal MICROS_DECIMAL")
         if self.simulation_model_version != E5_SIMULATION_MODEL_VERSION:
             raise ValueError(f"simulation_model_version must equal {E5_SIMULATION_MODEL_VERSION}")
+        if self.run_config_hash != config_hash(self.run_config_snapshot):
+            raise ValueError("run_config_hash must match canonical RunConfig material")
+        if self.run_id != self.run_config_snapshot.run_id:
+            raise ValueError("run_id must exactly bind run_config_snapshot.run_id")
+        if self.experiment_id != self.run_config_snapshot.experiment_id:
+            raise ValueError("experiment_id must exactly bind run_config_snapshot.experiment_id")
+        if self.origin is not self.run_config_snapshot.origin:
+            raise ValueError("origin must exactly bind run_config_snapshot.origin")
         expected_config_hash = digest(
             "E5_SIMULATION_CONFIG",
             {
@@ -709,11 +721,18 @@ def run_watcher_scenario(
     *,
     run_id: str,
     experiment_id: str,
+    run_config: RunConfig,
     scenario: WatcherScenario,
     config: E5SimulationConfig,
 ) -> E5ScenarioRow:
     if experiment_id != "E5":
         raise ValueError("experiment_id must equal E5")
+    if run_config.run_id != run_id:
+        raise ValueError("run_config.run_id must match run_id")
+    if run_config.experiment_id != experiment_id:
+        raise ValueError("run_config.experiment_id must match experiment_id")
+    if run_config.origin is not config.origin:
+        raise ValueError("run_config.origin must match config.origin")
     generator = random.Random(config.seed)
     no_challenge_count = 0
     challenge_success_count = 0
@@ -767,6 +786,8 @@ def run_watcher_scenario(
     payload = {
         "run_id": run_id,
         "experiment_id": experiment_id,
+        "run_config_snapshot": run_config,
+        "run_config_hash": config_hash(run_config),
         "scenario_id": scenario.scenario_id,
         "seed": config.seed,
         "simulations": config.simulations,
@@ -872,6 +893,7 @@ def replay_row(row: E5ScenarioRow) -> E5ScenarioRow:
     return run_watcher_scenario(
         run_id=row.run_id,
         experiment_id=row.experiment_id,
+        run_config=row.run_config_snapshot,
         scenario=scenario_from_row(row),
         config=simulation_config_from_row(row),
     )
