@@ -14,7 +14,6 @@ required_evaluator_fields:
   - evaluator_id
   - evaluator_hash
   - independence_basis
-  - verified
 notes:
   - Synthetic fixtures are plumbing-only and can never satisfy the confirmatory publication path.
   - Task11 annotation-driven semantics remain fail-closed; E3 metrics score typed outputs but do not mint semantic authority.

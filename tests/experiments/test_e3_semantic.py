@@ -9,9 +9,7 @@ from poi_mpp.auditor.semantic.models import SemanticCalibrationArtifact, Semanti
 from poi_mpp.datasets.manifests import DatasetManifest, DatasetRecord, DatasetSplit
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.config import RunConfig, approved_schema_hash
-from poi_mpp.evidence.models import EvidenceOrigin, RunManifest
-from poi_mpp.evidence.provenance import EnvironmentManifest, environment_hash, freeze_run
-from poi_mpp.evidence.validation import ProvenanceBundle
+from poi_mpp.evidence.models import ArtifactStage, EvidenceOrigin
 
 
 def _hash(label: str, value: str) -> str:
@@ -23,14 +21,15 @@ def _record(
     record_id: str,
     split: DatasetSplit,
     origin: EvidenceOrigin,
+    salt: str,
 ) -> DatasetRecord:
     return DatasetRecord(
         record_id=record_id,
         split=split,
         origin=origin,
-        source_family=f"{split.value.lower()}-{record_id}",
-        source_hash=_hash("DATASET_SOURCE", f"{split.value}:{record_id}:source"),
-        content_hash=_hash("DATASET_CONTENT", f"{split.value}:{record_id}:content"),
+        source_family=f"{split.value.lower()}-{salt}",
+        source_hash=_hash("DATASET_SOURCE", f"{split.value}:{salt}:source"),
+        content_hash=_hash("DATASET_CONTENT", f"{split.value}:{salt}:content"),
     )
 
 
@@ -39,27 +38,32 @@ def _manifest(
     dataset_id: str,
     split: DatasetSplit,
     origin: EvidenceOrigin,
-    record_ids: tuple[str, ...],
+    record_specs: tuple[tuple[str, str], ...],
 ) -> DatasetManifest:
     return DatasetManifest(
         dataset_id=dataset_id,
         split=split,
         records=tuple(
-            _record(record_id=record_id, split=split, origin=origin)
-            for record_id in record_ids
+            _record(record_id=record_id, split=split, origin=origin, salt=salt)
+            for record_id, salt in record_specs
         ),
     )
 
 
-def _run_config(*, origin: EvidenceOrigin = EvidenceOrigin.REAL_MODEL_EXECUTION) -> RunConfig:
+def _run_config(
+    *,
+    run_id: str,
+    origin: EvidenceOrigin,
+    authorization_scope: str,
+) -> RunConfig:
     return RunConfig.model_validate(
         {
             "schema_version": "POI_MPP_RUN_CONFIG_V1",
             "schema_hash": approved_schema_hash(),
-            "run_id": "run-e3",
+            "run_id": run_id,
             "experiment_id": "E3",
             "origin": origin.value,
-            "authorization_scope": "LOCAL_AUTHORIZED_PILOT_ONLY",
+            "authorization_scope": authorization_scope,
             "model_hash": "1" * 64,
             "dataset_hash": "2" * 64,
             "parent_hashes": [],
@@ -80,13 +84,14 @@ def _calibration() -> SemanticCalibrationArtifact:
     )
 
 
-def _row(
+def _plumbing_row(
     *,
     case_id: str,
     reference_valid: bool,
     verifier_decision: VerificationDecision,
-    verifier_confidence: float | None = None,
     subgroup: str = "core",
+    source_salt: str | None = None,
+    annotation_salt: str | None = None,
 ):
     from poi_mpp.experiments.e3_semantic import E3SemanticRow
 
@@ -95,15 +100,17 @@ def _row(
     )
     if verifier_decision is VerificationDecision.ACCEPT:
         verifier_outcome = SemanticOutcome.SUPPORTED
-        confidence = 0.92 if verifier_confidence is None else verifier_confidence
+        verifier_confidence = 0.92
     elif verifier_decision is VerificationDecision.REJECT:
         verifier_outcome = SemanticOutcome.CONTRADICTORY
-        confidence = 0.81 if verifier_confidence is None else verifier_confidence
+        verifier_confidence = 0.81
     else:
         verifier_outcome = None
-        confidence = verifier_confidence
+        verifier_confidence = None
+    source_tag = source_salt or case_id
+    annotation_tag = annotation_salt or case_id
     return E3SemanticRow(
-        run_id="run-e3",
+        run_id="run-e3-plumbing",
         experiment_id="E3",
         case_id=case_id,
         split=DatasetSplit.PLUMBING,
@@ -114,204 +121,163 @@ def _row(
         verifier_outcome=verifier_outcome,
         abstained=verifier_decision is VerificationDecision.ABSTAIN,
         subgroup=subgroup,
-        verifier_confidence=confidence,
+        verifier_confidence=verifier_confidence,
         calibration_hash=_calibration().content_hash,
         source_record_id=f"source-{case_id}",
-        source_content_hash=_hash("SOURCE_CONTENT", case_id),
+        source_content_hash=_hash("DATASET_CONTENT", f"{DatasetSplit.PLUMBING.value}:{source_tag}:content"),
         source_origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
         annotation_record_id=f"annotation-{case_id}",
-        annotation_hash=_hash("ANNOTATION_CONTENT", case_id),
+        annotation_hash=_hash("DATASET_CONTENT", f"{DatasetSplit.PLUMBING.value}:{annotation_tag}:content"),
         annotation_origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
-        evaluator_id="fixture-evaluator",
-        evaluator_hash=_hash("EVALUATOR", "fixture-evaluator"),
+        evaluator_id="synthetic-plumbing-evaluator",
+        evaluator_hash=_hash("EVAL_HASH", "synthetic-plumbing-evaluator"),
         evaluator_origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
-        evaluator_independence_basis="fixture plumbing only",
+        evaluator_independence_basis="SYNTHETIC_NON_EVIDENCE_PLUMBING_ONLY",
     )
 
 
-def _confirmatory_config(
-    *,
-    dataset_origin: EvidenceOrigin,
-    confirmatory_manifest: DatasetManifest,
-):
+def _plumbing_config():
     from poi_mpp.experiments.e3_semantic import (
-        E3ConfirmatoryConfig,
-        E3ConfirmatoryDataset,
         E3DevelopmentDataset,
-        E3EvaluatorAuthority,
+        E3ManifestClosure,
+        E3SyntheticPlumbingConfig,
+        E3SyntheticPlumbingEvaluator,
     )
 
-    return E3ConfirmatoryConfig(
-        run_config=_run_config(origin=EvidenceOrigin.REAL_MODEL_EXECUTION),
-        publication_scope="LOCAL_TEST_ONLY",
+    return E3SyntheticPlumbingConfig(
+        run_config=_run_config(
+            run_id="run-e3-plumbing",
+            origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+            authorization_scope="LOCAL_TEST_ONLY",
+        ),
         development_dataset=E3DevelopmentDataset(
             dataset_id="development-e3",
             manifest=_manifest(
                 dataset_id="development-e3",
                 split=DatasetSplit.DEVELOPMENT,
                 origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-                record_ids=("dev-1", "dev-2"),
+                record_specs=(("dev-1", "dev-1"), ("dev-2", "dev-2")),
             ),
             calibration=_calibration(),
         ),
-        dataset=E3ConfirmatoryDataset(
-            dataset_id="confirm-e3",
-            origin=dataset_origin,
-            manifest=confirmatory_manifest,
-            license_id=None,
-            privacy_status=None,
-            annotation_protocol_id=None,
-        ),
-        evaluators=(
-            E3EvaluatorAuthority(
-                evaluator_id="eval-1",
-                evaluator_hash=_hash("EVAL_HASH", "eval-1"),
-                origin=dataset_origin,
-                independence_basis="fixture evaluator",
-                verified=False,
+        manifests=E3ManifestClosure(
+            case_manifest=_manifest(
+                dataset_id="cases-e3",
+                split=DatasetSplit.PLUMBING,
+                origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+                record_specs=(("case-1", "case-1"), ("case-2", "case-2")),
+            ),
+            source_manifest=_manifest(
+                dataset_id="sources-e3",
+                split=DatasetSplit.PLUMBING,
+                origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+                record_specs=(("source-case-1", "case-1"), ("source-case-2", "case-2")),
+            ),
+            annotation_manifest=_manifest(
+                dataset_id="annotations-e3",
+                split=DatasetSplit.PLUMBING,
+                origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+                record_specs=(("annotation-case-1", "case-1"), ("annotation-case-2", "case-2")),
             ),
         ),
-        provenance_bundle=None,
+        evaluators=(
+            E3SyntheticPlumbingEvaluator(
+                evaluator_id="synthetic-plumbing-evaluator",
+                evaluator_hash=_hash("EVAL_HASH", "synthetic-plumbing-evaluator"),
+                origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
+                independence_basis="SYNTHETIC_NON_EVIDENCE_PLUMBING_ONLY",
+            ),
+        ),
     )
 
 
-def _publication_bundle(
-    *,
-    run_origin: EvidenceOrigin,
-    forged_manifest: RunManifest | None = None,
-) -> tuple[RunConfig, ProvenanceBundle]:
-    run_config = RunConfig.model_validate(
-        {
-            "schema_version": "POI_MPP_RUN_CONFIG_V1",
-            "schema_hash": approved_schema_hash(),
-            "run_id": "run-e3-publication",
-            "experiment_id": "E3",
-            "origin": run_origin.value,
-            "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
-            "model_hash": "3" * 64,
-            "dataset_hash": "4" * 64,
-            "parent_hashes": [],
-            "data_availability": {
-                "total_shards": 16,
-                "samples": 8,
-                "replacement": False,
-            },
-        }
-    )
-    environment = EnvironmentManifest(
-        python_implementation="CPython",
-        python_version="3.11.15",
-        os_name="Darwin",
-        os_release="26.0.0",
-        machine="arm64",
-        cpu_model="Apple M4",
-        gpu_model="Apple GPU",
-        package_lock_hash="5" * 64,
-        compiler_version=None,
-        foundry_version=None,
-        code_revision="6" * 40,
-    )
-    manifest = forged_manifest or freeze_run(run_config, environment)
-    return run_config, ProvenanceBundle(
-        config=run_config,
-        environment=environment,
-        manifest=manifest,
-    )
-
-
-def _publication_config(
-    *,
-    run_origin: EvidenceOrigin,
-    dataset_origin: EvidenceOrigin,
-    forged_manifest: RunManifest | None = None,
-):
+def _confirmatory_config():
     from poi_mpp.experiments.e3_semantic import (
         E3ConfirmatoryConfig,
-        E3ConfirmatoryDataset,
+        E3DeclaredEvaluator,
         E3DevelopmentDataset,
-        E3EvaluatorAuthority,
+        E3ManifestClosure,
         E3_CONFIRMATORY_SCOPE,
     )
 
-    run_config, provenance_bundle = _publication_bundle(
-        run_origin=run_origin,
-        forged_manifest=forged_manifest,
-    )
     return E3ConfirmatoryConfig(
-        run_config=run_config,
+        run_config=_run_config(
+            run_id="run-e3-confirm",
+            origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+            authorization_scope="PUBLICATION_EVIDENCE_AUTHORIZED",
+        ),
         publication_scope=E3_CONFIRMATORY_SCOPE,
         development_dataset=E3DevelopmentDataset(
             dataset_id="development-e3",
             manifest=_manifest(
                 dataset_id="development-e3",
                 split=DatasetSplit.DEVELOPMENT,
-                origin=run_origin,
-                record_ids=("dev-1", "dev-2"),
+                origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+                record_specs=(("dev-1", "dev-1"), ("dev-2", "dev-2")),
             ),
             calibration=_calibration(),
         ),
-        dataset=E3ConfirmatoryDataset(
-            dataset_id="confirm-e3",
-            origin=dataset_origin,
-            manifest=_manifest(
-                dataset_id="confirm-e3",
+        manifests=E3ManifestClosure(
+            case_manifest=_manifest(
+                dataset_id="cases-e3-confirm",
                 split=DatasetSplit.CONFIRMATORY,
-                origin=dataset_origin,
-                record_ids=("confirm-1", "confirm-2"),
+                origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+                record_specs=(("case-1", "case-1"),),
             ),
-            license_id="license-1",
-            privacy_status="PUBLIC",
-            annotation_protocol_id="proto-1",
+            source_manifest=_manifest(
+                dataset_id="sources-e3-confirm",
+                split=DatasetSplit.CONFIRMATORY,
+                origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+                record_specs=(("source-case-1", "case-1"),),
+            ),
+            annotation_manifest=_manifest(
+                dataset_id="annotations-e3-confirm",
+                split=DatasetSplit.CONFIRMATORY,
+                origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+                record_specs=(("annotation-case-1", "case-1"),),
+            ),
         ),
         evaluators=(
-            E3EvaluatorAuthority(
-                evaluator_id="eval-1",
-                evaluator_hash=_hash("EVAL_HASH", "eval-1"),
-                origin=run_origin,
-                independence_basis="independent reviewer",
-                verified=True,
+            E3DeclaredEvaluator(
+                evaluator_id="real-evaluator-1",
+                evaluator_hash=_hash("EVAL_HASH", "real-evaluator-1"),
+                origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+                independence_basis="declared-only-no-authority",
             ),
         ),
-        provenance_bundle=provenance_bundle,
+        license_id="license-1",
+        privacy_status="PUBLIC",
+        annotation_protocol_id="proto-1",
     )
 
 
-def _publication_row(
-    *,
-    case_id: str = "case-1",
-    origin: EvidenceOrigin = EvidenceOrigin.REAL_MODEL_EXECUTION,
-    source_origin: EvidenceOrigin = EvidenceOrigin.REAL_MODEL_EXECUTION,
-    annotation_origin: EvidenceOrigin = EvidenceOrigin.REAL_MODEL_EXECUTION,
-    evaluator_origin: EvidenceOrigin = EvidenceOrigin.REAL_MODEL_EXECUTION,
-    evaluator_hash: str | None = None,
-    evaluator_independence_basis: str = "independent reviewer",
-):
+def _confirmatory_row():
     from poi_mpp.experiments.e3_semantic import E3SemanticRow
 
     return E3SemanticRow(
-        run_id="run-e3-publication",
+        run_id="run-e3-confirm",
         experiment_id="E3",
-        case_id=case_id,
+        case_id="case-1",
         split=DatasetSplit.CONFIRMATORY,
-        origin=origin,
+        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
         frozen_reference_valid=True,
         frozen_reference_outcome=SemanticOutcome.SUPPORTED,
         verifier_decision=VerificationDecision.ACCEPT,
         verifier_outcome=SemanticOutcome.SUPPORTED,
         abstained=False,
         subgroup="core",
-        verifier_confidence=0.92,
+        verifier_confidence=0.95,
         calibration_hash=_calibration().content_hash,
-        source_record_id=f"source-{case_id}",
-        source_content_hash=_hash("SOURCE_CONTENT", f"pub-{case_id}"),
-        source_origin=source_origin,
-        annotation_record_id=f"annotation-{case_id}",
-        annotation_hash=_hash("ANNOTATION_CONTENT", f"pub-{case_id}"),
-        annotation_origin=annotation_origin,
-        evaluator_id="eval-1",
-        evaluator_hash=evaluator_hash or _hash("EVAL_HASH", "eval-1"),
-        evaluator_origin=evaluator_origin,
-        evaluator_independence_basis=evaluator_independence_basis,
+        source_record_id="source-case-1",
+        source_content_hash=_hash("DATASET_CONTENT", f"{DatasetSplit.CONFIRMATORY.value}:case-1:content"),
+        source_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        annotation_record_id="annotation-case-1",
+        annotation_hash=_hash("DATASET_CONTENT", f"{DatasetSplit.CONFIRMATORY.value}:case-1:content"),
+        annotation_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        evaluator_id="real-evaluator-1",
+        evaluator_hash=_hash("EVAL_HASH", "real-evaluator-1"),
+        evaluator_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        evaluator_independence_basis="declared-only-no-authority",
     )
 
 
@@ -319,10 +285,10 @@ def test_far_denominator_is_all_invalid_cases() -> None:
     from poi_mpp.reporting.e3 import semantic_metrics
 
     records = (
-        _row(case_id="case-1", reference_valid=False, verifier_decision=VerificationDecision.ACCEPT),
-        _row(case_id="case-2", reference_valid=False, verifier_decision=VerificationDecision.REJECT),
-        _row(case_id="case-3", reference_valid=True, verifier_decision=VerificationDecision.ACCEPT),
-        _row(case_id="case-4", reference_valid=True, verifier_decision=VerificationDecision.REJECT),
+        _plumbing_row(case_id="case-1", reference_valid=False, verifier_decision=VerificationDecision.ACCEPT),
+        _plumbing_row(case_id="case-2", reference_valid=False, verifier_decision=VerificationDecision.REJECT),
+        _plumbing_row(case_id="case-3", reference_valid=True, verifier_decision=VerificationDecision.ACCEPT),
+        _plumbing_row(case_id="case-4", reference_valid=True, verifier_decision=VerificationDecision.REJECT),
     )
 
     result = semantic_metrics(records)
@@ -337,8 +303,8 @@ def test_zero_denominator_is_explicit_when_no_invalid_cases() -> None:
     from poi_mpp.reporting.e3 import semantic_metrics
 
     records = (
-        _row(case_id="case-1", reference_valid=True, verifier_decision=VerificationDecision.ABSTAIN),
-        _row(case_id="case-2", reference_valid=True, verifier_decision=VerificationDecision.ABSTAIN),
+        _plumbing_row(case_id="case-1", reference_valid=True, verifier_decision=VerificationDecision.ABSTAIN),
+        _plumbing_row(case_id="case-2", reference_valid=True, verifier_decision=VerificationDecision.ABSTAIN),
     )
 
     result = semantic_metrics(records)
@@ -350,124 +316,82 @@ def test_zero_denominator_is_explicit_when_no_invalid_cases() -> None:
     assert result.calibration.zero_denominator is True
 
 
-def test_synthetic_confirmation_is_rejected() -> None:
-    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+def test_synthetic_plumbing_runner_emits_nonterminal_metrics() -> None:
+    from poi_mpp.experiments.e3_semantic import run_synthetic_plumbing_semantic
 
-    config = _confirmatory_config(
-        dataset_origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
-        confirmatory_manifest=_manifest(
-            dataset_id="confirm-e3",
-            split=DatasetSplit.PLUMBING,
-            origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
-            record_ids=("plumb-1",),
+    result = run_synthetic_plumbing_semantic(
+        config=_plumbing_config(),
+        rows=(
+            _plumbing_row(case_id="case-1", reference_valid=True, verifier_decision=VerificationDecision.ACCEPT),
+            _plumbing_row(case_id="case-2", reference_valid=False, verifier_decision=VerificationDecision.REJECT),
         ),
     )
 
-    with pytest.raises(PublicationEligibilityError, match="synthetic non-evidence"):
-        run_confirmatory_semantic(config=config, rows=(_row(case_id="case-1", reference_valid=True, verifier_decision=VerificationDecision.ACCEPT),))
+    assert result.origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE
+    assert result.stage is ArtifactStage.SEMANTICALLY_VALID
+    assert result.summary.denominator == 2
+    assert result.summary.coverage.numerator == 2
 
 
-def test_confirmatory_overlap_is_rejected() -> None:
-    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+def test_plumbing_requires_source_manifest_closure_before_metrics() -> None:
+    from poi_mpp.experiments.e3_semantic import E3EvaluationContractError, run_synthetic_plumbing_semantic
 
-    overlapping_manifest = _manifest(
-        dataset_id="confirm-e3",
-        split=DatasetSplit.CONFIRMATORY,
-        origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-        record_ids=("dev-1",),
-    )
-    config = _confirmatory_config(
-        dataset_origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-        confirmatory_manifest=overlapping_manifest,
-    )
-
-    with pytest.raises(PublicationEligibilityError, match="overlap"):
-        run_confirmatory_semantic(config=config, rows=(_row(case_id="case-1", reference_valid=True, verifier_decision=VerificationDecision.ACCEPT),))
-
-
-def test_confirmatory_requires_real_model_execution_origin() -> None:
-    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
-
-    config = _publication_config(
-        run_origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-        dataset_origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-    )
-
-    with pytest.raises(PublicationEligibilityError, match="run_config.origin must equal REAL_MODEL_EXECUTION"):
-        run_confirmatory_semantic(
-            config=config,
+    with pytest.raises(E3EvaluationContractError, match="source manifest"):
+        run_synthetic_plumbing_semantic(
+            config=_plumbing_config(),
             rows=(
-                _publication_row(
-                    origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-                    source_origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-                    annotation_origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
-                    evaluator_origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+                _plumbing_row(
+                    case_id="case-1",
+                    reference_valid=True,
+                    verifier_decision=VerificationDecision.ACCEPT,
+                    source_salt="forged-source",
+                ),
+                _plumbing_row(case_id="case-2", reference_valid=False, verifier_decision=VerificationDecision.REJECT),
+            ),
+        )
+
+
+def test_plumbing_requires_annotation_manifest_closure_before_metrics() -> None:
+    from poi_mpp.experiments.e3_semantic import E3EvaluationContractError, run_synthetic_plumbing_semantic
+
+    with pytest.raises(E3EvaluationContractError, match="annotation manifest"):
+        run_synthetic_plumbing_semantic(
+            config=_plumbing_config(),
+            rows=(
+                _plumbing_row(case_id="case-1", reference_valid=True, verifier_decision=VerificationDecision.ACCEPT),
+                _plumbing_row(
+                    case_id="case-2",
+                    reference_valid=False,
+                    verifier_decision=VerificationDecision.REJECT,
+                    annotation_salt="forged-annotation",
                 ),
             ),
         )
 
 
-def test_row_evaluator_provenance_must_match_verified_registry() -> None:
+def test_real_confirmatory_waits_for_external_evaluator_authority() -> None:
     from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
 
-    config = _publication_config(
-        run_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-        dataset_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-    )
-
-    with pytest.raises(PublicationEligibilityError, match="evaluator_hash must match the verified evaluator registry"):
+    with pytest.raises(PublicationEligibilityError, match="WAITING_EXTERNAL_EVALUATOR_AUTHORITY"):
         run_confirmatory_semantic(
-            config=config,
-            rows=(
-                _publication_row(
-                    evaluator_hash=_hash("ROW_EVAL_HASH", "mismatch"),
-                    evaluator_origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
-                    evaluator_independence_basis="caller supplied mismatch",
-                ),
-            ),
+            config=_confirmatory_config(),
+            rows=(_confirmatory_row(),),
         )
 
 
-def test_forged_provenance_bundle_is_rejected() -> None:
+def test_confirmatory_row_outside_manifest_is_rejected_before_authority_boundary() -> None:
     from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
 
-    forged_manifest = RunManifest(
-        run_id="run-e3-publication",
-        experiment_id="E3",
-        config_hash=_hash("FORGED_CONFIG", "x"),
-        environment_hash=environment_hash(
-            EnvironmentManifest(
-                python_implementation="CPython",
-                python_version="3.11.15",
-                os_name="Darwin",
-                os_release="26.0.0",
-                machine="arm64",
-                cpu_model="Apple M4",
-                gpu_model="Apple GPU",
-                package_lock_hash="5" * 64,
-                compiler_version=None,
-                foundry_version=None,
-                code_revision="6" * 40,
-            )
-        ),
-        code_revision="UNVERSIONED_BLOCKED",
-        origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
-        authorization_scope="PUBLICATION_EVIDENCE_AUTHORIZED",
-        model_hash="3" * 64,
-        dataset_hash="4" * 64,
-        parent_hashes=(),
-    )
-    config = _publication_config(
-        run_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-        dataset_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
-        forged_manifest=forged_manifest,
-    )
+    forged_row = _confirmatory_row().model_copy(update={"source_record_id": "source-missing"})
 
-    with pytest.raises(PublicationEligibilityError, match="provenance manifest does not equal recomputed freeze_run"):
-        run_confirmatory_semantic(config=config, rows=(_publication_row(),))
+    with pytest.raises(PublicationEligibilityError, match="source manifest"):
+        run_confirmatory_semantic(
+            config=_confirmatory_config(),
+            rows=(forged_row,),
+        )
 
 
-def test_cli_loads_pilot_config_then_stops_at_authority_boundary() -> None:
+def test_cli_loads_schema_then_stops_at_external_authority_boundary() -> None:
     repo = Path("/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts")
     completed = subprocess.run(
         [
@@ -483,5 +407,75 @@ def test_cli_loads_pilot_config_then_stops_at_authority_boundary() -> None:
 
     combined = f"{completed.stdout}\n{completed.stderr}"
     assert completed.returncode != 0
-    assert "frozen confirmatory dataset manifest" in combined
+    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" in combined
     assert "schema_hash" not in combined
+
+
+def test_cli_rejects_corrupt_schema_copy_before_authority_boundary(tmp_path: Path) -> None:
+    repo = Path("/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts")
+    schema_copy = tmp_path / "e3.schema.yaml"
+    schema_copy.write_text("not: [valid\n", encoding="utf-8")
+
+    completed = subprocess.run(
+        [
+            str(repo / ".venv/bin/python"),
+            str(repo / "experiments/e3_semantic_eval.py"),
+            "--config",
+            str(repo / "configs/pilot/e3.yaml"),
+            "--schema",
+            str(schema_copy),
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+
+    combined = f"{completed.stdout}\n{completed.stderr}"
+    assert completed.returncode != 0
+    assert "unable to load E3 confirmatory schema" in combined
+    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" not in combined
+
+
+def test_cli_rejects_mismatched_schema_copy_before_authority_boundary(tmp_path: Path) -> None:
+    repo = Path("/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts")
+    schema_copy = tmp_path / "e3.schema.yaml"
+    schema_copy.write_text(
+        (
+            "schema_version: POI_MPP_E3_CONFIRMATORY_SCOPE_V1\n"
+            "publication_scope: WRONG_SCOPE\n"
+            "required_run_origin: REAL_MODEL_EXECUTION\n"
+            "required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED\n"
+            "required_calibration_split: DEVELOPMENT\n"
+            "required_confirmatory_manifest_split: CONFIRMATORY\n"
+            "forbidden_confirmatory_origins:\n"
+            "  - SYNTHETIC_NON_EVIDENCE\n"
+            "required_confirmatory_metadata:\n"
+            "  - license_id\n"
+            "  - privacy_status\n"
+            "  - annotation_protocol_id\n"
+            "required_evaluator_fields:\n"
+            "  - evaluator_id\n"
+            "  - evaluator_hash\n"
+            "  - independence_basis\n"
+        ),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            str(repo / ".venv/bin/python"),
+            str(repo / "experiments/e3_semantic_eval.py"),
+            "--config",
+            str(repo / "configs/pilot/e3.yaml"),
+            "--schema",
+            str(schema_copy),
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+
+    combined = f"{completed.stdout}\n{completed.stderr}"
+    assert completed.returncode != 0
+    assert "publication_scope must equal E3_CONFIRMATORY_PUBLICATION_V1" in combined
+    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" not in combined

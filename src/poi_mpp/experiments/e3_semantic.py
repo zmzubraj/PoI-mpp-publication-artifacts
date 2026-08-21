@@ -1,20 +1,24 @@
-"""E3 confirmatory semantic-evaluation harness with fail-closed authority checks."""
+"""E3 semantic evaluation with strict manifest closure and fail-closed authority."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+import yaml
 
 from poi_mpp.auditor.semantic.models import SemanticCalibrationArtifact, SemanticOutcome, VerificationDecision
-from poi_mpp.datasets.manifests import DatasetManifest, DatasetSplit, assert_confirmatory_isolation
-from poi_mpp.evidence import EvidenceOrigin, ProvenanceBundle, RunConfig, provenance_bundle_from_json
+from poi_mpp.datasets.manifests import DatasetManifest, DatasetRecord, DatasetSplit, assert_confirmatory_isolation
+from poi_mpp.evidence import ArtifactStage, EvidenceOrigin, ProvenanceBundle, RunConfig
 from poi_mpp.reporting.e3 import E3MetricPolicy, E3Summary, semantic_metrics
 
 
 PUBLICATION_EVIDENCE_AUTHORIZED = "PUBLICATION_EVIDENCE_AUTHORIZED"
 E3_CONFIRMATORY_SCOPE = "E3_CONFIRMATORY_PUBLICATION_V1"
+WAITING_EXTERNAL_EVALUATOR_AUTHORITY = "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+_PLUMBING_INDEPENDENCE_BASIS = "SYNTHETIC_NON_EVIDENCE_PLUMBING_ONLY"
 
 
 class _FrozenModel(BaseModel):
@@ -26,6 +30,14 @@ class ErrorClass(StrEnum):
     FALSE_REJECT = "FALSE_REJECT"
     ABSTAIN = "ABSTAIN"
     OUTCOME_MISMATCH = "OUTCOME_MISMATCH"
+
+
+class E3EvaluationContractError(ValueError):
+    """Raised when a row/config contract breaks before metrics are computed."""
+
+    def __init__(self, reasons: Sequence[str]):
+        self.reasons = tuple(dict.fromkeys(str(reason) for reason in reasons))
+        super().__init__("; ".join(self.reasons) if self.reasons else "E3 evaluation contract failed")
 
 
 class PublicationEligibilityError(ValueError):
@@ -107,18 +119,17 @@ class E3SemanticRow(_FrozenModel):
         return self
 
 
-class E3EvaluatorAuthority(_FrozenModel):
+class E3DeclaredEvaluator(_FrozenModel):
     evaluator_id: str
     evaluator_hash: str
     origin: EvidenceOrigin
     independence_basis: str
-    verified: bool
 
     @field_validator("evaluator_id", "independence_basis")
     @classmethod
     def require_nonblank_text(cls, value: str) -> str:
         if not value.strip():
-            raise ValueError("evaluator authority fields must not be blank")
+            raise ValueError("declared evaluator fields must not be blank")
         return value
 
     @field_validator("evaluator_hash")
@@ -127,6 +138,24 @@ class E3EvaluatorAuthority(_FrozenModel):
         if not isinstance(value, str) or len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value):
             raise ValueError("evaluator_hash must be a lowercase SHA-256 hex digest")
         return value
+
+
+class E3SyntheticPlumbingEvaluator(E3DeclaredEvaluator):
+    @model_validator(mode="after")
+    def validate_synthetic_origin(self) -> "E3SyntheticPlumbingEvaluator":
+        if self.origin is not EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
+            raise ValueError("synthetic plumbing evaluators must use SYNTHETIC_NON_EVIDENCE origin")
+        if self.independence_basis != _PLUMBING_INDEPENDENCE_BASIS:
+            raise ValueError(
+                f"synthetic plumbing evaluators must use independence_basis {_PLUMBING_INDEPENDENCE_BASIS}"
+            )
+        return self
+
+
+class E3ManifestClosure(_FrozenModel):
+    case_manifest: DatasetManifest
+    source_manifest: DatasetManifest
+    annotation_manifest: DatasetManifest
 
 
 class E3DevelopmentDataset(_FrozenModel):
@@ -142,20 +171,127 @@ class E3DevelopmentDataset(_FrozenModel):
         return value
 
 
-class E3ConfirmatoryDataset(_FrozenModel):
-    dataset_id: str
-    origin: EvidenceOrigin
-    manifest: DatasetManifest
-    license_id: str | None = None
-    privacy_status: str | None = None
-    annotation_protocol_id: str | None = None
+class E3ConfirmatorySchema(_FrozenModel):
+    schema_version: str = "POI_MPP_E3_CONFIRMATORY_SCOPE_V1"
+    publication_scope: str
+    required_run_origin: EvidenceOrigin
+    required_run_authorization_scope: str
+    required_calibration_split: DatasetSplit
+    required_confirmatory_manifest_split: DatasetSplit
+    forbidden_confirmatory_origins: tuple[EvidenceOrigin, ...]
+    required_confirmatory_metadata: tuple[str, ...]
+    required_evaluator_fields: tuple[str, ...]
+    notes: tuple[str, ...] = ()
 
-    @field_validator("dataset_id", "license_id", "privacy_status", "annotation_protocol_id")
+    @model_validator(mode="after")
+    def validate_contract(self) -> "E3ConfirmatorySchema":
+        if self.schema_version != "POI_MPP_E3_CONFIRMATORY_SCOPE_V1":
+            raise ValueError("schema_version must equal POI_MPP_E3_CONFIRMATORY_SCOPE_V1")
+        if self.publication_scope != E3_CONFIRMATORY_SCOPE:
+            raise ValueError(f"publication_scope must equal {E3_CONFIRMATORY_SCOPE}")
+        if self.required_run_origin is not EvidenceOrigin.REAL_MODEL_EXECUTION:
+            raise ValueError("required_run_origin must equal REAL_MODEL_EXECUTION")
+        if self.required_run_authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+            raise ValueError(
+                f"required_run_authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+            )
+        if self.required_calibration_split is not DatasetSplit.DEVELOPMENT:
+            raise ValueError("required_calibration_split must equal DEVELOPMENT")
+        if self.required_confirmatory_manifest_split is not DatasetSplit.CONFIRMATORY:
+            raise ValueError("required_confirmatory_manifest_split must equal CONFIRMATORY")
+        if EvidenceOrigin.SYNTHETIC_NON_EVIDENCE not in self.forbidden_confirmatory_origins:
+            raise ValueError("forbidden_confirmatory_origins must include SYNTHETIC_NON_EVIDENCE")
+        if tuple(self.required_confirmatory_metadata) != (
+            "license_id",
+            "privacy_status",
+            "annotation_protocol_id",
+        ):
+            raise ValueError(
+                "required_confirmatory_metadata must equal license_id, privacy_status, annotation_protocol_id"
+            )
+        if tuple(self.required_evaluator_fields) != (
+            "evaluator_id",
+            "evaluator_hash",
+            "independence_basis",
+        ):
+            raise ValueError(
+                "required_evaluator_fields must equal evaluator_id, evaluator_hash, independence_basis"
+            )
+        return self
+
+
+def default_e3_confirmatory_schema() -> E3ConfirmatorySchema:
+    return E3ConfirmatorySchema(
+        publication_scope=E3_CONFIRMATORY_SCOPE,
+        required_run_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        required_run_authorization_scope=PUBLICATION_EVIDENCE_AUTHORIZED,
+        required_calibration_split=DatasetSplit.DEVELOPMENT,
+        required_confirmatory_manifest_split=DatasetSplit.CONFIRMATORY,
+        forbidden_confirmatory_origins=(EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,),
+        required_confirmatory_metadata=("license_id", "privacy_status", "annotation_protocol_id"),
+        required_evaluator_fields=("evaluator_id", "evaluator_hash", "independence_basis"),
+        notes=(),
+    )
+
+
+def load_e3_confirmatory_schema(path: str | Path) -> E3ConfirmatorySchema:
+    schema_path = Path(path)
+    try:
+        raw = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as error:
+        raise ValueError(f"unable to load E3 confirmatory schema: {schema_path}") from error
+    if not isinstance(raw, Mapping):
+        raise ValueError("E3 confirmatory schema must be a mapping")
+    return E3ConfirmatorySchema.model_validate(dict(raw))
+
+
+class E3SyntheticPlumbingConfig(_FrozenModel):
+    run_config: RunConfig
+    development_dataset: E3DevelopmentDataset
+    manifests: E3ManifestClosure
+    evaluators: tuple[E3SyntheticPlumbingEvaluator, ...]
+    policy: E3MetricPolicy = E3MetricPolicy()
+
+    @model_validator(mode="after")
+    def validate_contract(self) -> "E3SyntheticPlumbingConfig":
+        if self.run_config.experiment_id != "E3":
+            raise ValueError("run_config.experiment_id must equal E3")
+        if self.run_config.origin is not EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
+            raise ValueError("synthetic plumbing run_config.origin must equal SYNTHETIC_NON_EVIDENCE")
+        if self.development_dataset.calibration.fitted_split.value != "DEVELOPMENT":
+            raise ValueError("calibration must be fitted on the DEVELOPMENT split")
+        return self
+
+
+class E3ConfirmatoryConfig(_FrozenModel):
+    run_config: RunConfig
+    schema_contract: E3ConfirmatorySchema = default_e3_confirmatory_schema()
+    publication_scope: str
+    development_dataset: E3DevelopmentDataset
+    manifests: E3ManifestClosure
+    evaluators: tuple[E3DeclaredEvaluator, ...]
+    license_id: str
+    privacy_status: str
+    annotation_protocol_id: str
+    provenance_bundle: ProvenanceBundle | None = None
+    policy: E3MetricPolicy = E3MetricPolicy()
+
+    @field_validator("publication_scope", "license_id", "privacy_status", "annotation_protocol_id")
     @classmethod
-    def reject_blank_optional_text(cls, value: str | None) -> str | None:
-        if value is not None and not value.strip():
-            raise ValueError("optional dataset metadata must not be blank when supplied")
+    def require_nonblank_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("confirmatory metadata must not be blank")
         return value
+
+    @model_validator(mode="after")
+    def validate_contract(self) -> "E3ConfirmatoryConfig":
+        if self.run_config.experiment_id != "E3":
+            raise ValueError("run_config.experiment_id must equal E3")
+        if self.development_dataset.calibration.fitted_split.value != self.schema_contract.required_calibration_split.value:
+            raise ValueError("calibration must be fitted on the DEVELOPMENT split")
+        if self.publication_scope != self.schema_contract.publication_scope:
+            raise ValueError(f"publication_scope must equal {self.schema_contract.publication_scope}")
+        return self
 
 
 class E3AnnotationProvenance(_FrozenModel):
@@ -188,47 +324,30 @@ class E3ErrorLedgerEntry(_FrozenModel):
         return value
 
 
-class E3ConfirmatoryConfig(_FrozenModel):
-    run_config: RunConfig
-    publication_scope: str
-    development_dataset: E3DevelopmentDataset
-    dataset: E3ConfirmatoryDataset
-    evaluators: tuple[E3EvaluatorAuthority, ...]
-    policy: E3MetricPolicy = E3MetricPolicy()
-    provenance_bundle: ProvenanceBundle | None = None
-
-    @field_validator("publication_scope")
-    @classmethod
-    def require_nonblank_publication_scope(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("publication_scope must not be blank")
-        return value
-
-    @model_validator(mode="after")
-    def validate_static_contract(self) -> "E3ConfirmatoryConfig":
-        if self.run_config.experiment_id != "E3":
-            raise ValueError("run_config.experiment_id must equal E3")
-        if self.development_dataset.calibration.fitted_split.value != "DEVELOPMENT":
-            raise ValueError("calibration must be fitted on the DEVELOPMENT split")
-        return self
-
-
 class E3ConfirmatoryResult(_FrozenModel):
     summary: E3Summary
     annotation_provenance: E3AnnotationProvenance
     error_ledger: tuple[E3ErrorLedgerEntry, ...]
 
 
-def _revalidate_config(config: object) -> E3ConfirmatoryConfig:
-    if isinstance(config, E3ConfirmatoryConfig):
+class E3SyntheticPlumbingResult(_FrozenModel):
+    origin: EvidenceOrigin = EvidenceOrigin.SYNTHETIC_NON_EVIDENCE
+    stage: ArtifactStage = ArtifactStage.SEMANTICALLY_VALID
+    summary: E3Summary
+    annotation_provenance: E3AnnotationProvenance
+    error_ledger: tuple[E3ErrorLedgerEntry, ...]
+
+
+def _revalidate_config(config: object, expected_type: type[_FrozenModel]) -> _FrozenModel:
+    if isinstance(config, expected_type):
         payload = config.model_dump(mode="json")
     elif isinstance(config, BaseModel):
         payload = config.model_dump(mode="json")
     elif isinstance(config, Mapping):
         payload = dict(config)
     else:
-        raise TypeError("config must be an E3ConfirmatoryConfig or equivalent mapping")
-    return E3ConfirmatoryConfig.model_validate(payload)
+        raise TypeError(f"config must be a {expected_type.__name__} or equivalent mapping")
+    return expected_type.model_validate(payload)
 
 
 def _revalidate_row(row: object) -> E3SemanticRow:
@@ -239,16 +358,6 @@ def _revalidate_row(row: object) -> E3SemanticRow:
     else:
         payload = row
     return E3SemanticRow.model_validate(payload)
-
-
-def _verified_bundle(bundle: ProvenanceBundle) -> ProvenanceBundle:
-    return provenance_bundle_from_json(
-        {
-            "config": bundle.config.model_dump(mode="json"),
-            "environment": bundle.environment.model_dump(mode="json"),
-            "manifest": bundle.manifest.model_dump(mode="json"),
-        }
-    )
 
 
 def _annotation_provenance(rows: Sequence[E3SemanticRow]) -> E3AnnotationProvenance:
@@ -293,121 +402,170 @@ def _error_ledger(rows: Sequence[E3SemanticRow]) -> tuple[E3ErrorLedgerEntry, ..
     return tuple(entries)
 
 
-def _publication_reasons(
+def _record_map(
+    manifest: DatasetManifest,
+    *,
+    label: str,
+) -> dict[str, DatasetRecord]:
+    records = {record.record_id: record for record in manifest.records}
+    if len(records) != len(manifest.records):
+        raise E3EvaluationContractError((f"{label} must not contain duplicate record_id values",))
+    return records
+
+
+def _shared_closure_reasons(
+    *,
+    run_config: RunConfig,
+    manifests: E3ManifestClosure,
+    evaluators: Sequence[E3DeclaredEvaluator],
+    calibration: SemanticCalibrationArtifact,
+    rows: Sequence[E3SemanticRow],
+    expected_split: DatasetSplit,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if manifests.case_manifest.split is not expected_split:
+        reasons.append(f"case manifest must use the {expected_split.value} split")
+    if manifests.source_manifest.split is not expected_split:
+        reasons.append(f"source manifest must use the {expected_split.value} split")
+    if manifests.annotation_manifest.split is not expected_split:
+        reasons.append(f"annotation manifest must use the {expected_split.value} split")
+    if not rows:
+        reasons.append("semantic rows are required")
+        return tuple(reasons)
+    if len({row.case_id for row in rows}) != len(rows):
+        reasons.append("row case_id values must be unique")
+    if len({row.source_record_id for row in rows}) != len(rows):
+        reasons.append("row source_record_id values must be one-to-one")
+    if len({row.annotation_record_id for row in rows}) != len(rows):
+        reasons.append("row annotation_record_id values must be one-to-one")
+    if len({row.evaluator_id for row in rows}) > len(evaluators):
+        reasons.append("row evaluator_id values exceed the frozen evaluator registry closure")
+    case_records = _record_map(manifests.case_manifest, label="case manifest")
+    source_records = _record_map(manifests.source_manifest, label="source manifest")
+    annotation_records = _record_map(manifests.annotation_manifest, label="annotation manifest")
+    declared_evaluators = {evaluator.evaluator_id: evaluator for evaluator in evaluators}
+
+    if {row.case_id for row in rows} != set(case_records):
+        reasons.append("case manifest closure must exactly match row case_id values")
+    if {row.source_record_id for row in rows} != set(source_records):
+        reasons.append("source manifest closure must exactly match row source_record_id values")
+    if {row.annotation_record_id for row in rows} != set(annotation_records):
+        reasons.append("annotation manifest closure must exactly match row annotation_record_id values")
+
+    for row in rows:
+        if row.run_id != run_config.run_id:
+            reasons.append(f"row {row.case_id} run_id must equal run_config.run_id")
+        if row.experiment_id != run_config.experiment_id:
+            reasons.append(f"row {row.case_id} experiment_id must equal run_config.experiment_id")
+        if row.split is not expected_split:
+            reasons.append(f"row {row.case_id} must use the {expected_split.value} split")
+        if row.calibration_hash != calibration.content_hash:
+            reasons.append(
+                f"row {row.case_id} calibration_hash must equal the frozen development calibration"
+            )
+        case_record = case_records.get(row.case_id)
+        if case_record is None:
+            reasons.append(f"row {row.case_id} is outside the case manifest closure")
+        elif row.origin is not case_record.origin:
+            reasons.append(f"row {row.case_id} origin must match the case manifest origin")
+        source_record = source_records.get(row.source_record_id)
+        if source_record is None:
+            reasons.append(f"row {row.case_id} source manifest is missing {row.source_record_id}")
+        else:
+            if row.source_content_hash != source_record.content_hash:
+                reasons.append(f"row {row.case_id} source manifest hash does not match")
+            if row.source_origin is not source_record.origin:
+                reasons.append(f"row {row.case_id} source manifest origin does not match")
+        annotation_record = annotation_records.get(row.annotation_record_id)
+        if annotation_record is None:
+            reasons.append(f"row {row.case_id} annotation manifest is missing {row.annotation_record_id}")
+        else:
+            if row.annotation_hash != annotation_record.content_hash:
+                reasons.append(f"row {row.case_id} annotation manifest hash does not match")
+            if row.annotation_origin is not annotation_record.origin:
+                reasons.append(f"row {row.case_id} annotation manifest origin does not match")
+        evaluator = declared_evaluators.get(row.evaluator_id)
+        if evaluator is None:
+            reasons.append(f"row {row.case_id} evaluator_id is outside the frozen evaluator registry")
+        else:
+            if row.evaluator_hash != evaluator.evaluator_hash:
+                reasons.append(f"row {row.case_id} evaluator registry hash does not match")
+            if row.evaluator_origin is not evaluator.origin:
+                reasons.append(f"row {row.case_id} evaluator registry origin does not match")
+            if row.evaluator_independence_basis != evaluator.independence_basis:
+                reasons.append(f"row {row.case_id} evaluator registry independence_basis does not match")
+    return tuple(dict.fromkeys(reasons))
+
+
+def _confirmatory_reasons(
     *,
     config: E3ConfirmatoryConfig,
     rows: Sequence[E3SemanticRow],
 ) -> tuple[str, ...]:
-    reasons: list[str] = []
-    if config.run_config.origin is not EvidenceOrigin.REAL_MODEL_EXECUTION:
+    reasons = list(
+        _shared_closure_reasons(
+            run_config=config.run_config,
+            manifests=config.manifests,
+            evaluators=config.evaluators,
+            calibration=config.development_dataset.calibration,
+            rows=rows,
+            expected_split=config.schema_contract.required_confirmatory_manifest_split,
+        )
+    )
+    if config.run_config.origin is not config.schema_contract.required_run_origin:
         reasons.append("run_config.origin must equal REAL_MODEL_EXECUTION")
-    if config.run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+    if config.run_config.authorization_scope != config.schema_contract.required_run_authorization_scope:
         reasons.append(
-            f"run_config.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+            f"run_config.authorization_scope must equal {config.schema_contract.required_run_authorization_scope}"
         )
-    if config.publication_scope != E3_CONFIRMATORY_SCOPE:
-        reasons.append(
-            f"publication_scope must equal {E3_CONFIRMATORY_SCOPE}"
-        )
-    if config.dataset.origin is not config.run_config.origin:
-        reasons.append("dataset.origin must equal run_config.origin")
-    if config.dataset.origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
-        reasons.append("synthetic non-evidence cannot run the E3 confirmatory publication path")
-    if config.dataset.manifest.split is not DatasetSplit.CONFIRMATORY:
-        reasons.append("confirmatory dataset manifest must use the CONFIRMATORY split")
-    if config.development_dataset.manifest.split is not DatasetSplit.DEVELOPMENT:
-        reasons.append("development dataset manifest must use the DEVELOPMENT split")
-    if any(record.origin is not config.dataset.origin for record in config.dataset.manifest.records):
-        reasons.append("confirmatory dataset record origins must equal dataset.origin")
+    if config.publication_scope != config.schema_contract.publication_scope:
+        reasons.append(f"publication_scope must equal {config.schema_contract.publication_scope}")
     try:
-        assert_confirmatory_isolation(
-            config.development_dataset.manifest,
-            config.dataset.manifest,
-        )
+        assert_confirmatory_isolation(config.development_dataset.manifest, config.manifests.case_manifest)
     except ValueError as error:
         reasons.append(str(error))
-    if config.dataset.license_id is None:
-        reasons.append("frozen confirmatory dataset manifest requires a non-synthetic license_id")
-    if config.dataset.privacy_status is None:
-        reasons.append("frozen confirmatory dataset manifest requires privacy_status")
-    if config.dataset.annotation_protocol_id is None:
-        reasons.append("frozen confirmatory dataset manifest requires annotation_protocol_id")
-    if not config.evaluators:
-        reasons.append("verified evaluator identities are required")
-    else:
-        if len({evaluator.evaluator_id for evaluator in config.evaluators}) != len(config.evaluators):
-            reasons.append("verified evaluator registry must not contain duplicate evaluator_id values")
-        verified_evaluators = {
-            evaluator.evaluator_id: evaluator
-            for evaluator in config.evaluators
-            if evaluator.verified
-        }
-        if not verified_evaluators:
-            reasons.append("verified evaluator identities are required")
-        for evaluator in config.evaluators:
-            if not evaluator.verified:
-                reasons.append(f"evaluator {evaluator.evaluator_id} is not independently verified")
-            if evaluator.independence_basis.strip() == "":
-                reasons.append(f"evaluator {evaluator.evaluator_id} is missing independence_basis")
-            if evaluator.origin is not config.run_config.origin:
-                reasons.append(f"evaluator {evaluator.evaluator_id} origin must equal run_config.origin")
-        for row in rows:
-            if row.evaluator_id not in verified_evaluators:
-                reasons.append(f"row {row.case_id} evaluator_id is not in the verified evaluator registry")
-    if config.provenance_bundle is None:
-        reasons.append("frozen config and verified provenance bundle are required")
-    else:
-        try:
-            verified_bundle = _verified_bundle(config.provenance_bundle)
-        except ValueError as error:
-            reasons.append(str(error))
-            verified_bundle = None
-        if verified_bundle is not None and verified_bundle.config.model_dump(mode="json") != config.run_config.model_dump(mode="json"):
-            reasons.append("provenance bundle config must exactly match run_config")
-        manifest = verified_bundle.manifest if verified_bundle is not None else config.provenance_bundle.manifest
-        if manifest.run_id != config.run_config.run_id:
-            reasons.append("provenance manifest run_id must equal run_config.run_id")
-        if manifest.experiment_id != config.run_config.experiment_id:
-            reasons.append("provenance manifest experiment_id must equal run_config.experiment_id")
-        if manifest.origin is not config.run_config.origin:
-            reasons.append("provenance manifest origin must equal run_config.origin")
-        if manifest.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
-            reasons.append(
-                f"provenance manifest authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
-            )
-    if not rows:
-        reasons.append("confirmatory semantic rows are required")
-    expected_evaluators = {evaluator.evaluator_id: evaluator for evaluator in config.evaluators}
-    for row in rows:
-        if row.run_id != config.run_config.run_id:
-            reasons.append(f"row {row.case_id} run_id must equal run_config.run_id")
-        if row.experiment_id != config.run_config.experiment_id:
-            reasons.append(f"row {row.case_id} experiment_id must equal run_config.experiment_id")
-        if row.split is not DatasetSplit.CONFIRMATORY:
-            reasons.append(f"row {row.case_id} must use the CONFIRMATORY split")
-        if row.origin is not config.run_config.origin:
-            reasons.append(f"row {row.case_id} origin must equal run_config.origin")
-        if row.source_origin is not config.dataset.origin:
-            reasons.append(f"row {row.case_id} source_origin must equal dataset.origin")
-        if row.annotation_origin is not config.dataset.origin:
-            reasons.append(f"row {row.case_id} annotation_origin must equal dataset.origin")
-        if row.calibration_hash != config.development_dataset.calibration.content_hash:
-            reasons.append(f"row {row.case_id} calibration_hash must equal the frozen development calibration")
-        evaluator = expected_evaluators.get(row.evaluator_id)
-        if evaluator is None:
-            reasons.append(f"row {row.case_id} evaluator_id is unknown to the confirmatory config")
-        else:
-            if row.evaluator_hash != evaluator.evaluator_hash:
-                reasons.append(f"row {row.case_id} evaluator_hash must match the verified evaluator registry")
-            if row.evaluator_origin is not evaluator.origin:
-                reasons.append(f"row {row.case_id} evaluator_origin must match the verified evaluator registry")
-            if row.evaluator_independence_basis != evaluator.independence_basis:
-                reasons.append(f"row {row.case_id} evaluator_independence_basis must match the verified evaluator registry")
-        if row.annotation_origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
-            reasons.append(f"row {row.case_id} annotation provenance is synthetic")
-        if row.source_origin is EvidenceOrigin.SYNTHETIC_NON_EVIDENCE:
-            reasons.append(f"row {row.case_id} source provenance is synthetic")
+    if config.license_id.strip() == "":
+        reasons.append("license_id must not be blank")
+    if config.privacy_status.strip() == "":
+        reasons.append("privacy_status must not be blank")
+    if config.annotation_protocol_id.strip() == "":
+        reasons.append("annotation_protocol_id must not be blank")
+    forbidden_origins = set(config.schema_contract.forbidden_confirmatory_origins)
+    if config.run_config.origin in forbidden_origins:
+        reasons.append("run_config.origin is forbidden for confirmatory publication")
+    for manifest in (
+        config.manifests.case_manifest,
+        config.manifests.source_manifest,
+        config.manifests.annotation_manifest,
+    ):
+        for record in manifest.records:
+            if record.origin in forbidden_origins:
+                reasons.append("confirmatory manifests cannot contain forbidden synthetic origins")
     return tuple(dict.fromkeys(reasons))
+
+
+def run_synthetic_plumbing_semantic(
+    *,
+    config: E3SyntheticPlumbingConfig,
+    rows: Sequence[E3SemanticRow] | Sequence[object],
+) -> E3SyntheticPlumbingResult:
+    canonical_config = _revalidate_config(config, E3SyntheticPlumbingConfig)
+    canonical_rows = tuple(_revalidate_row(row) for row in rows)
+    reasons = _shared_closure_reasons(
+        run_config=canonical_config.run_config,
+        manifests=canonical_config.manifests,
+        evaluators=canonical_config.evaluators,
+        calibration=canonical_config.development_dataset.calibration,
+        rows=canonical_rows,
+        expected_split=DatasetSplit.PLUMBING,
+    )
+    if reasons:
+        raise E3EvaluationContractError(reasons)
+    return E3SyntheticPlumbingResult(
+        summary=semantic_metrics(canonical_rows, policy=canonical_config.policy),
+        annotation_provenance=_annotation_provenance(canonical_rows),
+        error_ledger=_error_ledger(canonical_rows),
+    )
 
 
 def run_confirmatory_semantic(
@@ -415,13 +573,14 @@ def run_confirmatory_semantic(
     config: E3ConfirmatoryConfig,
     rows: Sequence[E3SemanticRow] | Sequence[object],
 ) -> E3ConfirmatoryResult:
-    canonical_config = _revalidate_config(config)
+    canonical_config = _revalidate_config(config, E3ConfirmatoryConfig)
     canonical_rows = tuple(_revalidate_row(row) for row in rows)
-    reasons = _publication_reasons(config=canonical_config, rows=canonical_rows)
+    reasons = _confirmatory_reasons(config=canonical_config, rows=canonical_rows)
     if reasons:
         raise PublicationEligibilityError(reasons)
-    return E3ConfirmatoryResult(
-        summary=semantic_metrics(canonical_rows, policy=canonical_config.policy),
-        annotation_provenance=_annotation_provenance(canonical_rows),
-        error_ledger=_error_ledger(canonical_rows),
+    raise PublicationEligibilityError(
+        (
+            WAITING_EXTERNAL_EVALUATOR_AUTHORITY,
+            "real E3 confirmatory publication requires an external registry-backed evaluator authority artifact before metrics can become publication evidence",
+        )
     )
