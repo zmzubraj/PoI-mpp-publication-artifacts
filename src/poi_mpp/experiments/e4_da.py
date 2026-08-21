@@ -26,14 +26,24 @@ class IntervalKind(StrEnum):
     WILSON = "WILSON"
 
 
+class ClaimTarget(StrEnum):
+    AVAILABILITY_SUCCESS = "AVAILABILITY_SUCCESS"
+    ATTACK_DETECTION = "ATTACK_DETECTION"
+
+
 class AuthorityBoundaryError(ValueError):
     """Raised when the E4 CLI would overstate unpublished authority."""
 
 
 class AvailabilityScenario(_FrozenModel):
     scenario_id: str
+    observation_key: str
+    certificate_observation_key: str
+    seed_observation_key: str
     mode: SamplingMode
     assumption_label: SamplingAssumption
+    claim_target: ClaimTarget
+    expected_outcome: str
     total_shards: int = Field(gt=0)
     reconstruction_threshold: int = Field(gt=0)
     unavailable_shards: int = Field(ge=0)
@@ -42,11 +52,11 @@ class AvailabilityScenario(_FrozenModel):
     observed_misses: int | None = Field(default=None, ge=0)
     observed_trials: int | None = Field(default=None, ge=0)
 
-    @field_validator("scenario_id")
+    @field_validator("scenario_id", "observation_key", "certificate_observation_key", "seed_observation_key")
     @classmethod
-    def require_nonblank_scenario_id(cls, value: str) -> str:
+    def require_nonblank_identifiers(cls, value: str) -> str:
         if not value.strip():
-            raise ValueError("scenario_id must not be blank")
+            raise ValueError("scenario identifiers must not be blank")
         return value
 
     @model_validator(mode="after")
@@ -78,6 +88,19 @@ class AvailabilityScenario(_FrozenModel):
         elif self.mode is SamplingMode.CORRELATED_LOSS:
             if self.assumption_label is not SamplingAssumption.CORRELATED_LOSS_DECLARED:
                 raise ValueError("correlated loss must be labeled CORRELATED_LOSS_DECLARED")
+        valid_outcomes = {
+            ReconstructionStatus.VERIFIED,
+            ReconstructionStatus.WITHHELD,
+            ReconstructionStatus.CORRUPT,
+            ReconstructionStatus.SELECTIVE_SERVICE,
+        }
+        if self.expected_outcome not in valid_outcomes:
+            raise ValueError("expected_outcome must be a declared reconstruction status")
+        if self.claim_target is ClaimTarget.AVAILABILITY_SUCCESS:
+            if self.expected_outcome != ReconstructionStatus.VERIFIED:
+                raise ValueError("availability-success claims require expected_outcome VERIFIED")
+        elif self.expected_outcome == ReconstructionStatus.VERIFIED:
+            raise ValueError("attack-detection claims require an adverse expected_outcome")
         if self.mode in {
             SamplingMode.STATIC_WITH_REPLACEMENT,
             SamplingMode.STATIC_WITHOUT_REPLACEMENT,
@@ -97,18 +120,33 @@ class E4ScenarioRow(_FrozenModel):
     run_id: str
     experiment_id: str
     scenario_id: str
+    observation_key: str
+    certificate_observation_key: str
+    seed_observation_key: str
     origin: EvidenceOrigin
     mode: SamplingMode
     assumption_label: SamplingAssumption
+    claim_target: ClaimTarget
+    expected_outcome: str
     interval_kind: IntervalKind
     denominator: int = Field(gt=0)
     miss_probability: float = Field(ge=0.0, le=1.0)
     exact_miss_probability: str | None = None
     confidence_interval: tuple[float, float]
     reconstruction_status: str
+    observed_availability_success: bool
+    observed_attack_detected: bool
+    expected_outcome_detected: bool
     notes: tuple[str, ...] = ()
 
-    @field_validator("run_id", "experiment_id", "scenario_id")
+    @field_validator(
+        "run_id",
+        "experiment_id",
+        "scenario_id",
+        "observation_key",
+        "certificate_observation_key",
+        "seed_observation_key",
+    )
     @classmethod
     def require_nonblank_text(cls, value: str) -> str:
         if not value.strip():
@@ -121,6 +159,11 @@ class E4ScenarioRow(_FrozenModel):
             raise ValueError("confidence_interval must contain ordered bounds")
         if self.interval_kind is IntervalKind.EXACT and self.exact_miss_probability is None:
             raise ValueError("EXACT rows must carry exact_miss_probability")
+        if self.claim_target is ClaimTarget.AVAILABILITY_SUCCESS:
+            if not self.expected_outcome_detected or not self.observed_availability_success:
+                raise ValueError("availability-success rows must actually observe successful availability")
+        elif self.expected_outcome == ReconstructionStatus.VERIFIED:
+            raise ValueError("attack-detection rows cannot target VERIFIED outcomes")
         return self
 
 
@@ -132,6 +175,14 @@ def build_e4_row(
     scenario: AvailabilityScenario,
     reconstruction: ReconstructionResult | None = None,
 ) -> E4ScenarioRow:
+    reconstruction_status = ReconstructionStatus.VERIFIED if reconstruction is None else reconstruction.status
+    observed_availability_success = reconstruction_status == ReconstructionStatus.VERIFIED
+    observed_attack_detected = reconstruction_status in {
+        ReconstructionStatus.WITHHELD,
+        ReconstructionStatus.CORRUPT,
+        ReconstructionStatus.SELECTIVE_SERVICE,
+    }
+    expected_outcome_detected = reconstruction_status == scenario.expected_outcome
     if scenario.mode in {
         SamplingMode.STATIC_WITH_REPLACEMENT,
         SamplingMode.STATIC_WITHOUT_REPLACEMENT,
@@ -148,17 +199,23 @@ def build_e4_row(
             run_id=run_id,
             experiment_id=experiment_id,
             scenario_id=scenario.scenario_id,
+            observation_key=scenario.observation_key,
+            certificate_observation_key=scenario.certificate_observation_key,
+            seed_observation_key=scenario.seed_observation_key,
             origin=origin,
             mode=scenario.mode,
             assumption_label=scenario.assumption_label,
+            claim_target=scenario.claim_target,
+            expected_outcome=scenario.expected_outcome,
             interval_kind=IntervalKind.EXACT,
             denominator=1,
             miss_probability=value,
             exact_miss_probability=f"{exact.numerator}/{exact.denominator}",
             confidence_interval=(value, value),
-            reconstruction_status=(
-                ReconstructionStatus.VERIFIED if reconstruction is None else reconstruction.status
-            ),
+            reconstruction_status=reconstruction_status,
+            observed_availability_success=observed_availability_success,
+            observed_attack_detected=observed_attack_detected,
+            expected_outcome_detected=expected_outcome_detected,
             notes=(),
         )
 
@@ -181,17 +238,23 @@ def build_e4_row(
         run_id=run_id,
         experiment_id=experiment_id,
         scenario_id=scenario.scenario_id,
+        observation_key=scenario.observation_key,
+        certificate_observation_key=scenario.certificate_observation_key,
+        seed_observation_key=scenario.seed_observation_key,
         origin=origin,
         mode=scenario.mode,
         assumption_label=scenario.assumption_label,
+        claim_target=scenario.claim_target,
+        expected_outcome=scenario.expected_outcome,
         interval_kind=IntervalKind.WILSON,
         denominator=scenario.observed_trials,
         miss_probability=scenario.observed_misses / scenario.observed_trials,
         exact_miss_probability=None,
         confidence_interval=interval,
-        reconstruction_status=(
-            ReconstructionStatus.VERIFIED if reconstruction is None else reconstruction.status
-        ),
+        reconstruction_status=reconstruction_status,
+        observed_availability_success=observed_availability_success,
+        observed_attack_detected=observed_attack_detected,
+        expected_outcome_detected=expected_outcome_detected,
         notes=notes,
     )
 

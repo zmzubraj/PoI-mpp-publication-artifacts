@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from enum import StrEnum
 import hashlib
+import os
 from pathlib import Path
+import stat
 from typing import Sequence
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -30,6 +32,10 @@ class SamplingAssumption(StrEnum):
     TARGETED_WITHHOLDING_DECLARED = "TARGETED_WITHHOLDING_DECLARED"
     SELECTIVE_SERVING_DECLARED = "SELECTIVE_SERVING_DECLARED"
     CORRELATED_LOSS_DECLARED = "CORRELATED_LOSS_DECLARED"
+
+
+class LocalShardAccessError(ValueError):
+    """Raised when a shard path escapes or mutates outside the trusted local store."""
 
 
 class ErasureParameters(_FrozenModel):
@@ -176,6 +182,68 @@ class LocalShardStore:
             raise ValueError("shard index must be non-negative")
         return self.root / "shards" / f"{index:04d}.bin"
 
+    def _open_root_fd(self) -> int:
+        return os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
+
+    def _path_parts(self, relative_path: str) -> tuple[str, ...]:
+        parts = Path(relative_path).parts
+        if not parts:
+            raise LocalShardAccessError("shard relative path must not be empty")
+        if any(part in {"", ".", ".."} for part in parts):
+            raise LocalShardAccessError("shard relative path must stay under the trusted store root")
+        return parts
+
+    def _secure_open_shard_fd(self, relative_path: str) -> int:
+        parts = self._path_parts(relative_path)
+        root_fd = self._open_root_fd()
+        current_fd = root_fd
+        opened_parents: list[int] = []
+        try:
+            for parent in parts[:-1]:
+                try:
+                    next_fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=current_fd)
+                except FileNotFoundError as error:
+                    raise FileNotFoundError(f"trusted shard parent {parent!r} is missing") from error
+                except OSError as error:
+                    raise LocalShardAccessError(
+                        f"trusted shard parent {parent!r} could not be opened safely"
+                    ) from error
+                parent_stat = os.fstat(next_fd)
+                if not stat.S_ISDIR(parent_stat.st_mode):
+                    os.close(next_fd)
+                    raise LocalShardAccessError(f"trusted shard parent {parent!r} is not a directory")
+                opened_parents.append(next_fd)
+                current_fd = next_fd
+            filename = parts[-1]
+            try:
+                pre_stat = os.stat(filename, dir_fd=current_fd, follow_symlinks=False)
+            except FileNotFoundError as error:
+                raise FileNotFoundError(f"trusted shard file {filename!r} is missing") from error
+            if not stat.S_ISREG(pre_stat.st_mode):
+                raise LocalShardAccessError(f"trusted shard file {filename!r} is not a regular file")
+            try:
+                file_fd = os.open(filename, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=current_fd)
+            except OSError as error:
+                raise LocalShardAccessError(f"trusted shard file {filename!r} could not be opened safely") from error
+            fd_stat = os.fstat(file_fd)
+            post_stat = os.stat(filename, dir_fd=current_fd, follow_symlinks=False)
+            identities = {
+                (pre_stat.st_dev, pre_stat.st_ino),
+                (fd_stat.st_dev, fd_stat.st_ino),
+                (post_stat.st_dev, post_stat.st_ino),
+            }
+            if len(identities) != 1:
+                os.close(file_fd)
+                raise LocalShardAccessError("trusted shard file changed identity during access")
+            if not stat.S_ISREG(fd_stat.st_mode):
+                os.close(file_fd)
+                raise LocalShardAccessError(f"trusted shard file {filename!r} is not a regular file")
+            return file_fd
+        finally:
+            for parent_fd in reversed(opened_parents):
+                os.close(parent_fd)
+            os.close(root_fd)
+
     def initialize(
         self,
         *,
@@ -208,22 +276,46 @@ class LocalShardStore:
 
     def read_shard(self, layout: ShardLayout, index: int) -> bytes:
         record = layout.shards[index]
-        path = self.root / record.relative_path
-        return path.read_bytes()
+        file_fd = self._secure_open_shard_fd(record.relative_path)
+        try:
+            chunks: list[bytes] = []
+            while True:
+                chunk = os.read(file_fd, 8192)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            return b"".join(chunks)
+        finally:
+            os.close(file_fd)
 
     def available_indices(self, layout: ShardLayout) -> tuple[int, ...]:
         available: list[int] = []
         for record in layout.shards:
-            if (self.root / record.relative_path).is_file():
+            try:
+                file_fd = self._secure_open_shard_fd(record.relative_path)
+            except (FileNotFoundError, LocalShardAccessError):
+                continue
+            else:
+                os.close(file_fd)
                 available.append(record.index)
         return tuple(available)
 
     def shard_hash(self, layout: ShardLayout, index: int) -> str | None:
         record = layout.shards[index]
-        path = self.root / record.relative_path
-        if not path.is_file():
+        try:
+            payload = self.read_shard(layout, index)
+        except (FileNotFoundError, LocalShardAccessError):
             return None
-        return _payload_hash(index, path.read_bytes())
+        return _payload_hash(index, payload)
+
+    def verified_layout_hash(self, layout: ShardLayout, index: int) -> str:
+        observed_hash = self.shard_hash(layout, index)
+        if observed_hash is None:
+            raise FileNotFoundError(f"sampled shard {index} is not present in the local shard store")
+        expected_hash = layout.shards[index].payload_hash
+        if observed_hash != expected_hash:
+            raise ValueError(f"sampled shard {index} no longer matches the finalized shard layout")
+        return expected_hash
 
 
 def derive_sample_indices(
@@ -286,10 +378,7 @@ def issue_sample_certificate(
     )
     shard_hashes: list[str] = []
     for index in sample_indices:
-        shard_hash = store.shard_hash(layout, index)
-        if shard_hash is None:
-            raise FileNotFoundError(f"sampled shard {index} is not present in the local shard store")
-        shard_hashes.append(shard_hash)
+        shard_hashes.append(store.verified_layout_hash(layout, index))
     assumption = (
         SamplingAssumption.STATIC_WITH_REPLACEMENT_EXACT
         if replacement
