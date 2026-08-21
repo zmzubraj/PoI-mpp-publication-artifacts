@@ -22,6 +22,18 @@ def _write_json(path: Path, payload: object) -> Path:
     return path
 
 
+def _read_manifest(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _write_manifest(path: Path, payload: dict[str, object]) -> None:
+    from poi_mpp.reporting.manifest import _manifest_self_digest
+
+    payload["self_digest"] = ""
+    payload["self_digest"] = _manifest_self_digest(payload)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def _base_spec(tmp_path: Path, *, artifact_root: Path | None = None, output_root: Path | None = None) -> ReportBuildSpec:
     return ReportBuildSpec.model_validate(
         {
@@ -166,11 +178,14 @@ def test_e8_inconclusive_is_preserved_and_labeled(tmp_path: Path):
     t13 = (Path(spec.output_root) / "tables" / "T13_consensus_safety.csv").read_text(encoding="utf-8")
     f11 = (Path(spec.output_root) / "figures" / "F11_consensus_dynamics.svg").read_text(encoding="utf-8")
     claim_matrix = (Path(spec.output_root) / "tables" / "claim_matrix.csv").read_text(encoding="utf-8")
+    t4_status = json.loads((Path(spec.output_root) / "tables" / "T4_status.json").read_text(encoding="utf-8"))
 
     assert "INCONCLUSIVE" in claim_matrix
     assert "REPRODUCIBLE_SIMULATION" in t13
     assert "REPRODUCIBLE_SIMULATION" in f11
     assert any(entry.artifact_id == "T13" for entry in manifest.outputs)
+    assert t4_status["artifact_id"] == "T4"
+    assert t4_status["disposition"] == "MISSING"
 
 
 def test_generated_svg_includes_source_hash_caption(tmp_path: Path):
@@ -193,6 +208,77 @@ def test_manifest_detects_tamper_and_extra_files(tmp_path: Path):
     extra_path.write_text("unexpected", encoding="utf-8")
     with pytest.raises(PublicationEligibilityError):
         validate_existing_manifest(Path(spec.output_root))
+
+
+def test_manifest_detects_input_and_generator_drift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    spec = _valid_e8_spec(tmp_path)
+    build_publication_report(spec)
+    rows_path = Path(spec.artifact_root) / "e8_rows.json"
+    rows_payload = json.loads(rows_path.read_text(encoding="utf-8"))
+    rows_payload["rows"][0]["scenario_id"] = "mutated-scenario"
+    rows_path.write_text(json.dumps(rows_payload, indent=2, sort_keys=True), encoding="utf-8")
+    with pytest.raises(PublicationEligibilityError, match="input hash mismatch"):
+        validate_existing_manifest(Path(spec.output_root))
+
+    spec = _valid_e8_spec(tmp_path / "drift")
+    build_publication_report(spec)
+    import poi_mpp.reporting.manifest as reporting_manifest
+
+    monkeypatch.setattr(reporting_manifest, "_current_generator_source_closure_hash", lambda: "0" * 64)
+    with pytest.raises(PublicationEligibilityError, match="generator source closure drift"):
+        validate_existing_manifest(Path(spec.output_root))
+
+
+def test_manifest_rejects_duplicate_outputs_and_unknown_keys(tmp_path: Path):
+    spec = _valid_e8_spec(tmp_path)
+    build_publication_report(spec)
+    manifest_path = Path(spec.output_root) / "artifact_manifest.json"
+    payload = _read_manifest(manifest_path)
+    assert isinstance(payload["outputs"], list)
+    payload["outputs"].append(dict(payload["outputs"][0]))
+    payload["outputs"][-1]["output_id"] = payload["outputs"][0]["output_id"]
+    payload["outputs"][-1]["relative_path"] = "tables/duplicate.csv"
+    _write_manifest(manifest_path, payload)
+    with pytest.raises(PublicationEligibilityError, match="duplicate output ids"):
+        validate_existing_manifest(Path(spec.output_root))
+
+    spec = _valid_e8_spec(tmp_path / "unknown")
+    build_publication_report(spec)
+    manifest_path = Path(spec.output_root) / "artifact_manifest.json"
+    payload = _read_manifest(manifest_path)
+    payload["unknown_field"] = True
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    with pytest.raises(Exception):
+        validate_existing_manifest(Path(spec.output_root))
+
+
+def test_output_symlink_root_and_leaf_are_rejected(tmp_path: Path):
+    spec = _valid_e8_spec(tmp_path)
+    build_publication_report(spec)
+
+    symlink_root = tmp_path / "out-link"
+    symlink_root.symlink_to(Path(spec.output_root))
+    with pytest.raises(PublicationEligibilityError):
+        validate_existing_manifest(symlink_root)
+
+    spec = _valid_e8_spec(tmp_path / "leaf")
+    build_publication_report(spec)
+    output_root = Path(spec.output_root)
+    target = output_root / "figures" / "F11_consensus_dynamics.svg"
+    replacement = output_root / "figures" / "replacement.svg"
+    replacement.write_text(target.read_text(encoding="utf-8"), encoding="utf-8")
+    target.unlink()
+    target.symlink_to(replacement.name)
+    with pytest.raises(PublicationEligibilityError):
+        validate_existing_manifest(output_root)
+
+
+def test_artifact_mapping_covers_t4_t6_t13_and_f5_f12():
+    from poi_mpp.reporting.load import ARTIFACT_PLAN, experiment_artifact_ids
+
+    all_artifacts = sorted({artifact_id for experiment_id in ARTIFACT_PLAN for artifact_id in experiment_artifact_ids(experiment_id)})
+    assert all_artifacts == ["F10", "F11", "F12", "F5", "F6", "F7", "F8", "F9", "T10", "T11", "T12", "T13", "T4", "T6", "T7", "T8", "T9"]
+    assert ARTIFACT_PLAN["E3"]["tables"] == ("T4", "T8")
 
 
 def test_atomic_write_failure_leaves_no_partial_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

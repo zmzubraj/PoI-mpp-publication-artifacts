@@ -17,12 +17,7 @@ from poi_mpp.evidence import ArtifactValidationError, EvidenceOrigin, collect_en
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.experiments.e5_watcher import E5ScenarioRow, load_e5_confirmatory_contract
 from poi_mpp.experiments.e6_sybil import E6ScenarioRow, load_e6_confirmatory_contract
-from poi_mpp.experiments.e7_evm import (
-    E7Bundle,
-    E7ParityAttachment,
-    E7MeasurementContract,
-    default_measurement_contract,
-)
+from poi_mpp.experiments.e7_evm import E7Bundle, E7ParityAttachment, default_measurement_contract
 from poi_mpp.experiments.e8_consensus import E8ScenarioRow, load_e8_confirmatory_contract
 from poi_mpp.reporting.e1 import summarize_e1_rows
 from poi_mpp.reporting.e2 import summarize_e2_rows
@@ -35,39 +30,35 @@ from poi_mpp.reporting.e8 import f11_points, summarize_e8_rows, t13_rows
 
 
 _PUBLICATION_DISPOSITIONS = frozenset({"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE", "MISSING", "WAITING_EXTERNAL"})
-_DATA_ARTIFACTS = {
-    "E1": ("T6", "F5"),
-    "E2": ("T7", "F6"),
-    "E3": ("T8", "F7"),
-    "E4": ("T9", "F8"),
-    "E5": ("T10", None),
-    "E6": ("T11", "F9"),
-    "E7": ("T12", "F12"),
-    "E8": ("T13", "F11"),
+ARTIFACT_PLAN = {
+    "E1": {"tables": ("T6",), "figures": ("F5",)},
+    "E2": {"tables": ("T7",), "figures": ("F6",)},
+    "E3": {"tables": ("T4", "T8"), "figures": ("F7",)},
+    "E4": {"tables": ("T9",), "figures": ("F8",)},
+    "E5": {"tables": ("T10",), "figures": ("F10",)},
+    "E6": {"tables": ("T11",), "figures": ("F9",)},
+    "E7": {"tables": ("T12",), "figures": ("F12",)},
+    "E8": {"tables": ("T13",), "figures": ("F11",)},
 }
-_STATUS_FIGURES = {
-    "E1": "F5",
-    "E2": "F6",
-    "E3": "F7",
-    "E4": "F8",
-    "E5": "F10",
-    "E6": "F9",
-    "E7": "F12",
-    "E8": "F11",
+ARTIFACT_FILENAMES = {
+    "T4": "tables/T4_dataset_composition.status.json",
+    "T6": "tables/T6_single_pass_cost.csv",
+    "T7": "tables/T7_execution_audit_security.csv",
+    "T8": "tables/T8_semantic_verification.csv",
+    "T9": "tables/T9_data_availability.csv",
+    "T10": "tables/T10_watcher_dispute_economics.csv",
+    "T11": "tables/T11_sybil_economics.csv",
+    "T12": "tables/T12_evm_boundedness.csv",
+    "T13": "tables/T13_consensus_safety.csv",
+    "F5": "figures/F5_single_pass_cost.svg",
+    "F6": "figures/F6_audit_soundness.svg",
+    "F7": "figures/F7_semantic_verification_quality.svg",
+    "F8": "figures/F8_da_withholding.svg",
+    "F9": "figures/F9_sybil_advantage.svg",
+    "F10": "figures/F10_economic_security.svg",
+    "F11": "figures/F11_consensus_dynamics.svg",
+    "F12": "figures/F12_evm_gas_state_scaling.svg",
 }
-_SAFE_SOURCE_KEYS = frozenset(
-    {
-        "rows_path",
-        "summary_path",
-        "run_config_path",
-        "contract_path",
-        "bundle_path",
-        "parity_attachment_path",
-        "replay_context_path",
-        "contracts_root",
-        "timeout_seconds",
-    }
-)
 
 
 class PublicationEligibilityError(ValueError):
@@ -118,16 +109,30 @@ class ReportBuildSpec(_FrozenModel):
     @field_validator("sources")
     @classmethod
     def validate_sources(cls, value: dict[str, ExperimentSource]) -> dict[str, ExperimentSource]:
-        unknown = sorted(set(value) - set(_DATA_ARTIFACTS))
+        unknown = sorted(set(value) - set(ARTIFACT_PLAN))
         if unknown:
             raise ValueError(f"unknown experiment source keys: {', '.join(unknown)}")
         return value
 
 
 @dataclass(frozen=True)
+class InputEntry:
+    experiment_id: str
+    input_role: str
+    relative_path: str
+    sha256: str
+    schema_version: str | None
+    origin: str | None
+    disposition: str
+    run_id: str | None
+    config_hash: str | None
+    paper_artifact_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class LoadedExperiment:
     experiment_id: str
-    table_id: str | None
+    table_ids: tuple[str, ...]
     figure_ids: tuple[str, ...]
     claim_id: str
     origin: str | None
@@ -144,6 +149,7 @@ class LoadedExperiment:
     uncertainty: str | None
     limits: tuple[str, ...]
     omission_reason: str | None
+    input_entries: tuple[InputEntry, ...]
 
 
 @dataclass(frozen=True)
@@ -153,6 +159,11 @@ class LoadedBundle:
     experiments: tuple[LoadedExperiment, ...]
     environment_hash: str
     generator_source_closure_hash: str
+
+
+def experiment_artifact_ids(experiment_id: str) -> tuple[str, ...]:
+    plan = ARTIFACT_PLAN[experiment_id]
+    return tuple(plan["tables"]) + tuple(plan["figures"])
 
 
 def _path_hash(path: Path) -> str:
@@ -279,20 +290,38 @@ def _limits_from_summary(summary: dict[str, Any]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(limits))
 
 
-def _missing_experiment(experiment_id: str, reason: str) -> LoadedExperiment:
-    table_id, primary_figure = _DATA_ARTIFACTS[experiment_id]
-    figure_ids = tuple(
-        artifact_id
-        for artifact_id in (
-            primary_figure,
-            "F10" if experiment_id == "E6" else None,
-        )
-        if artifact_id is not None
+def _entry(
+    *,
+    experiment_id: str,
+    input_role: str,
+    path: Path,
+    root: Path,
+    sha256: str,
+    schema_version: str | None,
+    origin: str | None,
+    disposition: str,
+    run_id: str | None,
+    config_hash: str | None,
+) -> InputEntry:
+    return InputEntry(
+        experiment_id=experiment_id,
+        input_role=input_role,
+        relative_path=str(path.relative_to(root)),
+        sha256=sha256,
+        schema_version=schema_version,
+        origin=origin,
+        disposition=disposition,
+        run_id=run_id,
+        config_hash=config_hash,
+        paper_artifact_ids=experiment_artifact_ids(experiment_id),
     )
+
+
+def _missing_experiment(experiment_id: str, reason: str) -> LoadedExperiment:
     return LoadedExperiment(
         experiment_id=experiment_id,
-        table_id=table_id,
-        figure_ids=figure_ids,
+        table_ids=tuple(ARTIFACT_PLAN[experiment_id]["tables"]),
+        figure_ids=tuple(ARTIFACT_PLAN[experiment_id]["figures"]),
         claim_id=f"{experiment_id}_MISSING",
         origin=None,
         disposition="MISSING" if "missing" in reason.lower() else "WAITING_EXTERNAL",
@@ -308,15 +337,18 @@ def _missing_experiment(experiment_id: str, reason: str) -> LoadedExperiment:
         uncertainty=None,
         limits=(),
         omission_reason=reason,
+        input_entries=(),
     )
 
 
 def _e8_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
     if source.rows_path is None or source.contract_path is None:
         return _missing_experiment("E8", "missing E8 rows_path or contract_path")
-    rows_payload, rows_hash = _rows_payload(root, source.rows_path, label="E8 rows")
-    _, contract_text, contract_hash = _load_yaml_text(root, source.contract_path, label="E8 contract")
-    contract = load_e8_confirmatory_contract(_resolved_anchored_path(root, source.contract_path))
+    rows_path = _resolved_anchored_path(root, source.rows_path)
+    contract_path = _resolved_anchored_path(root, source.contract_path)
+    rows_payload, rows_hash = _rows_payload(root, rows_path, label="E8 rows")
+    _, contract_text, contract_hash = _load_yaml_text(root, contract_path, label="E8 contract")
+    contract = load_e8_confirmatory_contract(contract_path)
     try:
         rows = tuple(E8ScenarioRow.model_validate(row) for row in rows_payload)
     except Exception as error:
@@ -329,7 +361,7 @@ def _e8_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
     summary = summarize_e8_rows(rows, contract=contract).model_dump(mode="json")
     return LoadedExperiment(
         experiment_id="E8",
-        table_id="T13",
+        table_ids=("T13",),
         figure_ids=("F11",),
         claim_id=str(summary["claim_id"]),
         origin=origin,
@@ -346,12 +378,39 @@ def _e8_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
         uncertainty="wilson_from_replay" if any("interval" in key for key in summary) else None,
         limits=_limits_from_summary(summary) + tuple(str(line) for line in yaml.safe_load(contract_text).get("notes", ())),
         omission_reason=None,
+        input_entries=(
+            _entry(
+                experiment_id="E8",
+                input_role="rows",
+                path=rows_path,
+                root=root,
+                sha256=rows_hash,
+                schema_version=str(rows[0].schema_version),
+                origin=origin,
+                disposition=str(summary["claim_disposition"]),
+                run_id=rows[0].run_id,
+                config_hash=rows[0].run_config_hash,
+            ),
+            _entry(
+                experiment_id="E8",
+                input_role="confirmatory_contract",
+                path=contract_path,
+                root=root,
+                sha256=contract_hash,
+                schema_version=str(contract.schema_version),
+                origin=origin,
+                disposition=str(summary["claim_disposition"]),
+                run_id=rows[0].run_id,
+                config_hash=rows[0].run_config_hash,
+            ),
+        ),
     )
 
 
 def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> LoadedExperiment:
     if source.run_config_path is not None:
-        run_config = load_run_config(_resolved_anchored_path(root, source.run_config_path))
+        run_config_path = _resolved_anchored_path(root, source.run_config_path)
+        run_config = load_run_config(run_config_path)
         bundle_output = output_root / "raw" / "E7_live_bundle.json"
         result = collect_and_summarize_e7_publication(
             contracts_root=source.contracts_root or str(Path(__file__).resolve().parents[3] / "contracts"),
@@ -363,15 +422,15 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
         summary = result.summary.model_dump(mode="json")
         return LoadedExperiment(
             experiment_id="E7",
-            table_id="T12",
+            table_ids=("T12",),
             figure_ids=("F12",),
             claim_id=str(summary["claim_id"]),
             origin=result.bundle.run_config_snapshot.origin.value,
             disposition=str(summary["claim_disposition"]),
             scope=result.bundle.run_config_snapshot.authorization_scope,
-        maturity="LOCAL_FOUNDRY_MEASUREMENT",
-        run_id=result.bundle.run_config_snapshot.run_id,
-        config_hash=result.bundle.run_config_hash,
+            maturity="LOCAL_FOUNDRY_MEASUREMENT",
+            run_id=result.bundle.run_config_snapshot.run_id,
+            config_hash=result.bundle.run_config_hash,
             source_hashes=(
                 result.bundle.raw_report_hash,
                 result.bundle.run_config_hash,
@@ -386,16 +445,58 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
             uncertainty="N/A_single_measurement",
             limits=(),
             omission_reason=None,
+            input_entries=(
+                _entry(
+                    experiment_id="E7",
+                    input_role="run_config",
+                    path=run_config_path,
+                    root=root,
+                    sha256=_path_hash(run_config_path),
+                    schema_version=str(run_config.schema_version),
+                    origin=run_config.origin.value,
+                    disposition=str(summary["claim_disposition"]),
+                    run_id=run_config.run_id,
+                    config_hash=result.bundle.run_config_hash,
+                ),
+            ),
         )
     if source.bundle_path is None:
         return _missing_experiment("E7", "missing E7 run_config_path for live measurement")
-    _, bundle_payload, bundle_hash = _load_json(root, source.bundle_path, label="E7 bundle")
+    bundle_path, bundle_payload, bundle_hash = _load_json(root, source.bundle_path, label="E7 bundle")
     bundle = E7Bundle.model_validate(bundle_payload)
     parity_attachment: E7ParityAttachment | None = None
+    input_entries = [
+        _entry(
+            experiment_id="E7",
+            input_role="bundle",
+            path=bundle_path,
+            root=root,
+            sha256=bundle_hash,
+            schema_version=str(bundle.schema_version),
+            origin=bundle.run_config_snapshot.origin.value,
+            disposition="INCONCLUSIVE",
+            run_id=bundle.run_config_snapshot.run_id,
+            config_hash=bundle.run_config_hash,
+        )
+    ]
     if source.parity_attachment_path is not None:
-        _, parity_payload, parity_hash = _load_json(root, source.parity_attachment_path, label="E7 parity attachment")
+        parity_path, parity_payload, parity_hash = _load_json(root, source.parity_attachment_path, label="E7 parity attachment")
         parity_attachment = E7ParityAttachment.model_validate(parity_payload)
         source_hashes = (bundle_hash, parity_hash)
+        input_entries.append(
+            _entry(
+                experiment_id="E7",
+                input_role="parity_attachment",
+                path=parity_path,
+                root=root,
+                sha256=parity_hash,
+                schema_version=str(parity_attachment.schema_version),
+                origin=bundle.run_config_snapshot.origin.value,
+                disposition="INCONCLUSIVE",
+                run_id=bundle.run_config_snapshot.run_id,
+                config_hash=bundle.run_config_hash,
+            )
+        )
     else:
         source_hashes = (bundle_hash,)
     summary = summarize_e7_bundle(
@@ -405,7 +506,7 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
     ).model_dump(mode="json")
     return LoadedExperiment(
         experiment_id="E7",
-        table_id="T12",
+        table_ids=("T12",),
         figure_ids=("F12",),
         claim_id=str(summary["claim_id"]),
         origin=bundle.run_config_snapshot.origin.value,
@@ -422,14 +523,16 @@ def _e7_loaded(root: Path, output_root: Path, source: ExperimentSource) -> Loade
         uncertainty=None,
         limits=(),
         omission_reason="stored E7 bundle metadata is non-authoritative; live collection is required",
+        input_entries=tuple(input_entries),
     )
 
 
 def _e6_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
     if source.rows_path is None or source.contract_path is None:
         return _missing_experiment("E6", "missing E6 rows_path or contract_path")
-    rows_payload, rows_hash = _rows_payload(root, source.rows_path, label="E6 rows")
+    rows_path = _resolved_anchored_path(root, source.rows_path)
     contract_path = _resolved_anchored_path(root, source.contract_path)
+    rows_payload, rows_hash = _rows_payload(root, rows_path, label="E6 rows")
     contract = load_e6_confirmatory_contract(contract_path)
     rows = tuple(E6ScenarioRow.model_validate(row) for row in rows_payload)
     origins = {row.origin.value for row in rows}
@@ -440,7 +543,7 @@ def _e6_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
     summary = summarize_e6_rows(rows, contract=contract).model_dump(mode="json")
     return LoadedExperiment(
         experiment_id="E6",
-        table_id="T11",
+        table_ids=("T11",),
         figure_ids=("F9", "F10"),
         claim_id=str(summary["claim_id"]),
         origin=origin,
@@ -458,14 +561,41 @@ def _e6_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
         uncertainty="confidence_interval_micros",
         limits=_limits_from_summary(summary),
         omission_reason=None,
+        input_entries=(
+            _entry(
+                experiment_id="E6",
+                input_role="rows",
+                path=rows_path,
+                root=root,
+                sha256=rows_hash,
+                schema_version=str(rows[0].schema_version),
+                origin=origin,
+                disposition=str(summary["claim_disposition"]),
+                run_id=rows[0].run_id,
+                config_hash=rows[0].run_config_hash,
+            ),
+            _entry(
+                experiment_id="E6",
+                input_role="confirmatory_contract",
+                path=contract_path,
+                root=root,
+                sha256=_path_hash(contract_path),
+                schema_version=str(contract.schema_version),
+                origin=origin,
+                disposition=str(summary["claim_disposition"]),
+                run_id=rows[0].run_id,
+                config_hash=rows[0].run_config_hash,
+            ),
+        ),
     )
 
 
 def _e5_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
     if source.rows_path is None or source.contract_path is None:
         return _missing_experiment("E5", "missing E5 rows_path or contract_path")
-    rows_payload, rows_hash = _rows_payload(root, source.rows_path, label="E5 rows")
+    rows_path = _resolved_anchored_path(root, source.rows_path)
     contract_path = _resolved_anchored_path(root, source.contract_path)
+    rows_payload, rows_hash = _rows_payload(root, rows_path, label="E5 rows")
     contract = load_e5_confirmatory_contract(contract_path)
     rows = tuple(E5ScenarioRow.model_validate(row) for row in rows_payload)
     origins = {row.origin.value for row in rows}
@@ -476,7 +606,7 @@ def _e5_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
     summary = summarize_e5_rows(rows, contract=contract).model_dump(mode="json")
     return LoadedExperiment(
         experiment_id="E5",
-        table_id="T10",
+        table_ids=("T10",),
         figure_ids=("F10",),
         claim_id=str(summary["claim_id"]),
         origin=origin,
@@ -493,6 +623,32 @@ def _e5_loaded(root: Path, source: ExperimentSource) -> LoadedExperiment:
         uncertainty="invalid_maturity_interval",
         limits=_limits_from_summary(summary),
         omission_reason=None,
+        input_entries=(
+            _entry(
+                experiment_id="E5",
+                input_role="rows",
+                path=rows_path,
+                root=root,
+                sha256=rows_hash,
+                schema_version=str(rows[0].schema_version),
+                origin=origin,
+                disposition=str(summary["claim_disposition"]),
+                run_id=rows[0].run_id,
+                config_hash=rows[0].run_config_hash,
+            ),
+            _entry(
+                experiment_id="E5",
+                input_role="confirmatory_contract",
+                path=contract_path,
+                root=root,
+                sha256=_path_hash(contract_path),
+                schema_version=str(contract.schema_version),
+                origin=origin,
+                disposition=str(summary["claim_disposition"]),
+                run_id=rows[0].run_id,
+                config_hash=rows[0].run_config_hash,
+            ),
+        ),
     )
 
 

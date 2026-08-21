@@ -45,22 +45,23 @@ def _table_rows(experiment: LoadedExperiment) -> list[dict[str, Any]]:
 def claim_matrix_rows(bundle: LoadedBundle) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for experiment in bundle.experiments:
-        rows.append(
-            {
-                "artifact_id": experiment.table_id or "",
-                "experiment_id": experiment.experiment_id,
-                "claim_id": experiment.claim_id,
-                "disposition": experiment.disposition,
-                "origin": experiment.origin or "",
-                "scope": experiment.scope or "",
-                "maturity": experiment.maturity,
-                "run_id": experiment.run_id or "",
-                "config_hash": experiment.config_hash or "",
-                "source_hashes": "|".join(experiment.source_hashes),
-                "limits": "|".join(experiment.limits),
-                "omission_reason": experiment.omission_reason or "",
-            }
-        )
+        for artifact_id in experiment.table_ids:
+            rows.append(
+                {
+                    "artifact_id": artifact_id,
+                    "experiment_id": experiment.experiment_id,
+                    "claim_id": experiment.claim_id,
+                    "disposition": experiment.disposition,
+                    "origin": experiment.origin or "",
+                    "scope": experiment.scope or "",
+                    "maturity": experiment.maturity,
+                    "run_id": experiment.run_id or "",
+                    "config_hash": experiment.config_hash or "",
+                    "source_hashes": "|".join(experiment.source_hashes),
+                    "limits": "|".join(experiment.limits),
+                    "omission_reason": experiment.omission_reason or "",
+                }
+            )
     return rows
 
 
@@ -69,7 +70,7 @@ def omission_rows(bundle: LoadedBundle) -> list[dict[str, Any]]:
     for experiment in bundle.experiments:
         if experiment.omission_reason is None:
             continue
-        artifact_ids = [artifact_id for artifact_id in (experiment.table_id, *experiment.figure_ids) if artifact_id]
+        artifact_ids = [artifact_id for artifact_id in (*experiment.table_ids, *experiment.figure_ids) if artifact_id]
         for artifact_id in artifact_ids:
             rows.append(
                 {
@@ -91,17 +92,35 @@ def table_artifacts(bundle: LoadedBundle) -> dict[str, bytes]:
         "tables/omissions.json": _json_bytes(omission_rows(bundle)),
     }
     for experiment in bundle.experiments:
-        if experiment.table_id is None or not experiment.table_rows:
+        if experiment.omission_reason is not None:
+            for table_id in experiment.table_ids:
+                outputs[f"tables/{table_id}_status.json"] = _json_bytes(
+                    {
+                        "artifact_id": table_id,
+                        "experiment_id": experiment.experiment_id,
+                        "disposition": experiment.disposition,
+                        "origin": experiment.origin,
+                        "reason": experiment.omission_reason,
+                    }
+                )
+            continue
+        if not experiment.table_ids or not experiment.table_rows:
             continue
         rows = _table_rows(experiment)
-        suffix = {
-            "T10": "watcher_dispute_economics",
-            "T11": "sybil_economics",
-            "T12": "evm_boundedness",
-            "T13": "consensus_safety",
-        }.get(experiment.table_id, experiment.table_id.lower())
-        outputs[f"tables/{experiment.table_id}_{suffix}.csv"] = _csv_bytes(rows)
-        outputs[f"tables/{experiment.table_id}_{suffix}.json"] = _json_bytes(rows)
+        for table_id in experiment.table_ids:
+            suffix = {
+                "T4": "dataset_composition",
+                "T6": "single_pass_cost",
+                "T7": "execution_audit_security",
+                "T8": "semantic_verification",
+                "T9": "data_availability",
+                "T10": "watcher_dispute_economics",
+                "T11": "sybil_economics",
+                "T12": "evm_boundedness",
+                "T13": "consensus_safety",
+            }[table_id]
+            outputs[f"tables/{table_id}_{suffix}.csv"] = _csv_bytes(rows)
+            outputs[f"tables/{table_id}_{suffix}.json"] = _json_bytes(rows)
     return outputs
 
 

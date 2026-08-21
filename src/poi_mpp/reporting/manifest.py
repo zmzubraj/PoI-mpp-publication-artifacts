@@ -7,25 +7,84 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import stat
 import tempfile
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import ValidationError
+
+from poi_mpp.evidence.canonical import digest
+from poi_mpp.evidence import collect_environment, environment_hash
 from poi_mpp.reporting.figures import figure_artifacts
 from poi_mpp.reporting.load import (
+    ARTIFACT_FILENAMES,
+    InputEntry,
     LoadedBundle,
     PublicationEligibilityError,
     ReportBuildSpec,
+    experiment_artifact_ids,
     load_publication_inputs,
 )
 from poi_mpp.reporting.tables import omission_rows, table_artifacts
+
+
+_MANIFEST_SCHEMA_VERSION = "POI_MPP_PUBLICATION_REPORT_MANIFEST_V2"
+_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
 
 
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _sha256_path(path: Path) -> str:
-    return _sha256_bytes(path.read_bytes())
+def _assert_no_symlink_components(path: Path, *, stop_at: Path | None = None, require_directory: bool = False) -> None:
+    current = path
+    while True:
+        try:
+            metadata = os.lstat(current)
+        except OSError as error:
+            raise PublicationEligibilityError((f"unable to stat path component: {current}",)) from error
+        if stat.S_ISLNK(metadata.st_mode):
+            raise PublicationEligibilityError((f"symlinked path component is forbidden: {current}",))
+        if require_directory and current == path and not stat.S_ISDIR(metadata.st_mode):
+            raise PublicationEligibilityError((f"expected directory path: {current}",))
+        if stop_at is not None and current == stop_at:
+            break
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+
+
+def _safe_read_file(path: Path, *, root: Path | None = None) -> bytes:
+    if root is not None:
+        _assert_no_symlink_components(path.parent, stop_at=root, require_directory=True)
+    else:
+        _assert_no_symlink_components(path.parent, require_directory=True)
+    flags = os.O_RDONLY | _NOFOLLOW
+    try:
+        file_descriptor = os.open(str(path), flags)
+    except OSError as error:
+        raise PublicationEligibilityError((f"unable to open file without following symlinks: {path}",)) from error
+    try:
+        metadata = os.fstat(file_descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise PublicationEligibilityError((f"path is not a regular file: {path}",))
+        if metadata.st_nlink != 1:
+            raise PublicationEligibilityError((f"hardlinked output/input file is forbidden: {path}",))
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(file_descriptor, 65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        return b"".join(chunks)
+    finally:
+        os.close(file_descriptor)
+
+
+def _sha256_path(path: Path, *, root: Path | None = None) -> str:
+    return _sha256_bytes(_safe_read_file(path, root=root))
 
 
 def _fsync_directory(path: Path) -> None:
@@ -47,7 +106,7 @@ def _atomic_write_bytes(path: Path, data: bytes) -> str:
             os.fsync(handle.fileno())
         os.replace(temp_path, path)
         _fsync_directory(path.parent)
-        observed = _sha256_path(path)
+        observed = _sha256_path(path, root=path.parent)
         expected = _sha256_bytes(data)
         if observed != expected:
             raise PublicationEligibilityError((f"atomic write verification failed for {path.name}",))
@@ -56,6 +115,75 @@ def _atomic_write_bytes(path: Path, data: bytes) -> str:
         if temp_path.exists():
             temp_path.unlink()
         raise
+
+
+class _FrozenModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class ManifestInputRecord(_FrozenModel):
+    experiment_id: str
+    input_role: str
+    relative_path: str
+    sha256: str
+    schema_version: str | None = None
+    origin: str | None = None
+    disposition: str
+    run_id: str | None = None
+    config_hash: str | None = None
+    paper_artifact_ids: tuple[str, ...]
+
+
+class ManifestOutputRecord(_FrozenModel):
+    output_id: str
+    paper_artifact_id: str
+    relative_path: str
+    sha256: str
+    kind: str
+    experiment_id: str
+    origin: str
+    disposition: str
+    derivation_edge: str
+    omission_reason: str | None = None
+    source_hashes: tuple[str, ...] = ()
+
+
+class ManifestOmissionRecord(_FrozenModel):
+    paper_artifact_id: str
+    experiment_id: str
+    disposition: str
+    origin: str
+    reason: str
+
+
+class PublicationReportManifestModel(_FrozenModel):
+    schema_version: str = _MANIFEST_SCHEMA_VERSION
+    artifact_root_relative_path: str
+    generator_source_closure_hash: str
+    environment_hash: str
+    inputs: tuple[ManifestInputRecord, ...]
+    outputs: tuple[ManifestOutputRecord, ...]
+    omissions: tuple[ManifestOmissionRecord, ...]
+    self_digest: str
+
+    @model_validator(mode="after")
+    def validate_uniqueness(self) -> "PublicationReportManifestModel":
+        input_paths = tuple(item.relative_path for item in self.inputs)
+        if len(input_paths) != len(set(input_paths)):
+            raise ValueError("duplicate input relative paths are forbidden")
+        output_paths = tuple(item.relative_path for item in self.outputs)
+        if len(output_paths) != len(set(output_paths)):
+            raise ValueError("duplicate output relative paths are forbidden")
+        output_ids = tuple(item.output_id for item in self.outputs)
+        if len(output_ids) != len(set(output_ids)):
+            raise ValueError("duplicate output ids are forbidden")
+        derivation_edges = tuple(item.derivation_edge for item in self.outputs)
+        if len(derivation_edges) != len(set(derivation_edges)):
+            raise ValueError("duplicate derivation edges are forbidden")
+        omission_ids = tuple(item.paper_artifact_id for item in self.omissions)
+        if len(omission_ids) != len(set(omission_ids)):
+            raise ValueError("duplicate omission artifact ids are forbidden")
+        return self
 
 
 @dataclass(frozen=True)
@@ -80,51 +208,143 @@ class PublicationManifest:
     manifest_sha256: str
 
 
-def _table_id_to_experiment(bundle: LoadedBundle) -> dict[str, str]:
-    mapping: dict[str, str] = {}
-    for experiment in bundle.experiments:
-        if experiment.table_id is not None:
-            mapping[experiment.table_id] = experiment.experiment_id
-        for figure_id in experiment.figure_ids:
-            mapping[figure_id] = experiment.experiment_id
-    return mapping
+def _current_generator_source_closure_hash() -> str:
+    from poi_mpp.reporting.load import _generator_source_closure_hash
+
+    return _generator_source_closure_hash()
 
 
-def _manifest_payload(bundle: LoadedBundle, artifact_hashes: dict[str, str]) -> dict[str, Any]:
-    omission_index = {
-        row["artifact_id"]: row
-        for row in omission_rows(bundle)
-    }
-    outputs: list[dict[str, Any]] = []
-    mapping = _table_id_to_experiment(bundle)
-    for relative_path in sorted(artifact_hashes):
-        artifact_id = Path(relative_path).name.split("_", 1)[0].split(".", 1)[0]
-        experiment_id = mapping.get(artifact_id, "REPORT")
-        experiment = next((item for item in bundle.experiments if item.experiment_id == experiment_id), None)
-        outputs.append(
+def _current_environment_hash() -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    environment = collect_environment(repo_root=repo_root, lock_path=repo_root / "requirements.lock")
+    return environment_hash(environment)
+
+
+def _output_id(relative_path: str) -> str:
+    kind, filename = relative_path.split("/", 1)
+    stem, extension = filename.rsplit(".", 1)
+    return f"{kind}:{stem}:{extension}"
+
+
+def _paper_artifact_id(relative_path: str) -> str:
+    kind, filename = relative_path.split("/", 1)
+    if kind == "tables":
+        if filename.startswith("claim_matrix"):
+            return "CLAIM_MATRIX"
+        if filename.startswith("omissions"):
+            return "OMISSION_LEDGER"
+    return filename.split("_", 1)[0].split(".", 1)[0]
+
+
+def _manifest_material(payload: dict[str, Any]) -> dict[str, Any]:
+    material = dict(payload)
+    material["self_digest"] = ""
+    return material
+
+
+def _manifest_self_digest(payload: dict[str, Any]) -> str:
+    return digest("PUBLICATION_REPORT_MANIFEST", _manifest_material(payload))
+
+
+def _manifest_inputs(bundle: LoadedBundle) -> tuple[ManifestInputRecord, ...]:
+    records = [
+        ManifestInputRecord.model_validate(
             {
-                "artifact_id": artifact_id,
-                "relative_path": relative_path,
-                "sha256": artifact_hashes[relative_path],
-                "kind": relative_path.split("/", 1)[0],
-                "experiment_id": experiment_id,
-                "origin": "" if experiment is None or experiment.origin is None else experiment.origin,
-                "disposition": "OMITTED"
-                if artifact_id in omission_index and relative_path.startswith("figures/")
-                else ("" if experiment is None else experiment.disposition),
-                "derivation_edge": f"{experiment_id}->{artifact_id}",
-                "omission_reason": omission_index.get(artifact_id, {}).get("reason"),
-                "source_hashes": [] if experiment is None else list(experiment.source_hashes),
+                "experiment_id": entry.experiment_id,
+                "input_role": entry.input_role,
+                "relative_path": entry.relative_path,
+                "sha256": entry.sha256,
+                "schema_version": entry.schema_version,
+                "origin": entry.origin,
+                "disposition": entry.disposition,
+                "run_id": entry.run_id,
+                "config_hash": entry.config_hash,
+                "paper_artifact_ids": entry.paper_artifact_ids,
             }
         )
-    omissions = list(omission_rows(bundle))
-    return {
-        "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V1",
+        for experiment in bundle.experiments
+        for entry in experiment.input_entries
+    ]
+    return tuple(sorted(records, key=lambda item: (item.experiment_id, item.input_role, item.relative_path)))
+
+
+def _manifest_outputs(bundle: LoadedBundle, artifact_hashes: dict[str, str]) -> tuple[ManifestOutputRecord, ...]:
+    experiment_by_artifact = {
+        artifact_id: experiment
+        for experiment in bundle.experiments
+        for artifact_id in (*experiment.table_ids, *experiment.figure_ids)
+    }
+    outputs: list[ManifestOutputRecord] = []
+    for relative_path, sha256 in sorted(artifact_hashes.items()):
+        paper_artifact_id = _paper_artifact_id(relative_path)
+        experiment = experiment_by_artifact.get(paper_artifact_id)
+        outputs.append(
+            ManifestOutputRecord.model_validate(
+                {
+                    "output_id": _output_id(relative_path),
+                    "paper_artifact_id": paper_artifact_id,
+                    "relative_path": relative_path,
+                    "sha256": sha256,
+                    "kind": relative_path.split("/", 1)[0],
+                    "experiment_id": "REPORT" if experiment is None else experiment.experiment_id,
+                    "origin": "" if experiment is None or experiment.origin is None else experiment.origin,
+                    "disposition": "" if experiment is None else experiment.disposition,
+                    "derivation_edge": f"{'REPORT' if experiment is None else experiment.experiment_id}->{paper_artifact_id}:{Path(relative_path).suffix.lstrip('.')}",
+                    "omission_reason": None if experiment is None else experiment.omission_reason,
+                    "source_hashes": () if experiment is None else experiment.source_hashes,
+                }
+            )
+        )
+    return tuple(outputs)
+
+
+def _manifest_omissions(bundle: LoadedBundle) -> tuple[ManifestOmissionRecord, ...]:
+    rows = omission_rows(bundle)
+    return tuple(
+        ManifestOmissionRecord.model_validate(
+            {
+                "paper_artifact_id": row["artifact_id"],
+                "experiment_id": row["experiment_id"],
+                "disposition": row["disposition"],
+                "origin": row["origin"],
+                "reason": row["reason"],
+            }
+        )
+        for row in rows
+    )
+
+
+def _manifest_payload(bundle: LoadedBundle, artifact_hashes: dict[str, str]) -> PublicationReportManifestModel:
+    artifact_root_relative_path = os.path.relpath(bundle.artifact_root, bundle.output_root)
+    payload = {
+        "schema_version": _MANIFEST_SCHEMA_VERSION,
+        "artifact_root_relative_path": artifact_root_relative_path,
         "generator_source_closure_hash": bundle.generator_source_closure_hash,
         "environment_hash": bundle.environment_hash,
-        "outputs": outputs,
-        "omissions": omissions,
+        "inputs": [item.model_dump(mode="json") for item in _manifest_inputs(bundle)],
+        "outputs": [item.model_dump(mode="json") for item in _manifest_outputs(bundle, artifact_hashes)],
+        "omissions": [item.model_dump(mode="json") for item in _manifest_omissions(bundle)],
+        "self_digest": "",
     }
+    payload["self_digest"] = _manifest_self_digest(payload)
+    return PublicationReportManifestModel.model_validate(payload)
+
+
+def _enumerate_output_files(output_root: Path) -> set[str]:
+    _assert_no_symlink_components(output_root, require_directory=True)
+    files: set[str] = set()
+    for current_root, directory_names, file_names in os.walk(output_root, topdown=True, followlinks=False):
+        current_path = Path(current_root)
+        for directory_name in list(directory_names):
+            directory_path = current_path / directory_name
+            metadata = os.lstat(directory_path)
+            if stat.S_ISLNK(metadata.st_mode):
+                raise PublicationEligibilityError((f"symlinked output directory is forbidden: {directory_path}",))
+        for file_name in file_names:
+            file_path = current_path / file_name
+            files.add(str(file_path.relative_to(output_root)))
+            _safe_read_file(file_path, root=output_root)
+    return files
 
 
 def build_publication_report(spec: ReportBuildSpec) -> PublicationManifest:
@@ -132,110 +352,119 @@ def build_publication_report(spec: ReportBuildSpec) -> PublicationManifest:
     outputs = {}
     outputs.update(table_artifacts(bundle))
     outputs.update(figure_artifacts(bundle))
+    if len(outputs) != len(set(outputs)):
+        raise PublicationEligibilityError(("duplicate output paths are forbidden",))
     artifact_hashes: dict[str, str] = {}
     for relative_path, data in sorted(outputs.items()):
         artifact_hashes[relative_path] = _atomic_write_bytes(bundle.output_root / relative_path, data)
-    manifest_payload = _manifest_payload(bundle, artifact_hashes)
-    manifest_bytes = (json.dumps(manifest_payload, sort_keys=True, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    manifest_model = _manifest_payload(bundle, artifact_hashes)
+    manifest_bytes = (json.dumps(manifest_model.model_dump(mode="json"), sort_keys=True, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     manifest_sha256 = _atomic_write_bytes(bundle.output_root / "artifact_manifest.json", manifest_bytes)
-    artifact_hashes["artifact_manifest.json"] = manifest_sha256
     outputs_index = tuple(
         ManifestEntry(
-            artifact_id=item["artifact_id"],
-            relative_path=item["relative_path"],
-            sha256=item["sha256"],
-            kind=item["kind"],
-            origin=item["origin"],
-            disposition=item["disposition"],
-            derivation_edge=item["derivation_edge"],
-            omission_reason=item["omission_reason"],
+            artifact_id=item.paper_artifact_id,
+            relative_path=item.relative_path,
+            sha256=item.sha256,
+            kind=item.kind,
+            origin=item.origin,
+            disposition=item.disposition,
+            derivation_edge=item.derivation_edge,
+            omission_reason=item.omission_reason,
         )
-        for item in manifest_payload["outputs"]
+        for item in manifest_model.outputs
     )
     omissions_index = tuple(
         ManifestEntry(
-            artifact_id=item["artifact_id"],
+            artifact_id=item.paper_artifact_id,
             relative_path="",
             sha256="",
             kind="omission",
-            origin=item["origin"],
-            disposition=item["disposition"],
-            derivation_edge=f"{item['experiment_id']}->{item['artifact_id']}",
-            omission_reason=item["reason"],
+            origin=item.origin,
+            disposition=item.disposition,
+            derivation_edge=f"{item.experiment_id}->{item.paper_artifact_id}",
+            omission_reason=item.reason,
         )
-        for item in manifest_payload["omissions"]
+        for item in manifest_model.omissions
     )
     return PublicationManifest(
         output_root=bundle.output_root,
         outputs=outputs_index,
         omissions=omissions_index,
-        generator_source_closure_hash=bundle.generator_source_closure_hash,
-        environment_hash=bundle.environment_hash,
+        generator_source_closure_hash=manifest_model.generator_source_closure_hash,
+        environment_hash=manifest_model.environment_hash,
         manifest_sha256=manifest_sha256,
     )
 
 
 def validate_existing_manifest(output_root: Path) -> PublicationManifest:
     manifest_path = output_root / "artifact_manifest.json"
-    if not manifest_path.is_file():
-        raise PublicationEligibilityError(("artifact_manifest.json is missing",))
+    manifest_bytes = _safe_read_file(manifest_path, root=output_root)
     try:
-        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest_payload = json.loads(manifest_bytes.decode("utf-8"))
     except json.JSONDecodeError as error:
         raise PublicationEligibilityError(("artifact_manifest.json is not valid JSON",)) from error
-    expected_files = {"artifact_manifest.json"}
-    for item in payload.get("outputs", []):
-        expected_files.add(item["relative_path"])
-    actual_files = {
-        str(path.relative_to(output_root))
-        for path in output_root.rglob("*")
-        if path.is_file()
-    }
+    try:
+        manifest_model = PublicationReportManifestModel.model_validate(manifest_payload)
+    except ValidationError as error:
+        raise PublicationEligibilityError((str(error),)) from error
+    if manifest_model.self_digest != _manifest_self_digest(manifest_model.model_dump(mode="json")):
+        raise PublicationEligibilityError(("manifest self-digest mismatch",))
+    if manifest_model.generator_source_closure_hash != _current_generator_source_closure_hash():
+        raise PublicationEligibilityError(("generator source closure drift detected",))
+    if manifest_model.environment_hash != _current_environment_hash():
+        raise PublicationEligibilityError(("environment hash drift detected",))
+    artifact_root = (output_root / manifest_model.artifact_root_relative_path).resolve()
+    _assert_no_symlink_components(artifact_root, require_directory=True)
+    seen_input_paths: set[str] = set()
+    for entry in manifest_model.inputs:
+        if entry.relative_path in seen_input_paths:
+            raise PublicationEligibilityError(("duplicate input relative paths are forbidden",))
+        seen_input_paths.add(entry.relative_path)
+        input_path = artifact_root / entry.relative_path
+        if _sha256_path(input_path, root=artifact_root) != entry.sha256:
+            raise PublicationEligibilityError((f"input hash mismatch for {entry.relative_path}",))
+    expected_files = {"artifact_manifest.json"} | {item.relative_path for item in manifest_model.outputs}
+    actual_files = _enumerate_output_files(output_root)
     if actual_files != expected_files:
         raise PublicationEligibilityError(("artifact manifest closure mismatch",))
-    for item in payload.get("outputs", []):
-        path = output_root / item["relative_path"]
-        if _sha256_path(path) != item["sha256"]:
-            raise PublicationEligibilityError((f"artifact hash mismatch for {item['relative_path']}",))
+    for item in manifest_model.outputs:
+        output_path = output_root / item.relative_path
+        if _sha256_path(output_path, root=output_root) != item.sha256:
+            raise PublicationEligibilityError((f"artifact hash mismatch for {item.relative_path}",))
     outputs = tuple(
         ManifestEntry(
-            artifact_id=item["artifact_id"],
-            relative_path=item["relative_path"],
-            sha256=item["sha256"],
-            kind=item["kind"],
-            origin=item["origin"],
-            disposition=item["disposition"],
-            derivation_edge=item["derivation_edge"],
-            omission_reason=item.get("omission_reason"),
+            artifact_id=item.paper_artifact_id,
+            relative_path=item.relative_path,
+            sha256=item.sha256,
+            kind=item.kind,
+            origin=item.origin,
+            disposition=item.disposition,
+            derivation_edge=item.derivation_edge,
+            omission_reason=item.omission_reason,
         )
-        for item in payload.get("outputs", [])
+        for item in manifest_model.outputs
     )
     omissions = tuple(
         ManifestEntry(
-            artifact_id=item["artifact_id"],
+            artifact_id=item.paper_artifact_id,
             relative_path="",
             sha256="",
             kind="omission",
-            origin=item["origin"],
-            disposition=item["disposition"],
-            derivation_edge=f"{item['experiment_id']}->{item['artifact_id']}",
-            omission_reason=item["reason"],
+            origin=item.origin,
+            disposition=item.disposition,
+            derivation_edge=f"{item.experiment_id}->{item.paper_artifact_id}",
+            omission_reason=item.reason,
         )
-        for item in payload.get("omissions", [])
+        for item in manifest_model.omissions
     )
     return PublicationManifest(
         output_root=output_root,
         outputs=outputs,
         omissions=omissions,
-        generator_source_closure_hash=str(payload["generator_source_closure_hash"]),
-        environment_hash=str(payload["environment_hash"]),
-        manifest_sha256=_sha256_path(manifest_path),
+        generator_source_closure_hash=manifest_model.generator_source_closure_hash,
+        environment_hash=manifest_model.environment_hash,
+        manifest_sha256=_sha256_bytes(manifest_bytes),
     )
 
 
-__all__ = [
-    "PublicationManifest",
-    "ManifestEntry",
-    "build_publication_report",
-    "validate_existing_manifest",
-]
+__all__ = ["ManifestEntry", "PublicationManifest", "build_publication_report", "validate_existing_manifest"]

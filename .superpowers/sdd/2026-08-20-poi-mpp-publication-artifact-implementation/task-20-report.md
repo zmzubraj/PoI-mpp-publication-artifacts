@@ -82,3 +82,37 @@
 ## Residual risk
 
 - The current loader implements live/authoritative reporting for E7/E8 and omission/status handling for missing E1-E6 inputs. If future authorized E1-E4 bundles need direct ingestion through Task 20 rather than omission routing, that surface should be extended under the same fail-closed contract.
+
+## Fix round 1
+
+- Manifest validation now recomputes current generator source-closure and environment hashes instead of trusting stored values.
+- Manifest now records explicit canonical inputs with:
+  - experiment id
+  - input role
+  - anchored relative path
+  - SHA-256
+  - schema version
+  - origin
+  - disposition
+  - run id
+  - config hash
+  - mapped paper artifact ids
+- Input drift is now detected by re-reading every recorded input through anchored no-follow reads under the recorded artifact-root relation.
+- Output validation now uses anchored no-follow reads for the output root, intermediate directories, and leaf files; symlinked output roots and symlink-replaced leaf files fail closed.
+- Manifest structure is now strict and self-authenticated:
+  - duplicate input paths rejected
+  - duplicate output ids rejected
+  - duplicate output paths rejected
+  - duplicate derivation edges rejected
+  - unknown top-level keys rejected
+  - manifest self-digest is recomputed and checked
+- Added explicit table-status artifacts for omitted quantitative tables, including `T4_status.json`, so dataset composition is represented as an omission/status artifact rather than an empty quantitative table.
+- Centralized exact artifact mapping now covers `T4`, `T6`-`T13`, and `F5`-`F12`, with `E3` reserved to route to both `T4` and `T8`.
+
+### Fix-round verification
+
+- `./.venv/bin/python -m pytest tests/reporting -q`
+- `./.venv/bin/python -m pytest tests/reporting tests/experiments -q`
+- `./.venv/bin/python -m pytest -q`
+- `./.venv/bin/python -m compileall -q src tests experiments scripts`
+- `git diff --check`
