@@ -32,6 +32,13 @@
 - Added exact source-manifest and annotation-manifest closure checks before metrics.
 - Added typed confirmatory-schema loading and CLI validation with corruption/mismatch coverage.
 
+## Fix Round 2
+
+- Real confirmatory evaluation now requires `provenance_bundle` before any external-authority wait state.
+- Confirmatory provenance is canonically revalidated through the evidence kernel before `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`.
+- Missing, forged, `UNVERSIONED_BLOCKED`, and config-mismatched provenance bundles now fail first with precise provenance eligibility errors.
+- Synthetic plumbing remains unchanged and does not depend on confirmatory provenance.
+
 ## Verification
 
 - `./.venv/bin/python -m pytest tests/experiments/test_e3_semantic.py -v`
@@ -43,3 +50,4 @@
 ## Ledger candidate
 
 - Task 14: fix round 1 complete (removed caller-authored evaluator verification, added explicit `WAITING_EXTERNAL_EVALUATOR_AUTHORITY` boundary, enforced exact source/annotation manifest closure, validated typed confirmatory schema in CLI; 10 targeted E3 tests PASS, 39 semantic/dataset+E3 tests PASS, full Python suite PASS, compileall PASS, git diff --check PASS).
+- Task 14: fix round 2 complete (confirmatory path now requires and kernel-validates provenance bundles before the external-authority boundary; added missing/forged/`UNVERSIONED_BLOCKED`/config-mismatch repros; 14 targeted E3 tests PASS, 43 semantic/dataset+E3 tests PASS, full Python suite PASS, compileall PASS, git diff --check PASS).

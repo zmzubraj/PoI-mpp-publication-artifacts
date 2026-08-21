@@ -11,7 +11,8 @@ import yaml
 
 from poi_mpp.auditor.semantic.models import SemanticCalibrationArtifact, SemanticOutcome, VerificationDecision
 from poi_mpp.datasets.manifests import DatasetManifest, DatasetRecord, DatasetSplit, assert_confirmatory_isolation
-from poi_mpp.evidence import ArtifactStage, EvidenceOrigin, ProvenanceBundle, RunConfig
+from poi_mpp.evidence import ArtifactStage, EvidenceOrigin, ProvenanceBundle, RunConfig, provenance_bundle_from_json
+from poi_mpp.evidence.validation import ArtifactValidationError
 from poi_mpp.reporting.e3 import E3MetricPolicy, E3Summary, semantic_metrics
 
 
@@ -502,6 +503,29 @@ def _confirmatory_reasons(
     config: E3ConfirmatoryConfig,
     rows: Sequence[E3SemanticRow],
 ) -> tuple[str, ...]:
+    if config.provenance_bundle is None:
+        return ("verified provenance bundle is required before confirmatory authority evaluation",)
+    try:
+        verified_bundle = provenance_bundle_from_json(
+            {
+                "config": config.provenance_bundle.config.model_dump(mode="json"),
+                "environment": config.provenance_bundle.environment.model_dump(mode="json"),
+                "manifest": config.provenance_bundle.manifest.model_dump(mode="json"),
+            }
+        )
+    except ArtifactValidationError as error:
+        return error.reasons
+    provenance_reasons: list[str] = []
+    if verified_bundle.config.model_dump(mode="json") != config.run_config.model_dump(mode="json"):
+        provenance_reasons.append("provenance bundle config must exactly match run_config")
+    if verified_bundle.manifest.run_id != config.run_config.run_id:
+        provenance_reasons.append("provenance manifest run_id must equal run_config.run_id")
+    if verified_bundle.manifest.experiment_id != config.run_config.experiment_id:
+        provenance_reasons.append("provenance manifest experiment_id must equal run_config.experiment_id")
+    if verified_bundle.manifest.origin is not config.run_config.origin:
+        provenance_reasons.append("provenance manifest origin must equal run_config.origin")
+    if provenance_reasons:
+        return tuple(dict.fromkeys(provenance_reasons))
     reasons = list(
         _shared_closure_reasons(
             run_config=config.run_config,

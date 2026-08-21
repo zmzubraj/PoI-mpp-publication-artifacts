@@ -10,6 +10,8 @@ from poi_mpp.datasets.manifests import DatasetManifest, DatasetRecord, DatasetSp
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.config import RunConfig, approved_schema_hash
 from poi_mpp.evidence.models import ArtifactStage, EvidenceOrigin
+from poi_mpp.evidence.provenance import EnvironmentManifest, freeze_run
+from poi_mpp.evidence.validation import ProvenanceBundle
 
 
 def _hash(label: str, value: str) -> str:
@@ -251,6 +253,36 @@ def _confirmatory_config():
     )
 
 
+def _provenance_bundle(
+    *,
+    run_config: RunConfig | None = None,
+    code_revision: str = "6" * 40,
+):
+    run_config = run_config or _run_config(
+        run_id="run-e3-confirm",
+        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        authorization_scope="PUBLICATION_EVIDENCE_AUTHORIZED",
+    )
+    environment = EnvironmentManifest(
+        python_implementation="CPython",
+        python_version="3.11.15",
+        os_name="Darwin",
+        os_release="26.0.0",
+        machine="arm64",
+        cpu_model="Apple M4",
+        gpu_model="Apple GPU",
+        package_lock_hash="5" * 64,
+        compiler_version=None,
+        foundry_version=None,
+        code_revision=code_revision,
+    )
+    return ProvenanceBundle(
+        config=run_config,
+        environment=environment,
+        manifest=freeze_run(run_config, environment),
+    )
+
+
 def _confirmatory_row():
     from poi_mpp.experiments.e3_semantic import E3SemanticRow
 
@@ -374,7 +406,7 @@ def test_real_confirmatory_waits_for_external_evaluator_authority() -> None:
 
     with pytest.raises(PublicationEligibilityError, match="WAITING_EXTERNAL_EVALUATOR_AUTHORITY"):
         run_confirmatory_semantic(
-            config=_confirmatory_config(),
+            config=_confirmatory_config().model_copy(update={"provenance_bundle": _provenance_bundle()}),
             rows=(_confirmatory_row(),),
         )
 
@@ -386,8 +418,63 @@ def test_confirmatory_row_outside_manifest_is_rejected_before_authority_boundary
 
     with pytest.raises(PublicationEligibilityError, match="source manifest"):
         run_confirmatory_semantic(
-            config=_confirmatory_config(),
+            config=_confirmatory_config().model_copy(update={"provenance_bundle": _provenance_bundle()}),
             rows=(forged_row,),
+        )
+
+
+def test_confirmatory_requires_provenance_bundle_before_authority_boundary() -> None:
+    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+
+    with pytest.raises(PublicationEligibilityError, match="verified provenance bundle is required"):
+        run_confirmatory_semantic(
+            config=_confirmatory_config(),
+            rows=(_confirmatory_row(),),
+        )
+
+
+def test_confirmatory_rejects_unversioned_blocked_provenance_bundle() -> None:
+    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+
+    with pytest.raises(PublicationEligibilityError, match="UNVERSIONED_BLOCKED"):
+        run_confirmatory_semantic(
+            config=_confirmatory_config().model_copy(
+                update={"provenance_bundle": _provenance_bundle(code_revision="UNVERSIONED_BLOCKED")}
+            ),
+            rows=(_confirmatory_row(),),
+        )
+
+
+def test_confirmatory_rejects_mismatched_provenance_bundle_config() -> None:
+    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+
+    mismatched_run_config = _run_config(
+        run_id="run-e3-other",
+        origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        authorization_scope="PUBLICATION_EVIDENCE_AUTHORIZED",
+    )
+    with pytest.raises(PublicationEligibilityError, match="provenance bundle config must exactly match run_config"):
+        run_confirmatory_semantic(
+            config=_confirmatory_config().model_copy(
+                update={"provenance_bundle": _provenance_bundle(run_config=mismatched_run_config)}
+            ),
+            rows=(_confirmatory_row(),),
+        )
+
+
+def test_confirmatory_rejects_forged_provenance_manifest() -> None:
+    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+
+    bundle = _provenance_bundle()
+    forged_bundle = ProvenanceBundle(
+        config=bundle.config,
+        environment=bundle.environment,
+        manifest=bundle.manifest.model_copy(update={"origin": EvidenceOrigin.SYNTHETIC_NON_EVIDENCE}),
+    )
+    with pytest.raises(PublicationEligibilityError, match="provenance manifest does not equal recomputed freeze_run"):
+        run_confirmatory_semantic(
+            config=_confirmatory_config().model_copy(update={"provenance_bundle": forged_bundle}),
+            rows=(_confirmatory_row(),),
         )
 
 
