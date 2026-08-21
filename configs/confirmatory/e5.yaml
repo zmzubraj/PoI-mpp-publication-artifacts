@@ -1,0 +1,8 @@
+schema_version: POI_MPP_E5_CONFIRMATORY_SCOPE_V1
+publication_scope: E5_CONFIRMATORY_PUBLICATION_V1
+required_run_origin: REPRODUCIBLE_SIMULATION
+required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+minimum_supported_simulations: 2048
+notes:
+  - E5 publication evidence is limited to reproducible simulation under the frozen MPP authority boundary.
+  - Synthetic plumbing fixtures are non-evidence and cannot satisfy the confirmatory publication path.
