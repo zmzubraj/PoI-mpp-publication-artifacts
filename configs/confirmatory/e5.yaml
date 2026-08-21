@@ -1,8 +1,18 @@
-schema_version: POI_MPP_E5_CONFIRMATORY_SCOPE_V1
+schema_version: POI_MPP_E5_CONFIRMATORY_CONTRACT_V1
 publication_scope: E5_CONFIRMATORY_PUBLICATION_V1
 required_run_origin: REPRODUCIBLE_SIMULATION
 required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
-minimum_supported_simulations: 2048
+required_simulations: 4096
+maximum_replay_simulations: 8192
+required_model_version: POI_MPP_E5_SIMULATOR_V1
+seed_policy: FIXED_PER_SCENARIO
+allowed_scenarios:
+  - scenario_id: publication-independent-baseline
+    scenario_contract_hash: "1111111111111111111111111111111111111111111111111111111111111111"
+    required_seed: 17
+  - scenario_id: publication-shared-backstop
+    scenario_contract_hash: "2222222222222222222222222222222222222222222222222222222222222222"
+    required_seed: 19
 notes:
   - E5 publication evidence is limited to reproducible simulation under the frozen MPP authority boundary.
   - Synthetic plumbing fixtures are non-evidence and cannot satisfy the confirmatory publication path.

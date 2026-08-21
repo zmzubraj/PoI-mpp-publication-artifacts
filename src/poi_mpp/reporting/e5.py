@@ -7,7 +7,13 @@ from collections.abc import Mapping
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from poi_mpp.evidence.models import EvidenceOrigin
-from poi_mpp.experiments.e5_watcher import E5ScenarioRow, E5_CONFIRMATORY_SCOPE
+from poi_mpp.experiments.e5_watcher import (
+    E5_CONFIRMATORY_SCOPE,
+    E5ConfirmatoryContract,
+    E5ScenarioRow,
+    E5SeedPolicy,
+    replay_row,
+)
 
 
 MIN_E5_SUPPORTED_SCENARIOS = 2
@@ -87,27 +93,52 @@ def _revalidate_row(row: object) -> E5ScenarioRow:
     return E5ScenarioRow.model_validate(payload)
 
 
+def _authoritative_row(row: object) -> E5ScenarioRow:
+    canonical = _revalidate_row(row)
+    replayed = replay_row(canonical)
+    if canonical.model_dump(mode="json") != replayed.model_dump(mode="json"):
+        raise ValueError("E5 row does not match canonical simulator replay")
+    return replayed
+
+
 def publication_precheck_reasons(
     rows: tuple[E5ScenarioRow, ...] | list[E5ScenarioRow],
+    *,
+    contract: E5ConfirmatoryContract | None = None,
 ) -> tuple[str, ...]:
     if not rows:
         return ("E5 publication precheck requires at least one row",)
-    canonical_rows = tuple(_revalidate_row(row) for row in rows)
+    canonical_rows = tuple(_authoritative_row(row) for row in rows)
     reasons: list[str] = []
-    if len({row.origin for row in canonical_rows}) != 1:
-        reasons.append("rows must share one origin")
-    elif canonical_rows[0].origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
-        reasons.append("rows.origin must equal REPRODUCIBLE_SIMULATION")
-    if len({row.publication_scope for row in canonical_rows}) != 1:
-        reasons.append("rows must share one publication_scope")
-    elif canonical_rows[0].publication_scope != E5_CONFIRMATORY_SCOPE:
-        reasons.append(f"rows.publication_scope must equal {E5_CONFIRMATORY_SCOPE}")
-    if len({row.config_contract_hash for row in canonical_rows}) != 1:
-        reasons.append("rows must share one config_contract_hash")
+    if contract is None:
+        reasons.append("E5 confirmatory contract is required for publication support")
+        return tuple(dict.fromkeys(reasons))
+    if len({row.origin for row in canonical_rows}) != 1 or canonical_rows[0].origin is not contract.required_run_origin:
+        reasons.append("rows.origin must exactly match the confirmatory contract")
+    if (
+        len({row.publication_scope for row in canonical_rows}) != 1
+        or canonical_rows[0].publication_scope != contract.publication_scope
+    ):
+        reasons.append("rows.publication_scope must exactly match the confirmatory contract")
+    if any(row.simulations != contract.required_simulations for row in canonical_rows):
+        reasons.append("rows.simulations must exactly match the confirmatory contract")
+    if any(row.simulations > contract.maximum_replay_simulations for row in canonical_rows):
+        reasons.append("rows.simulations exceed the bounded replay maximum")
+    if any(row.simulation_model_version != contract.required_model_version for row in canonical_rows):
+        reasons.append("rows.simulation_model_version must exactly match the confirmatory contract")
     if len({row.scenario_id for row in canonical_rows}) != len(canonical_rows):
         reasons.append("rows must use unique scenario_id values")
-    if len({row.scenario_contract_hash for row in canonical_rows}) != len(canonical_rows):
-        reasons.append("rows must use unique scenario_contract_hash values")
+    contract_scenarios = {item.scenario_id: item for item in contract.allowed_scenarios}
+    row_scenarios = {row.scenario_id: row for row in canonical_rows}
+    if set(row_scenarios) != set(contract_scenarios):
+        reasons.append("rows.scenario_id set must exactly close against the confirmatory contract")
+    else:
+        for scenario_id, row in row_scenarios.items():
+            allowed = contract_scenarios[scenario_id]
+            if row.scenario_contract_hash != allowed.scenario_contract_hash:
+                reasons.append(f"scenario_contract_hash mismatch for {scenario_id}")
+            if contract.seed_policy is E5SeedPolicy.FIXED_PER_SCENARIO and row.seed != allowed.required_seed:
+                reasons.append(f"seed mismatch for {scenario_id}")
     return tuple(dict.fromkeys(reasons))
 
 
@@ -149,10 +180,11 @@ def summarize_e5_rows(
     rows: tuple[E5ScenarioRow, ...] | list[E5ScenarioRow],
     *,
     claim_id: str = "C5",
+    contract: E5ConfirmatoryContract | None = None,
 ) -> E5Summary:
     if not rows:
         raise ValueError("E5 summary requires at least one row")
-    canonical_rows = tuple(_revalidate_row(row) for row in rows)
+    canonical_rows = tuple(_authoritative_row(row) for row in rows)
     if len({row.scenario_id for row in canonical_rows}) != len(canonical_rows):
         raise ValueError("E5 rows require unique scenario_id values")
     origins = tuple(sorted({row.origin.value for row in canonical_rows}))
@@ -164,7 +196,7 @@ def summarize_e5_rows(
         if (row.invalid_maturity_interval[1] - row.invalid_maturity_interval[0]) <= MAX_E5_INTERVAL_WIDTH
         and (row.no_challenge_interval[1] - row.no_challenge_interval[0]) <= MAX_E5_INTERVAL_WIDTH
     ]
-    publication_reasons = publication_precheck_reasons(canonical_rows)
+    publication_reasons = publication_precheck_reasons(canonical_rows, contract=contract)
     claim_disposition = (
         "SUPPORTED"
         if len(canonical_rows) >= MIN_E5_SUPPORTED_SCENARIOS

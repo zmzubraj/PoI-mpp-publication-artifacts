@@ -71,6 +71,41 @@ def _run_config_text(
     )
 
 
+def _write_contract(tmp_path: Path, rows, *, required_simulations: int | None = None, allowed_rows=None):
+    from poi_mpp.experiments.e5_watcher import E5_SIMULATION_MODEL_VERSION, load_e5_confirmatory_contract
+
+    selected_rows = tuple(rows if allowed_rows is None else allowed_rows)
+    simulations = required_simulations if required_simulations is not None else selected_rows[0].simulations
+    lines = [
+        "schema_version: POI_MPP_E5_CONFIRMATORY_CONTRACT_V1",
+        "publication_scope: E5_CONFIRMATORY_PUBLICATION_V1",
+        "required_run_origin: REPRODUCIBLE_SIMULATION",
+        "required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED",
+        f"required_simulations: {simulations}",
+        "maximum_replay_simulations: 8192",
+        f"required_model_version: {E5_SIMULATION_MODEL_VERSION}",
+        "seed_policy: FIXED_PER_SCENARIO",
+        "allowed_scenarios:",
+    ]
+    for row in selected_rows:
+        lines.extend(
+            [
+                f"  - scenario_id: {row.scenario_id}",
+                f"    scenario_contract_hash: {row.scenario_contract_hash}",
+                f"    required_seed: {row.seed}",
+            ]
+        )
+    lines.extend(
+        [
+            "notes:",
+            "  - test contract",
+        ]
+    )
+    path = tmp_path / "e5.contract.yaml"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return load_e5_confirmatory_contract(path)
+
+
 def test_correlated_watchers_do_not_use_independent_closed_form():
     from poi_mpp.experiments.e5_watcher import (
         WatcherAssumption,
@@ -206,7 +241,7 @@ def test_reporting_requires_unique_scenario_seed_pairs_and_marks_synthetic_rows_
         summarize_e5_rows((reproducible, reproducible))
 
 
-def test_publication_support_requires_exact_scope_reproducible_origin_and_contract_hashes():
+def test_publication_support_requires_exact_scope_reproducible_origin_and_contract_hashes(tmp_path: Path):
     from poi_mpp.experiments.e5_watcher import E5SimulationConfig, run_watcher_scenario
     from poi_mpp.reporting.e5 import publication_precheck_reasons, summarize_e5_rows
 
@@ -233,9 +268,12 @@ def test_publication_support_requires_exact_scope_reproducible_origin_and_contra
         ),
     )
 
-    supported = summarize_e5_rows((first, second))
+    contract = _write_contract(tmp_path, (first, second))
+    supported = summarize_e5_rows((first, second), contract=contract)
     assert supported.claim_disposition == "SUPPORTED"
-    assert publication_precheck_reasons((first, second)) == ()
+    assert publication_precheck_reasons((first, second), contract=contract) == ()
+
+    assert summarize_e5_rows((first, second)).claim_disposition == "INCONCLUSIVE"
 
     wrong_scope = run_watcher_scenario(
         run_id="run-e5",
@@ -248,12 +286,12 @@ def test_publication_support_requires_exact_scope_reproducible_origin_and_contra
             publication_scope="WRONG_SCOPE",
         ),
     )
-    assert summarize_e5_rows((first, wrong_scope)).claim_disposition == "INCONCLUSIVE"
-    assert publication_precheck_reasons((first, wrong_scope))
+    assert summarize_e5_rows((first, wrong_scope), contract=contract).claim_disposition == "INCONCLUSIVE"
+    assert publication_precheck_reasons((first, wrong_scope), contract=contract)
 
     forged_hash = second.model_copy(update={"scenario_contract_hash": "0" * 64})
     with pytest.raises(ValueError, match="scenario_contract_hash"):
-        summarize_e5_rows((first, forged_hash))
+        summarize_e5_rows((first, forged_hash), contract=contract)
 
 
 def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios():
@@ -285,6 +323,84 @@ def test_duplicate_scenario_ids_do_not_count_as_distinct_confirmatory_scenarios(
 
     with pytest.raises(ValueError, match="unique scenario_id"):
         summarize_e5_rows((first, replicate))
+
+
+def test_summary_rejects_forged_result_outputs_by_replaying_canonical_simulator(tmp_path: Path):
+    from poi_mpp.experiments.e5_watcher import (
+        E5ScenarioRow,
+        E5SimulationConfig,
+        result_contract_hash,
+        run_watcher_scenario,
+    )
+    from poi_mpp.reporting.e5 import summarize_e5_rows
+
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="replay-1"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=13,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    second = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="replay-2", fraud_value_micros=4_500_000),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=15,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    contract = _write_contract(tmp_path, (first, second))
+    payload = second.model_dump(mode="python")
+    payload["watcher_expected_utility_micros"] = "999999.000000"
+    provisional = E5ScenarioRow.model_construct(**{**payload, "result_contract_hash": "0" * 64})
+    payload["result_contract_hash"] = result_contract_hash(provisional)
+    forged = E5ScenarioRow.model_construct(**payload)
+
+    with pytest.raises(ValueError, match="canonical simulator replay"):
+        summarize_e5_rows((first, forged), contract=contract)
+
+
+def test_contract_closure_rejects_unlisted_or_mismatched_scenarios_and_simulation_policy(tmp_path: Path):
+    from poi_mpp.experiments.e5_watcher import E5SimulationConfig, run_watcher_scenario
+    from poi_mpp.reporting.e5 import publication_precheck_reasons, summarize_e5_rows
+
+    first = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="contract-1"),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=31,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    second = run_watcher_scenario(
+        run_id="run-e5",
+        experiment_id="E5",
+        scenario=_scenario(scenario_id="contract-2", fraud_value_micros=6_000_000),
+        config=E5SimulationConfig(
+            simulations=4096,
+            seed=33,
+            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+            publication_scope="E5_CONFIRMATORY_PUBLICATION_V1",
+        ),
+    )
+    contract = _write_contract(tmp_path, (first, second), allowed_rows=(first,))
+    reasons = publication_precheck_reasons((first, second), contract=contract)
+    assert any("exactly close against the confirmatory contract" in reason for reason in reasons)
+    assert summarize_e5_rows((first, second), contract=contract).claim_disposition == "INCONCLUSIVE"
+
+    wrong_sim_contract = _write_contract(tmp_path, (first, second), required_simulations=2048)
+    wrong_sim_reasons = publication_precheck_reasons((first, second), contract=wrong_sim_contract)
+    assert any("simulations must exactly match" in reason for reason in wrong_sim_reasons)
 
 
 def test_bribery_requires_declared_recipients_and_changes_modeled_economics():
