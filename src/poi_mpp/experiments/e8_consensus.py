@@ -70,6 +70,20 @@ class AuthorityBoundaryError(ValueError):
     """Raised when the E8 CLI would overstate publication authority."""
 
 
+_REQUIRED_PUBLICATION_SCENARIO_IDS = (
+    "support-honest-baseline",
+    "support-high-compute-capped",
+    "support-sybil-split",
+    "support-subsidized-compute",
+    "support-collusion-bounded",
+    "support-receipt-churn",
+    "negative-cap-removed",
+    "boundary-zero-credit-rich",
+    "boundary-pending-only",
+    "boundary-zero-total-weight",
+)
+
+
 class OperatorProfile(_FrozenModel):
     operator_id: str
     operator_class: OperatorClass
@@ -160,6 +174,9 @@ class E8AllowedScenario(_FrozenModel):
     required_role: CommitteeScenarioRole
     required_ablation: CommitteeAblation
     required_seed: int = Field(ge=0)
+    support_assertions: "E8SupportAssertions | None" = None
+    boundary_assertions: "E8BoundaryAssertions | None" = None
+    negative_assertions: "E8NegativeAssertions | None" = None
 
     @field_validator("scenario_id", "scenario_contract_hash")
     @classmethod
@@ -173,6 +190,73 @@ class E8AllowedScenario(_FrozenModel):
     def validate_hash_shape(cls, value: str) -> str:
         if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
             raise ValueError("scenario_contract_hash must be a lowercase SHA-256 hex digest")
+        return value
+
+    @model_validator(mode="after")
+    def validate_role_assertions(self) -> "E8AllowedScenario":
+        placeholder_hashes = {character * 64 for character in "0123456789abcdef"}
+        if self.scenario_contract_hash in placeholder_hashes:
+            raise ValueError("scenario_contract_hash cannot use a placeholder or sentinel digest")
+        if self.required_role is CommitteeScenarioRole.SUPPORT:
+            if self.support_assertions is None:
+                raise ValueError("support scenarios require support_assertions")
+            if self.boundary_assertions is not None or self.negative_assertions is not None:
+                raise ValueError("support scenarios cannot declare boundary or negative assertions")
+        elif self.required_role is CommitteeScenarioRole.BOUNDARY:
+            if self.boundary_assertions is None:
+                raise ValueError("boundary scenarios require boundary_assertions")
+            if self.support_assertions is not None or self.negative_assertions is not None:
+                raise ValueError("boundary scenarios cannot declare support or negative assertions")
+        elif self.required_role is CommitteeScenarioRole.NEGATIVE_CONTROL:
+            if self.negative_assertions is None:
+                raise ValueError("negative-control scenarios require negative_assertions")
+            if self.support_assertions is not None or self.boundary_assertions is not None:
+                raise ValueError("negative-control scenarios cannot declare support or boundary assertions")
+        return self
+
+
+class E8SupportAssertions(_FrozenModel):
+    max_attacker_active_weight_share: float = Field(ge=0.0, le=1.0)
+    max_attacker_weight_probability_ge_one_third: float = Field(ge=0.0, le=1.0)
+    max_attacker_weight_probability_ge_one_third_upper_bound: float = Field(ge=0.0, le=1.0)
+    max_attacker_weight_probability_ge_two_thirds: float = Field(ge=0.0, le=1.0)
+    max_attacker_weight_probability_ge_two_thirds_upper_bound: float = Field(ge=0.0, le=1.0)
+    max_attacker_seat_probability_ge_one_third: float = Field(ge=0.0, le=1.0)
+    max_attacker_seat_probability_ge_one_third_upper_bound: float = Field(ge=0.0, le=1.0)
+    max_attacker_seat_probability_ge_two_thirds: float = Field(ge=0.0, le=1.0)
+    max_attacker_seat_probability_ge_two_thirds_upper_bound: float = Field(ge=0.0, le=1.0)
+
+
+class E8BoundaryAssertions(_FrozenModel):
+    required_sampling_disposition: SamplingDisposition
+    required_total_active_weight_micros: int = Field(ge=0)
+    required_attacker_active_weight_micros: int = Field(ge=0)
+    require_zero_credit_implies_zero_weight: bool = True
+
+
+class E8NegativeAssertions(_FrozenModel):
+    pair_id: str
+    paired_support_scenario_id: str
+    paired_support_scenario_hash: str
+    required_pair_exogenous_hash: str
+    min_attacker_active_weight_share_delta: float = Field(ge=0.0, le=1.0)
+    min_attacker_weight_probability_ge_one_third_lower_advantage: float | None = Field(default=None, ge=0.0, le=1.0)
+    min_attacker_weight_probability_ge_two_thirds_lower_advantage: float | None = Field(default=None, ge=0.0, le=1.0)
+    min_attacker_seat_probability_ge_one_third_lower_advantage: float | None = Field(default=None, ge=0.0, le=1.0)
+    min_attacker_seat_probability_ge_two_thirds_lower_advantage: float | None = Field(default=None, ge=0.0, le=1.0)
+
+    @field_validator("pair_id", "paired_support_scenario_id", "paired_support_scenario_hash", "required_pair_exogenous_hash")
+    @classmethod
+    def require_nonblank_text(cls, value: str, info: ValidationInfo) -> str:
+        if not value.strip():
+            raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @field_validator("paired_support_scenario_hash", "required_pair_exogenous_hash")
+    @classmethod
+    def validate_hash_shape(cls, value: str) -> str:
+        if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+            raise ValueError("negative-control assertion hashes must be lowercase SHA-256 hex digests")
         return value
 
 
@@ -218,6 +302,8 @@ class E8ConfirmatoryContract(_FrozenModel):
             raise ValueError("allowed_scenarios must use unique scenario_id values")
         if len({item.scenario_contract_hash for item in self.allowed_scenarios}) != len(self.allowed_scenarios):
             raise ValueError("allowed_scenarios must use unique scenario_contract_hash values")
+        if tuple(item.scenario_id for item in self.allowed_scenarios) != _REQUIRED_PUBLICATION_SCENARIO_IDS:
+            raise ValueError("allowed_scenarios must exactly match the frozen E8 publication scenario closure")
         negative_controls = sum(
             1 for item in self.allowed_scenarios if item.required_role is CommitteeScenarioRole.NEGATIVE_CONTROL
         )
@@ -228,6 +314,21 @@ class E8ConfirmatoryContract(_FrozenModel):
         )
         if boundary_rows < self.minimum_boundary_rows:
             raise ValueError("allowed_scenarios must include at least minimum_boundary_rows boundary scenarios")
+        if self.minimum_scenario_breadth < len(_REQUIRED_PUBLICATION_SCENARIO_IDS):
+            raise ValueError("minimum_scenario_breadth cannot weaken the frozen E8 publication closure")
+        allowed_by_id = {item.scenario_id: item for item in self.allowed_scenarios}
+        for item in self.allowed_scenarios:
+            if item.required_role is not CommitteeScenarioRole.NEGATIVE_CONTROL:
+                continue
+            assert item.negative_assertions is not None
+            pair = item.negative_assertions
+            paired = allowed_by_id.get(pair.paired_support_scenario_id)
+            if paired is None:
+                raise ValueError("negative-control scenarios must pair to a declared support scenario")
+            if paired.required_role is not CommitteeScenarioRole.SUPPORT:
+                raise ValueError("negative-control pairs must reference support scenarios")
+            if paired.scenario_contract_hash != pair.paired_support_scenario_hash:
+                raise ValueError("negative-control paired_support_scenario_hash must match the paired support entry")
         return self
 
 
@@ -500,6 +601,40 @@ def scenario_contract_hash(scenario: CommitteeScenario) -> str:
                 {
                     "task": batch.task.model_dump(mode="json"),
                     "receipts": [receipt.model_dump(mode="json") for receipt in batch.receipts],
+                }
+                for batch in scenario.task_batches
+            ],
+        },
+    )
+
+
+def pair_exogenous_hash(scenario: CommitteeScenario) -> str:
+    return digest(
+        "E8_CONSENSUS_PAIR_EXOGENOUS",
+        {
+            "committee_size": scenario.committee_size,
+            "target_epoch": scenario.target_epoch,
+            "beta_micros": scenario.beta_micros,
+            "attacker_operator_ids": scenario.attacker_operator_ids,
+            "operator_profiles": [profile.model_dump(mode="json") for profile in scenario.operator_profiles],
+            "worker_bindings": [binding.model_dump(mode="json") for binding in scenario.worker_bindings],
+            "task_batches": [
+                {
+                    "task": {
+                        **batch.task.model_dump(mode="json"),
+                        "task_id": None,
+                    },
+                    "receipts": [
+                        {
+                            **receipt.model_dump(mode="json"),
+                            "receipt_id": None,
+                            "task_id": None,
+                            "nullifier": None,
+                            "commitment_hash": None,
+                            "audit_id": None,
+                        }
+                        for receipt in batch.receipts
+                    ],
                 }
                 for batch in scenario.task_batches
             ],

@@ -5,59 +5,149 @@ required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
 required_simulations: 256
 maximum_replay_simulations: 2048
 required_model_version: POI_MPP_E8_SIMULATOR_V1
-required_committee_size: 7
+required_committee_size: 2
 required_algorithm_version: POI_MPP_COMMITTEE_SAMPLER_SHA256_NO_REPLACEMENT_V1
 required_target_epoch_delta: 1
-minimum_scenario_breadth: 9
+minimum_scenario_breadth: 10
 minimum_negative_controls: 1
-minimum_boundary_rows: 1
+minimum_boundary_rows: 3
 seed_policy: FIXED_PER_SCENARIO
 allowed_scenarios:
   - scenario_id: support-honest-baseline
-    scenario_contract_hash: "1111111111111111111111111111111111111111111111111111111111111111"
+    scenario_contract_hash: "ac3c632ffa8dfa94ab1b7cda2010144c4e9c588588d23e873819427cdbe60ae8"
     required_role: SUPPORT
     required_ablation: NONE
     required_seed: 17
+    support_assertions:
+      max_attacker_active_weight_share: 0.35
+      max_attacker_weight_probability_ge_one_third: 0.75
+      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_weight_probability_ge_two_thirds: 0.25
+      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0
+      max_attacker_seat_probability_ge_one_third: 0.75
+      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_seat_probability_ge_two_thirds: 0.25
+      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0
   - scenario_id: support-high-compute-capped
-    scenario_contract_hash: "2222222222222222222222222222222222222222222222222222222222222222"
+    scenario_contract_hash: "6a4867c03fe528ddf8f351194ba232afada4a9176be8208f150c7b0f1d3e748c"
     required_role: SUPPORT
     required_ablation: HIGH_COMPUTE
     required_seed: 19
+    support_assertions:
+      max_attacker_active_weight_share: 0.55
+      max_attacker_weight_probability_ge_one_third: 0.95
+      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_weight_probability_ge_two_thirds: 0.55
+      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0
+      max_attacker_seat_probability_ge_one_third: 0.95
+      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_seat_probability_ge_two_thirds: 0.55
+      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0
   - scenario_id: support-sybil-split
-    scenario_contract_hash: "3333333333333333333333333333333333333333333333333333333333333333"
+    scenario_contract_hash: "2acbf2cc823d4fb117a4ce354f794e283b3b9009e682be84c25a4e81e5231c3c"
     required_role: SUPPORT
     required_ablation: SYBIL_SPLIT
     required_seed: 23
+    support_assertions:
+      max_attacker_active_weight_share: 0.55
+      max_attacker_weight_probability_ge_one_third: 0.95
+      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_weight_probability_ge_two_thirds: 0.55
+      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0
+      max_attacker_seat_probability_ge_one_third: 0.95
+      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_seat_probability_ge_two_thirds: 0.55
+      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0
   - scenario_id: support-subsidized-compute
-    scenario_contract_hash: "4444444444444444444444444444444444444444444444444444444444444444"
+    scenario_contract_hash: "ce766c657e3437860fdd0489b24e90b70818be3b2d3d93e3ffa6d6d7fa6f310e"
     required_role: SUPPORT
     required_ablation: SUBSIDIZED_COMPUTE
     required_seed: 29
+    support_assertions:
+      max_attacker_active_weight_share: 0.6
+      max_attacker_weight_probability_ge_one_third: 0.98
+      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_weight_probability_ge_two_thirds: 0.6
+      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0
+      max_attacker_seat_probability_ge_one_third: 0.98
+      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_seat_probability_ge_two_thirds: 0.6
+      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0
   - scenario_id: support-collusion-bounded
-    scenario_contract_hash: "5555555555555555555555555555555555555555555555555555555555555555"
+    scenario_contract_hash: "d85ab3d3ca7339154f759e88d816b4228b8e2d854309afa7d24fdf881edf98e7"
     required_role: SUPPORT
     required_ablation: COLLUSION
     required_seed: 31
+    support_assertions:
+      max_attacker_active_weight_share: 0.6
+      max_attacker_weight_probability_ge_one_third: 0.98
+      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_weight_probability_ge_two_thirds: 0.65
+      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0
+      max_attacker_seat_probability_ge_one_third: 0.98
+      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_seat_probability_ge_two_thirds: 0.65
+      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0
   - scenario_id: support-receipt-churn
-    scenario_contract_hash: "6666666666666666666666666666666666666666666666666666666666666666"
+    scenario_contract_hash: "befc566c5a03a66d2d37c48132c2709b51f1e8746be9ca5e5c5f4243c8f19fa7"
     required_role: SUPPORT
     required_ablation: CHURN
     required_seed: 37
+    support_assertions:
+      max_attacker_active_weight_share: 0.4
+      max_attacker_weight_probability_ge_one_third: 0.85
+      max_attacker_weight_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_weight_probability_ge_two_thirds: 0.35
+      max_attacker_weight_probability_ge_two_thirds_upper_bound: 1.0
+      max_attacker_seat_probability_ge_one_third: 0.85
+      max_attacker_seat_probability_ge_one_third_upper_bound: 1.0
+      max_attacker_seat_probability_ge_two_thirds: 0.35
+      max_attacker_seat_probability_ge_two_thirds_upper_bound: 1.0
   - scenario_id: negative-cap-removed
-    scenario_contract_hash: "7777777777777777777777777777777777777777777777777777777777777777"
+    scenario_contract_hash: "4979282226a834fc11d31723d7082cc56f9f09e4c73c81df75a34661c518a2e3"
     required_role: NEGATIVE_CONTROL
     required_ablation: CONCENTRATION_CAP_REMOVED
-    required_seed: 41
+    required_seed: 19
+    negative_assertions:
+      pair_id: cap-removal-vs-capped
+      paired_support_scenario_id: support-high-compute-capped
+      paired_support_scenario_hash: "6a4867c03fe528ddf8f351194ba232afada4a9176be8208f150c7b0f1d3e748c"
+      required_pair_exogenous_hash: "f7e8c2de1f31e3896dee3293e94461d23260fdbeb1a591c90a883fe85185d0e1"
+      min_attacker_active_weight_share_delta: 0.2
+      min_attacker_weight_probability_ge_one_third_lower_advantage: 0.0
+      min_attacker_weight_probability_ge_two_thirds_lower_advantage: 0.0
+      min_attacker_seat_probability_ge_one_third_lower_advantage: 0.0
+      min_attacker_seat_probability_ge_two_thirds_lower_advantage: null
   - scenario_id: boundary-zero-credit-rich
-    scenario_contract_hash: "8888888888888888888888888888888888888888888888888888888888888888"
+    scenario_contract_hash: "07759582f7088ce8a53448ceac938a3e4142496ccdcd4df872b736124737f8f4"
     required_role: BOUNDARY
     required_ablation: COLLATERAL_RICH_ZERO_CREDIT
     required_seed: 43
-  - scenario_id: boundary-zero-total-weight
-    scenario_contract_hash: "9999999999999999999999999999999999999999999999999999999999999999"
+    boundary_assertions:
+      required_sampling_disposition: COMMITTEE_SAMPLED
+      required_total_active_weight_micros: 180
+      required_attacker_active_weight_micros: 0
+      require_zero_credit_implies_zero_weight: true
+  - scenario_id: boundary-pending-only
+    scenario_contract_hash: "99e5f00b5aab7c630aa80d1a2cad1b16eb724df6e4d082e2dec40f483f955716"
     required_role: BOUNDARY
     required_ablation: MISSING_RECEIPTS
     required_seed: 47
+    boundary_assertions:
+      required_sampling_disposition: ZERO_TOTAL_WEIGHT
+      required_total_active_weight_micros: 0
+      required_attacker_active_weight_micros: 0
+      require_zero_credit_implies_zero_weight: true
+  - scenario_id: boundary-zero-total-weight
+    scenario_contract_hash: "319093ff2f696de7e7645767f9f14a2b85fdceeeb78e4993fbe6f75ba50c653a"
+    required_role: BOUNDARY
+    required_ablation: MISSING_RECEIPTS
+    required_seed: 53
+    boundary_assertions:
+      required_sampling_disposition: ZERO_TOTAL_WEIGHT
+      required_total_active_weight_micros: 0
+      required_attacker_active_weight_micros: 0
+      require_zero_credit_implies_zero_weight: true
 notes:
   - E8 publication artifacts are reproducible simulations only; they are not live consensus evidence.
-  - Synthetic fixtures remain plumbing-only and cannot satisfy confirmatory publication scope.
+  - Frozen scenario assertions are publication criteria only; they are not measured result claims.

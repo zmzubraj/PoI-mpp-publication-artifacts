@@ -18,7 +18,9 @@ from poi_mpp.experiments.e8_consensus import (
     MIN_SUPPORTED_SIMULATIONS,
     CommitteeScenarioRole,
     SamplingDisposition,
+    pair_exogenous_hash,
     replay_row,
+    scenario_from_row,
 )
 
 
@@ -218,8 +220,6 @@ def publication_precheck_reasons(
     canonical_rows = tuple(_authoritative_row(row) for row in rows)
     if len({row.scenario_id for row in canonical_rows}) != len(canonical_rows):
         raise ValueError("rows must use unique scenario_id values")
-    if len({row.seed for row in canonical_rows}) != len(canonical_rows):
-        raise ValueError("rows must use unique seed values")
     if len({row.result_contract_hash for row in canonical_rows}) != len(canonical_rows):
         raise ValueError("rows must use unique result_contract_hash values")
 
@@ -326,13 +326,140 @@ def summarize_e8_rows(
     nonterminal_row_count = len(canonical_rows) - sampled_row_count
     claim_disposition = "INCONCLUSIVE"
     if contract is not None and not reasons:
-        if len(canonical_rows) < contract.minimum_scenario_breadth:
-            claim_disposition = "INCONCLUSIVE"
-        elif negative_control_count < contract.minimum_negative_controls:
-            claim_disposition = "INCONCLUSIVE"
-        elif boundary_row_count < contract.minimum_boundary_rows:
-            claim_disposition = "INCONCLUSIVE"
-        else:
+        assertion_failures: list[str] = []
+        rows_by_id = {row.scenario_id: row for row in canonical_rows}
+        for allowed in contract.allowed_scenarios:
+            row = rows_by_id.get(allowed.scenario_id)
+            if row is None:
+                assertion_failures.append(f"missing scenario row for {allowed.scenario_id}")
+                continue
+            if row.scenario_contract_hash != allowed.scenario_contract_hash:
+                assertion_failures.append(f"scenario hash mismatch for {allowed.scenario_id}")
+                continue
+            if allowed.required_role is CommitteeScenarioRole.SUPPORT:
+                assert allowed.support_assertions is not None
+                checks = (
+                    (row.attacker_active_weight_share, allowed.support_assertions.max_attacker_active_weight_share, "attacker_active_weight_share"),
+                    (
+                        row.attacker_weight_threshold_probability_ge_one_third,
+                        allowed.support_assertions.max_attacker_weight_probability_ge_one_third,
+                        "attacker_weight_threshold_probability_ge_one_third",
+                    ),
+                    (
+                        row.attacker_weight_threshold_probability_ge_two_thirds,
+                        allowed.support_assertions.max_attacker_weight_probability_ge_two_thirds,
+                        "attacker_weight_threshold_probability_ge_two_thirds",
+                    ),
+                    (
+                        row.attacker_seat_threshold_probability_ge_one_third,
+                        allowed.support_assertions.max_attacker_seat_probability_ge_one_third,
+                        "attacker_seat_threshold_probability_ge_one_third",
+                    ),
+                    (
+                        row.attacker_seat_threshold_probability_ge_two_thirds,
+                        allowed.support_assertions.max_attacker_seat_probability_ge_two_thirds,
+                        "attacker_seat_threshold_probability_ge_two_thirds",
+                    ),
+                )
+                for measured, maximum, label in checks:
+                    if measured is None or measured > maximum:
+                        assertion_failures.append(f"{allowed.scenario_id} exceeds support point bound for {label}")
+                interval_checks = (
+                    (
+                        row.attacker_weight_threshold_probability_ge_one_third_interval,
+                        allowed.support_assertions.max_attacker_weight_probability_ge_one_third_upper_bound,
+                        "attacker_weight_threshold_probability_ge_one_third_interval",
+                    ),
+                    (
+                        row.attacker_weight_threshold_probability_ge_two_thirds_interval,
+                        allowed.support_assertions.max_attacker_weight_probability_ge_two_thirds_upper_bound,
+                        "attacker_weight_threshold_probability_ge_two_thirds_interval",
+                    ),
+                    (
+                        row.attacker_seat_threshold_probability_ge_one_third_interval,
+                        allowed.support_assertions.max_attacker_seat_probability_ge_one_third_upper_bound,
+                        "attacker_seat_threshold_probability_ge_one_third_interval",
+                    ),
+                    (
+                        row.attacker_seat_threshold_probability_ge_two_thirds_interval,
+                        allowed.support_assertions.max_attacker_seat_probability_ge_two_thirds_upper_bound,
+                        "attacker_seat_threshold_probability_ge_two_thirds_interval",
+                    ),
+                )
+                for interval, maximum, label in interval_checks:
+                    if interval is None or interval[1] > maximum:
+                        assertion_failures.append(f"{allowed.scenario_id} exceeds support uncertainty bound for {label}")
+            elif allowed.required_role is CommitteeScenarioRole.BOUNDARY:
+                assert allowed.boundary_assertions is not None
+                if row.sampling_disposition is not allowed.boundary_assertions.required_sampling_disposition:
+                    assertion_failures.append(f"{allowed.scenario_id} violates required boundary disposition")
+                if row.total_active_weight_micros != allowed.boundary_assertions.required_total_active_weight_micros:
+                    assertion_failures.append(f"{allowed.scenario_id} violates required boundary total weight")
+                if row.attacker_active_weight_micros != allowed.boundary_assertions.required_attacker_active_weight_micros:
+                    assertion_failures.append(f"{allowed.scenario_id} violates required boundary attacker weight")
+                if allowed.boundary_assertions.require_zero_credit_implies_zero_weight and not row.zero_credit_implies_zero_weight:
+                    assertion_failures.append(f"{allowed.scenario_id} violates zero-credit-implies-zero-weight boundary")
+            else:
+                assert allowed.negative_assertions is not None
+                pair = allowed.negative_assertions
+                support_row = rows_by_id.get(pair.paired_support_scenario_id)
+                if support_row is None:
+                    assertion_failures.append(f"{allowed.scenario_id} is missing paired support row")
+                    continue
+                if support_row.scenario_contract_hash != pair.paired_support_scenario_hash:
+                    assertion_failures.append(f"{allowed.scenario_id} paired support hash mismatch")
+                    continue
+                support_scenario = scenario_from_row(support_row)
+                negative_scenario = scenario_from_row(row)
+                if pair_exogenous_hash(support_scenario) != pair.required_pair_exogenous_hash:
+                    assertion_failures.append(f"{allowed.scenario_id} paired support exogenous hash mismatch")
+                if pair_exogenous_hash(negative_scenario) != pair.required_pair_exogenous_hash:
+                    assertion_failures.append(f"{allowed.scenario_id} negative exogenous hash mismatch")
+                if row.seed != support_row.seed:
+                    assertion_failures.append(f"{allowed.scenario_id} does not preserve paired seed")
+                if row.attacker_active_weight_share - support_row.attacker_active_weight_share < pair.min_attacker_active_weight_share_delta:
+                    assertion_failures.append(f"{allowed.scenario_id} misses minimum attacker active-weight-share delta")
+                delta_checks = (
+                    (
+                        row.attacker_weight_threshold_probability_ge_one_third_interval,
+                        support_row.attacker_weight_threshold_probability_ge_one_third_interval,
+                        pair.min_attacker_weight_probability_ge_one_third_lower_advantage,
+                        "attacker_weight_threshold_probability_ge_one_third",
+                    ),
+                    (
+                        row.attacker_weight_threshold_probability_ge_two_thirds_interval,
+                        support_row.attacker_weight_threshold_probability_ge_two_thirds_interval,
+                        pair.min_attacker_weight_probability_ge_two_thirds_lower_advantage,
+                        "attacker_weight_threshold_probability_ge_two_thirds",
+                    ),
+                    (
+                        row.attacker_seat_threshold_probability_ge_one_third_interval,
+                        support_row.attacker_seat_threshold_probability_ge_one_third_interval,
+                        pair.min_attacker_seat_probability_ge_one_third_lower_advantage,
+                        "attacker_seat_threshold_probability_ge_one_third",
+                    ),
+                    (
+                        row.attacker_seat_threshold_probability_ge_two_thirds_interval,
+                        support_row.attacker_seat_threshold_probability_ge_two_thirds_interval,
+                        pair.min_attacker_seat_probability_ge_two_thirds_lower_advantage,
+                        "attacker_seat_threshold_probability_ge_two_thirds",
+                    ),
+                )
+                for negative_interval, support_interval, minimum_delta, label in delta_checks:
+                    if minimum_delta is None:
+                        continue
+                    if negative_interval is None or support_interval is None:
+                        assertion_failures.append(f"{allowed.scenario_id} missing interval for paired negative assertion {label}")
+                        continue
+                    if negative_interval[0] - support_interval[1] < minimum_delta:
+                        assertion_failures.append(f"{allowed.scenario_id} misses paired lower-bound advantage for {label}")
+
+        if (
+            len(canonical_rows) >= contract.minimum_scenario_breadth
+            and negative_control_count >= contract.minimum_negative_controls
+            and boundary_row_count >= contract.minimum_boundary_rows
+            and not assertion_failures
+        ):
             claim_disposition = "SUPPORTED"
     return E8Summary(
         claim_id="C13",
