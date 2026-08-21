@@ -1,10 +1,35 @@
-import argparse, csv, random
-p=argparse.ArgumentParser(); p.add_argument('--tasks',type=int,default=10000); p.add_argument('--out',default='../results/raw/e6_sybil.csv'); a=p.parse_args()
-r=random.Random(6)
-with open(a.out,'w',newline='') as f:
-    w=csv.writer(f); w.writerow(['sybil_identities','scheduler','expected_credit_share'])
-    for n in [1,2,4,8,16,32]:
-        # unsafe identity-uniform scheduler
-        w.writerow([n,'identity_uniform',n/(n+9)])
-        # operator/capacity-neutral scheduler: identity split should not alter share
-        w.writerow([n,'capacity_neutral',1/10])
+from __future__ import annotations
+
+import argparse
+import sys
+
+from poi_mpp.evidence.config import load_run_config
+from poi_mpp.experiments.e6_sybil import assert_cli_authority_boundary, load_e6_confirmatory_contract
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Validate the frozen E6 authority boundary.")
+    parser.add_argument("--run-config", required=True, help="Path to the frozen run configuration YAML")
+    parser.add_argument(
+        "--confirmatory-contract",
+        required=True,
+        help="Path to the frozen E6 confirmatory contract YAML",
+    )
+    return parser
+
+
+def main() -> int:
+    args = _parser().parse_args()
+    run_config = load_run_config(args.run_config)
+    contract = load_e6_confirmatory_contract(args.confirmatory_contract)
+    try:
+        assert_cli_authority_boundary(run_config, contract)
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return 1
+    print("E6 publication execution remains manual.", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

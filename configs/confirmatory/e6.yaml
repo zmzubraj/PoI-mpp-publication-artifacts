@@ -1,0 +1,34 @@
+schema_version: POI_MPP_E6_CONFIRMATORY_CONTRACT_V1
+publication_scope: E6_CONFIRMATORY_PUBLICATION_V1
+required_run_origin: REPRODUCIBLE_SIMULATION
+required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+required_simulations: 1024
+maximum_replay_simulations: 8192
+required_model_version: POI_MPP_E6_SIMULATOR_V1
+epsilon_sybil: 0.02
+target_weight_numerator: 1
+target_weight_denominator: 3
+minimum_negative_controls: 2
+seed_policy: FIXED_PER_SCENARIO
+allowed_scenarios:
+  - scenario_id: support-capacity-committed-1
+    scenario_contract_hash: "1111111111111111111111111111111111111111111111111111111111111111"
+    required_seed: 17
+  - scenario_id: support-capacity-committed-64
+    scenario_contract_hash: "2222222222222222222222222222222222222222222222222222222222222222"
+    required_seed: 17
+  - scenario_id: support-operator-slot-1
+    scenario_contract_hash: "3333333333333333333333333333333333333333333333333333333333333333"
+    required_seed: 17
+  - scenario_id: support-operator-slot-64
+    scenario_contract_hash: "4444444444444444444444444444444444444444444444444444444444444444"
+    required_seed: 17
+  - scenario_id: negative-identity-uniform-1
+    scenario_contract_hash: "5555555555555555555555555555555555555555555555555555555555555555"
+    required_seed: 17
+  - scenario_id: negative-identity-uniform-64
+    scenario_contract_hash: "6666666666666666666666666666666666666666666666666666666666666666"
+    required_seed: 17
+notes:
+  - E6 publication evidence is limited to reproducible simulation under the frozen MPP authority boundary.
+  - Synthetic plumbing fixtures are non-evidence and cannot satisfy the confirmatory publication path.
