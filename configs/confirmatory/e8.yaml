@@ -1,0 +1,63 @@
+schema_version: POI_MPP_E8_CONFIRMATORY_CONTRACT_V1
+publication_scope: E8_CONFIRMATORY_PUBLICATION_V1
+required_run_origin: REPRODUCIBLE_SIMULATION
+required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+required_simulations: 256
+maximum_replay_simulations: 2048
+required_model_version: POI_MPP_E8_SIMULATOR_V1
+required_committee_size: 7
+required_algorithm_version: POI_MPP_COMMITTEE_SAMPLER_SHA256_NO_REPLACEMENT_V1
+required_target_epoch_delta: 1
+minimum_scenario_breadth: 9
+minimum_negative_controls: 1
+minimum_boundary_rows: 1
+seed_policy: FIXED_PER_SCENARIO
+allowed_scenarios:
+  - scenario_id: support-honest-baseline
+    scenario_contract_hash: "1111111111111111111111111111111111111111111111111111111111111111"
+    required_role: SUPPORT
+    required_ablation: NONE
+    required_seed: 17
+  - scenario_id: support-high-compute-capped
+    scenario_contract_hash: "2222222222222222222222222222222222222222222222222222222222222222"
+    required_role: SUPPORT
+    required_ablation: HIGH_COMPUTE
+    required_seed: 19
+  - scenario_id: support-sybil-split
+    scenario_contract_hash: "3333333333333333333333333333333333333333333333333333333333333333"
+    required_role: SUPPORT
+    required_ablation: SYBIL_SPLIT
+    required_seed: 23
+  - scenario_id: support-subsidized-compute
+    scenario_contract_hash: "4444444444444444444444444444444444444444444444444444444444444444"
+    required_role: SUPPORT
+    required_ablation: SUBSIDIZED_COMPUTE
+    required_seed: 29
+  - scenario_id: support-collusion-bounded
+    scenario_contract_hash: "5555555555555555555555555555555555555555555555555555555555555555"
+    required_role: SUPPORT
+    required_ablation: COLLUSION
+    required_seed: 31
+  - scenario_id: support-receipt-churn
+    scenario_contract_hash: "6666666666666666666666666666666666666666666666666666666666666666"
+    required_role: SUPPORT
+    required_ablation: CHURN
+    required_seed: 37
+  - scenario_id: negative-cap-removed
+    scenario_contract_hash: "7777777777777777777777777777777777777777777777777777777777777777"
+    required_role: NEGATIVE_CONTROL
+    required_ablation: CONCENTRATION_CAP_REMOVED
+    required_seed: 41
+  - scenario_id: boundary-zero-credit-rich
+    scenario_contract_hash: "8888888888888888888888888888888888888888888888888888888888888888"
+    required_role: BOUNDARY
+    required_ablation: COLLATERAL_RICH_ZERO_CREDIT
+    required_seed: 43
+  - scenario_id: boundary-zero-total-weight
+    scenario_contract_hash: "9999999999999999999999999999999999999999999999999999999999999999"
+    required_role: BOUNDARY
+    required_ablation: MISSING_RECEIPTS
+    required_seed: 47
+notes:
+  - E8 publication artifacts are reproducible simulations only; they are not live consensus evidence.
+  - Synthetic fixtures remain plumbing-only and cannot satisfy confirmatory publication scope.
