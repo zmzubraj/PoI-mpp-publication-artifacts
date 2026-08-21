@@ -9,8 +9,10 @@ from pathlib import Path
 import hashlib
 import os
 import re
+import stat
 import subprocess
 import sys
+import tempfile
 import tomllib
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
@@ -26,10 +28,12 @@ E7_PUBLICATION_SCOPE = "E7_FOUNDRY_PUBLICATION_V1"
 E7_REPORT_SCHEMA_VERSION = "POI_MPP_E7_FOUNDRY_REPORT_V1"
 E7_BUNDLE_SCHEMA_VERSION = "POI_MPP_E7_BUNDLE_V1"
 E7_PARITY_SCHEMA_VERSION = "POI_MPP_E7_PARITY_ATTACHMENT_V1"
+E7_COLLECTOR_CAPABILITY_SCHEMA_VERSION = "POI_MPP_E7_COLLECTOR_CAPABILITY_V1"
 _ROOT = Path(__file__).resolve().parents[3]
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _GIT_SHA = re.compile(r"[0-9a-f]{40}\Z")
 _OUTPUT_LIMIT = 20_000
+_CANONICAL_REPORT_RELATIVE_PATH = Path("out") / "e7_foundry_measurements.json"
 _E7_ARTIFACTS = (
     ("ModelRegistry", "src/ModelRegistry.sol", "out/ModelRegistry.sol/ModelRegistry.json"),
     ("TaskManager", "src/TaskManager.sol", "out/TaskManager.sol/TaskManager.json"),
@@ -62,6 +66,11 @@ class E7Operation(StrEnum):
     RECEIPT_MARK_CHALLENGED = "RECEIPT_MARK_CHALLENGED"
     RECEIPT_SLASH = "RECEIPT_SLASH"
     CREDIT_ALLOCATE = "CREDIT_ALLOCATE"
+
+
+class E7ReportAuthority(StrEnum):
+    CANONICAL_COLLECTOR_REPORT = "CANONICAL_COLLECTOR_REPORT"
+    PLUMBING_FIXTURE = "PLUMBING_FIXTURE"
 
 
 class E7ExpectedMeasurement(_FrozenModel):
@@ -104,7 +113,14 @@ class _RawMeasurement(_FrozenModel):
     operation: E7Operation
     batch_size: int = Field(gt=0, le=1024)
     gas_used: int = Field(ge=0)
-    storage_delta_bytes: int = Field(ge=0)
+    changed_storage_slot_count: int = Field(ge=0)
+    storage_change_upper_bound_bytes: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_storage_upper_bound(self) -> "_RawMeasurement":
+        if self.storage_change_upper_bound_bytes != self.changed_storage_slot_count * 32:
+            raise ValueError("storage_change_upper_bound_bytes must equal changed_storage_slot_count * 32")
+        return self
 
     @property
     def key(self) -> str:
@@ -176,16 +192,36 @@ class E7Manifest(_FrozenModel):
     git_dirty: bool
     chain_id: int = Field(gt=0)
     block_gas_limit: int = Field(gt=0)
+    raw_report_hash: str
+    canonical_report_path: str
     test_contract: str
     witness_contract: str
+    gas_measurement_surface: str
+    storage_measurement_surface: str
     command: tuple[str, ...]
     artifacts: tuple[E7ContractArtifact, ...]
 
-    @field_validator("contracts_root", "foundry_version", "compiler_version", "test_contract", "witness_contract")
+    @field_validator(
+        "contracts_root",
+        "foundry_version",
+        "compiler_version",
+        "canonical_report_path",
+        "test_contract",
+        "witness_contract",
+        "gas_measurement_surface",
+        "storage_measurement_surface",
+    )
     @classmethod
     def require_nonblank_text(cls, value: str, info: ValidationInfo) -> str:
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @field_validator("raw_report_hash")
+    @classmethod
+    def validate_raw_report_hash(cls, value: str) -> str:
+        if not _SHA256.fullmatch(value):
+            raise ValueError("raw_report_hash must be a lowercase SHA-256 hex digest")
         return value
 
     @field_validator("git_revision")
@@ -207,6 +243,29 @@ class E7Manifest(_FrozenModel):
         return self
 
 
+class E7CollectorCapability(_FrozenModel):
+    schema_version: str = E7_COLLECTOR_CAPABILITY_SCHEMA_VERSION
+    report_authority: E7ReportAuthority
+    observed_report_path: str
+    canonical_report_path: str
+    anchored_no_follow: bool
+    symlink_free: bool
+
+    @field_validator("observed_report_path", "canonical_report_path")
+    @classmethod
+    def require_nonblank_path(cls, value: str, info: ValidationInfo) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @model_validator(mode="after")
+    def validate_authority(self) -> "E7CollectorCapability":
+        if self.report_authority is E7ReportAuthority.CANONICAL_COLLECTOR_REPORT:
+            if not self.anchored_no_follow or not self.symlink_free:
+                raise ValueError("canonical collector reports require anchored no-follow and symlink-free provenance")
+        return self
+
+
 class E7MeasurementRow(_FrozenModel):
     schema_version: str = "POI_MPP_E7_MEASUREMENT_ROW_V1"
     run_id: str
@@ -218,8 +277,9 @@ class E7MeasurementRow(_FrozenModel):
     publication_scope: str
     gas_used: int = Field(ge=0)
     gas_unit: str = "gas"
-    storage_delta_bytes: int = Field(ge=0)
-    storage_unit: str = "bytes"
+    changed_storage_slot_count: int = Field(ge=0)
+    storage_change_upper_bound_bytes: int = Field(ge=0)
+    storage_unit: str = "bytes_upper_bound"
     test_contract: str
     witness_contract: str
     chain_id: int = Field(gt=0)
@@ -266,8 +326,10 @@ class E7MeasurementRow(_FrozenModel):
             raise ValueError("origin must equal FOUNDRY_MEASUREMENT")
         if self.publication_scope != E7_PUBLICATION_SCOPE:
             raise ValueError(f"publication_scope must equal {E7_PUBLICATION_SCOPE}")
-        if self.gas_unit != "gas" or self.storage_unit != "bytes":
-            raise ValueError("gas/storage units must be explicit gas and bytes")
+        if self.gas_unit != "gas" or self.storage_unit != "bytes_upper_bound":
+            raise ValueError("gas/storage units must be explicit gas and bytes_upper_bound")
+        if self.storage_change_upper_bound_bytes != self.changed_storage_slot_count * 32:
+            raise ValueError("storage_change_upper_bound_bytes must equal changed_storage_slot_count * 32")
         if self.measurement_key != f"{self.operation.value}:{self.batch_size}":
             raise ValueError("measurement_key must exactly bind operation and batch_size")
         if self.run_id != self.run_config_snapshot.run_id:
@@ -287,6 +349,7 @@ class E7Bundle(_FrozenModel):
     schema_version: str = E7_BUNDLE_SCHEMA_VERSION
     raw_report_path: str
     raw_report_hash: str
+    collector_capability: E7CollectorCapability
     run_config_snapshot: RunConfig
     run_config_hash: str
     rows: tuple[E7MeasurementRow, ...]
@@ -310,10 +373,14 @@ class E7Bundle(_FrozenModel):
     def validate_bundle(self) -> "E7Bundle":
         if self.schema_version != E7_BUNDLE_SCHEMA_VERSION:
             raise ValueError(f"schema_version must equal {E7_BUNDLE_SCHEMA_VERSION}")
+        if self.collector_capability.canonical_report_path != self.manifest.canonical_report_path:
+            raise ValueError("collector_capability.canonical_report_path must exactly match manifest.canonical_report_path")
         if self.run_config_hash != config_hash(self.run_config_snapshot):
             raise ValueError("run_config_hash must exactly bind run_config_snapshot")
         if not self.rows:
             raise ValueError("rows must not be empty")
+        if self.raw_report_hash != self.manifest.raw_report_hash:
+            raise ValueError("bundle.raw_report_hash must exactly match manifest.raw_report_hash")
         if len({row.measurement_key for row in self.rows}) != len(self.rows):
             raise ValueError("rows must be unique by measurement_key")
         if any(row.raw_report_hash != self.raw_report_hash for row in self.rows):
@@ -361,6 +428,65 @@ def _path_hash(path: Path) -> str:
         raise ArtifactValidationError((f"unable to read file for hash: {path}",)) from error
 
 
+def _bytes_hash(contents: bytes) -> str:
+    return hashlib.sha256(contents).hexdigest()
+
+
+def _absolute_path(path: Path) -> Path:
+    return Path(os.path.abspath(path))
+
+
+def _canonical_report_path(contracts_root: Path) -> Path:
+    return _absolute_path(contracts_root / _CANONICAL_REPORT_RELATIVE_PATH)
+
+
+def _read_json_bytes(path: Path) -> bytes:
+    try:
+        status = os.lstat(path)
+    except OSError as error:
+        raise ArtifactValidationError((f"unable to stat foundry report: {path}",)) from error
+    if stat.S_ISLNK(status.st_mode):
+        raise ArtifactValidationError((f"symlinked foundry report is forbidden: {path}",))
+    if not stat.S_ISREG(status.st_mode):
+        raise ArtifactValidationError((f"foundry report must be a regular file: {path}",))
+    try:
+        return path.read_bytes()
+    except OSError as error:
+        raise ArtifactValidationError((f"unable to read foundry report: {path}",)) from error
+
+
+def _read_canonical_report_bytes(contracts_root: Path) -> bytes:
+    root = contracts_root.resolve(strict=True)
+    candidate = root
+    for part in _CANONICAL_REPORT_RELATIVE_PATH.parts:
+        candidate = candidate / part
+        try:
+            status = os.lstat(candidate)
+        except OSError as error:
+            raise ArtifactValidationError((f"canonical E7 report component is missing: {candidate}",)) from error
+        if stat.S_ISLNK(status.st_mode):
+            raise ArtifactValidationError((f"symlinked canonical E7 report component is forbidden: {candidate}",))
+    flags = os.O_RDONLY
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    if no_follow:
+        flags |= no_follow
+    try:
+        descriptor = os.open(candidate, flags)
+    except OSError as error:
+        raise ArtifactValidationError((f"unable to open canonical E7 report with no-follow: {candidate}",)) from error
+    try:
+        status = os.fstat(descriptor)
+        if not stat.S_ISREG(status.st_mode):
+            raise ArtifactValidationError((f"canonical E7 report must be a regular file: {candidate}",))
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            contents = handle.read()
+    except OSError as error:
+        raise ArtifactValidationError((f"unable to read canonical E7 report: {candidate}",)) from error
+    finally:
+        os.close(descriptor)
+    return contents
+
+
 def _artifact_json(path: Path) -> dict[str, object]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -378,18 +504,39 @@ def _normalize_report(raw: object) -> _RawFoundryReport:
         raise ArtifactValidationError(("foundry report is invalid", str(error))) from error
 
 
-def _load_report(path: Path) -> _RawFoundryReport:
-    try:
-        contents = path.read_text(encoding="utf-8")
-    except OSError as error:
-        raise ArtifactValidationError((f"unable to read foundry report: {path}",)) from error
+def _parse_report_contents(contents: bytes) -> _RawFoundryReport:
     if not contents.strip():
         raise ArtifactValidationError(("foundry report is empty",))
     try:
-        parsed = json.loads(contents)
+        parsed = json.loads(contents.decode("utf-8"))
     except json.JSONDecodeError as error:
         raise ArtifactValidationError(("foundry report is not valid JSON",)) from error
     return _normalize_report(parsed)
+
+
+def _atomic_write_json(path: Path, payload: Mapping[str, object]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    contents = json.dumps(payload, indent=2).encode("utf-8")
+    tmp_descriptor, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(tmp_descriptor, "wb") as handle:
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+        directory_descriptor = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+        read_back = _read_json_bytes(path)
+        if read_back != contents:
+            raise ArtifactValidationError((f"atomic write verification failed for {path}",))
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+    return _bytes_hash(contents)
 
 
 def _git_revision(repo_root: Path) -> tuple[str, bool]:
@@ -506,7 +653,8 @@ def row_hash(row: E7MeasurementRow | Mapping[str, object]) -> str:
         "publication_scope": payload["publication_scope"],
         "gas_used": payload["gas_used"],
         "gas_unit": payload["gas_unit"],
-        "storage_delta_bytes": payload["storage_delta_bytes"],
+        "changed_storage_slot_count": payload["changed_storage_slot_count"],
+        "storage_change_upper_bound_bytes": payload["storage_change_upper_bound_bytes"],
         "storage_unit": payload["storage_unit"],
         "test_contract": payload["test_contract"],
         "witness_contract": payload["witness_contract"],
@@ -601,11 +749,31 @@ def parse_foundry_measurement_report(
         raise ArtifactValidationError(("E7 parsing requires origin FOUNDRY_MEASUREMENT",))
     report_file = Path(report_path)
     contracts_dir = Path(contracts_root)
-    parsed = _load_report(report_file)
+    canonical_report = _canonical_report_path(contracts_dir)
+    observed_report = _absolute_path(report_file)
+    if observed_report == canonical_report:
+        report_bytes = _read_canonical_report_bytes(contracts_dir)
+        collector_capability = E7CollectorCapability(
+            report_authority=E7ReportAuthority.CANONICAL_COLLECTOR_REPORT,
+            observed_report_path=str(observed_report),
+            canonical_report_path=str(canonical_report),
+            anchored_no_follow=True,
+            symlink_free=True,
+        )
+    else:
+        report_bytes = _read_json_bytes(report_file)
+        collector_capability = E7CollectorCapability(
+            report_authority=E7ReportAuthority.PLUMBING_FIXTURE,
+            observed_report_path=str(observed_report),
+            canonical_report_path=str(canonical_report),
+            anchored_no_follow=False,
+            symlink_free=False,
+        )
+    parsed = _parse_report_contents(report_bytes)
     compiler_version, optimizer_enabled, optimizer_runs, artifacts = _artifact_manifest(contracts_dir)
     foundry_version = _foundry_version(contracts_dir)
     git_revision, git_dirty = _git_revision(_ROOT)
-    raw_hash = _path_hash(report_file)
+    raw_hash = _bytes_hash(report_bytes)
     manifest = E7Manifest(
         contracts_root=str(contracts_dir.resolve()),
         foundry_version=foundry_version,
@@ -616,8 +784,12 @@ def parse_foundry_measurement_report(
         git_dirty=git_dirty,
         chain_id=parsed.chain_id,
         block_gas_limit=parsed.block_gas_limit,
+        raw_report_hash=raw_hash,
+        canonical_report_path=str(canonical_report),
         test_contract=parsed.test_contract,
         witness_contract=parsed.witness_contract,
+        gas_measurement_surface="CALL_BODY_GASLEFT_DELTA_EXCLUDES_TEST_HARNESS",
+        storage_measurement_surface="POST_CALL_SLOT_DIFF_VS_FRESH_BASELINE_BYTES_UPPER_BOUND",
         command=("forge", "script", "test/GasSnapshots.t.sol:GasSnapshotWitness", "--via-ir", "-q"),
         artifacts=artifacts,
     )
@@ -634,8 +806,9 @@ def parse_foundry_measurement_report(
             "publication_scope": E7_PUBLICATION_SCOPE,
             "gas_used": measurement.gas_used,
             "gas_unit": "gas",
-            "storage_delta_bytes": measurement.storage_delta_bytes,
-            "storage_unit": "bytes",
+            "changed_storage_slot_count": measurement.changed_storage_slot_count,
+            "storage_change_upper_bound_bytes": measurement.storage_change_upper_bound_bytes,
+            "storage_unit": "bytes_upper_bound",
             "test_contract": parsed.test_contract,
             "witness_contract": parsed.witness_contract,
             "chain_id": parsed.chain_id,
@@ -655,6 +828,7 @@ def parse_foundry_measurement_report(
             {
                 "raw_report_path": str(report_file.resolve()),
                 "raw_report_hash": raw_hash,
+                "collector_capability": collector_capability.model_dump(mode="json"),
                 "run_config_snapshot": run_config.model_dump(mode="json"),
                 "run_config_hash": run_hash,
                 "rows": [row.model_dump(mode="json") for row in rows],
@@ -721,7 +895,7 @@ def collect_foundry_measurements(
 ) -> E7Bundle:
     contract = default_measurement_contract() if measurement_contract is None else measurement_contract
     contracts_dir = Path(contracts_root)
-    report_path = contracts_dir / "out" / "e7_foundry_measurements.json"
+    report_path = contracts_dir / _CANONICAL_REPORT_RELATIVE_PATH
     if report_path.exists():
         report_path.unlink()
     _run_command(
@@ -742,8 +916,7 @@ def collect_foundry_measurements(
         run_config=run_config,
     )
     output_file = Path(output_path)
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    output_file.write_text(json.dumps(bundle.model_dump(mode="json"), indent=2), encoding="utf-8")
+    _atomic_write_json(output_file, bundle.model_dump(mode="json"))
     return bundle
 
 
@@ -760,4 +933,3 @@ def assert_cli_authority_boundary(run_config: RunConfig) -> None:
 
 def repo_root() -> Path:
     return _ROOT
-

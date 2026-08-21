@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.experiments.e7_evm import (
     E7Bundle,
+    E7ReportAuthority,
     E7MeasurementContract,
     E7MeasurementRow,
     E7ParityAttachment,
@@ -29,7 +30,8 @@ class T12Row(_FrozenModel):
     operation: str
     batch_size: int = Field(gt=0)
     gas_used: int = Field(ge=0)
-    storage_delta_bytes: int = Field(ge=0)
+    changed_storage_slot_count: int = Field(ge=0)
+    storage_change_upper_bound_bytes: int = Field(ge=0)
     fraction_of_block_limit: float = Field(ge=0.0)
 
 
@@ -52,7 +54,7 @@ class E7Summary(_FrozenModel):
 
 def _canonical_bundle(bundle: E7Bundle) -> E7Bundle:
     return parse_foundry_measurement_report(
-        report_path=Path(bundle.raw_report_path),
+        report_path=Path(bundle.collector_capability.canonical_report_path),
         contracts_root=Path(bundle.manifest.contracts_root),
         run_config=bundle.run_config_snapshot,
     )
@@ -97,6 +99,10 @@ def publication_precheck_reasons(
         reasons.append("bundle.run_config_snapshot.authorization_scope must equal PUBLICATION_EVIDENCE_AUTHORIZED")
     if bundle.run_config_snapshot.experiment_id != "E7":
         reasons.append("bundle.run_config_snapshot.experiment_id must equal E7")
+    if bundle.collector_capability.report_authority is not E7ReportAuthority.CANONICAL_COLLECTOR_REPORT:
+        reasons.append("bundle must originate from the canonical collector-owned raw E7 report path")
+    if not bundle.collector_capability.anchored_no_follow or not bundle.collector_capability.symlink_free:
+        reasons.append("bundle collector provenance must be anchored no-follow and symlink-free")
     if reasons:
         return tuple(dict.fromkeys(reasons))
     try:
@@ -114,6 +120,8 @@ def publication_precheck_reasons(
         reasons.append("manifest.test_contract must exactly match the measurement contract")
     if bundle.manifest.witness_contract != contract.required_witness_contract:
         reasons.append("manifest.witness_contract must exactly match the measurement contract")
+    if bundle.manifest.raw_report_hash != bundle.raw_report_hash:
+        reasons.append("manifest.raw_report_hash must exactly match bundle.raw_report_hash")
     if len({row.publication_scope for row in bundle.rows}) != 1 or bundle.rows[0].publication_scope != E7_PUBLICATION_SCOPE:
         reasons.append("rows.publication_scope must exactly match E7_FOUNDRY_PUBLICATION_V1")
     parity_ok, parity_reasons = _verify_parity_attachment(parity_attachment)
@@ -131,7 +139,8 @@ def t12_rows(rows: tuple[E7MeasurementRow, ...] | list[E7MeasurementRow]) -> tup
             operation=row.operation.value,
             batch_size=row.batch_size,
             gas_used=row.gas_used,
-            storage_delta_bytes=row.storage_delta_bytes,
+            changed_storage_slot_count=row.changed_storage_slot_count,
+            storage_change_upper_bound_bytes=row.storage_change_upper_bound_bytes,
             fraction_of_block_limit=row.gas_used / row.block_gas_limit,
         )
         for row in ordered
@@ -167,4 +176,3 @@ def summarize_e7_bundle(
         parity_bound=parity_ok,
         claim_disposition="SUPPORTED" if not reasons and block_boundedness_all else "INCONCLUSIVE",
     )
-

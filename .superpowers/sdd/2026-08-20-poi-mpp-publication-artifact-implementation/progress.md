@@ -115,6 +115,7 @@ Spec: `/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-
 | 5 | 17 | Task-budget and credit lifecycle. | Compatible. |
 | 5 | 19 | Receipt-derived active weights. | Compatible. |
 | 5 | 21 | Full task-to-credit lifecycle. | Compatible. |
+- Task 18: fix round 1 complete on 2026-08-21 (canonical collector path enforcement, symlink/off-repo fail-closed support gate, gas no-prewarm rewrite, storage upper-bound renaming, atomic bundle/summary writes, raw hash invalidation `039e...` -> regenerated `c5e7fe21...`; focused E7 tests PASS, parity PASS, `tests/experiments` PASS, full Python suite PASS, GasSnapshots gas-report PASS, full Foundry suite PASS, compileall PASS, git diff --check PASS).
 | 6 | 7 | Credit and committee state contract. | Compatible. |
 | 6 | 8 | Credit/committee parity vectors. | Compatible. |
 | 6 | 17 | Credit conservation and Sybil budget analysis. | Compatible. |

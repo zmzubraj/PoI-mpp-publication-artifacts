@@ -76,22 +76,29 @@ contract GasSnapshots is ProtocolKernelBase {
         witnessCreditAllocate(8);
     }
 
-    function witnessModelRegister() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
+    function witnessModelRegister()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
         bytes32[] memory slots = new bytes32[](4);
         bytes32 base = _mappingSlot(EXTRA_MODEL_ROOT, 0);
         for (uint256 index = 0; index < 4; index++) {
             slots[index] = bytes32(uint256(base) + index);
         }
-        bytes32[] memory beforeValues = _snapshot(address(modelRegistry), slots);
         vm.prank(MODEL_ADMIN);
         uint256 gasBefore = gasleft();
         modelRegistry.registerModel(EXTRA_MODEL_ROOT, EXTRA_RUNTIME_ROOT, EXTRA_MANIFEST_HASH, 2);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(modelRegistry), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        changedStorageSlotCount = _countChangedSlots(address(modelRegistry), baseline.modelRegistryAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessTaskCreate() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        uint256 taskId = taskManager.nextTaskId();
+    function witnessTaskCreate()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 taskId = serviceTaskId + 1;
         uint64 currentEpoch = policy.currentEpoch();
         bytes32 base = _mappingSlot(taskId, 1);
         bytes32[] memory slots = new bytes32[](6);
@@ -99,7 +106,6 @@ contract GasSnapshots is ProtocolKernelBase {
         for (uint256 index = 0; index < 5; index++) {
             slots[index + 1] = bytes32(uint256(base) + index);
         }
-        bytes32[] memory beforeValues = _snapshot(address(taskManager), slots);
         vm.prank(TASK_ADMIN);
         uint256 gasBefore = gasleft();
         taskManager.createTask(
@@ -112,157 +118,227 @@ contract GasSnapshots is ProtocolKernelBase {
             600
         );
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(taskManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        changedStorageSlotCount = _countChangedSlots(address(taskManager), baseline.taskManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessCommitResponse() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        uint256 taskId =
-            _createTask(keccak256("gas-commit-task"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+    function witnessCommitResponse()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 taskId = prepareCommitResponseState();
         bytes32 base = _mappingSlot(taskId, 0);
         bytes32[] memory slots = new bytes32[](11);
         for (uint256 index = 0; index < 11; index++) {
             slots[index] = bytes32(uint256(base) + index);
         }
-        bytes32[] memory beforeValues = _snapshot(address(commitmentHub), slots);
         vm.prank(WORKER);
         uint256 gasBefore = gasleft();
         commitmentHub.commitResponse(taskId, RESPONSE_ROOT, TRACE_ROOT, EVIDENCE_ROOT, ARTIFACT_ROOT, NONCE);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(commitmentHub), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareCommitResponseState();
+        changedStorageSlotCount = _countChangedSlots(address(commitmentHub), baseline.commitmentHubAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessAuditOpen() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        uint256 taskId =
-            _createTask(keccak256("gas-audit-open"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
-        _commit(taskId, WORKER);
-        _finalizeCommitment(taskId);
+    function witnessAuditOpen()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 taskId = prepareAuditOpenState();
         bytes32[] memory slots = _auditSlots(taskId);
-        bytes32[] memory beforeValues = _snapshot(address(auditManager), slots);
         vm.prank(AUDITOR);
         uint256 gasBefore = gasleft();
         auditManager.openAudit(taskId, keccak256("gas-audit-id"), SEED_HASH, POLICY_HASH, 0);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(auditManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareAuditOpenState();
+        changedStorageSlotCount = _countChangedSlots(address(auditManager), baseline.auditManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessAuditRecordResult() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        uint256 taskId =
-            _createTask(keccak256("gas-audit-result"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
-        _commit(taskId, WORKER);
-        _finalizeCommitment(taskId);
-        vm.prank(AUDITOR);
-        auditManager.openAudit(taskId, keccak256("gas-audit-id"), SEED_HASH, POLICY_HASH, 0);
+    function witnessAuditRecordResult()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 taskId = prepareOpenedAuditState(keccak256("gas-audit-result"));
         bytes32[] memory slots = new bytes32[](1);
         slots[0] = bytes32(uint256(_mappingSlot(taskId, 0)) + 4);
-        bytes32[] memory beforeValues = _snapshot(address(auditManager), slots);
         vm.prank(AUDITOR);
         uint256 gasBefore = gasleft();
         auditManager.recordAuditResult(taskId, AuditManager.AuditDecision.ACCEPT);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(auditManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareOpenedAuditState(keccak256("gas-audit-result"));
+        changedStorageSlotCount = _countChangedSlots(address(auditManager), baseline.auditManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessAuditRecordDa() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        uint256 taskId =
-            _createTask(keccak256("gas-audit-da"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
-        _commit(taskId, WORKER);
-        _finalizeCommitment(taskId);
-        vm.prank(AUDITOR);
-        auditManager.openAudit(taskId, keccak256("gas-audit-id"), SEED_HASH, POLICY_HASH, 0);
+    function witnessAuditRecordDa()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 taskId = prepareOpenedAuditState(keccak256("gas-audit-da"));
         bytes32[] memory slots = new bytes32[](1);
         slots[0] = bytes32(uint256(_mappingSlot(taskId, 0)) + 4);
-        bytes32[] memory beforeValues = _snapshot(address(auditManager), slots);
         vm.prank(AUDITOR);
         uint256 gasBefore = gasleft();
         auditManager.recordDataAvailability(taskId, true);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(auditManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareOpenedAuditState(keccak256("gas-audit-da"));
+        changedStorageSlotCount = _countChangedSlots(address(auditManager), baseline.auditManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessOpenChallenge() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
+    function witnessOpenChallenge()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
         bytes32[] memory slots = new bytes32[](1);
         slots[0] = bytes32(uint256(_mappingSlot(consensusTaskId, 0)) + 4);
-        bytes32[] memory beforeValues = _snapshot(address(auditManager), slots);
         vm.prank(AUDITOR);
         uint256 gasBefore = gasleft();
         auditManager.openChallenge(consensusTaskId, keccak256("gas-dispute-root"));
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(auditManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        changedStorageSlotCount = _countChangedSlots(address(auditManager), baseline.auditManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessReceiptMintPending() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        uint256 taskId =
-            _createTask(keccak256("gas-receipt-mint"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
-        _commit(taskId, WORKER);
-        _finalizeCommitment(taskId);
-        _openAcceptedAudit(taskId);
-        uint256 receiptId = receiptManager.nextReceiptId();
+    function witnessReceiptMintPending()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 taskId = prepareReceiptMintPendingState();
+        uint256 receiptId = pendingReceiptId + 1;
         bytes32 nullifier = keccak256("gas-receipt-nullifier");
         bytes32[] memory slots = _receiptMintSlots(receiptId, nullifier);
-        bytes32[] memory beforeValues = _snapshot(address(receiptManager), slots);
         vm.prank(RECEIPT_OPERATOR);
         uint256 gasBefore = gasleft();
         receiptManager.mintPending(taskId, nullifier);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(receiptManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareReceiptMintPendingState();
+        changedStorageSlotCount = _countChangedSlots(address(receiptManager), baseline.receiptManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessReceiptActivate() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        _matureReceiptWindow(consensusTaskId);
+    function witnessReceiptActivate()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        prepareReceiptActivateState();
         bytes32[] memory slots = _receiptActivateSlots(pendingReceiptId, consensusTaskId, WORKER, NULLIFIER);
-        bytes32[] memory beforeValues = _snapshot(address(receiptManager), slots);
         vm.prank(RECEIPT_OPERATOR);
         uint256 gasBefore = gasleft();
         receiptManager.activate(pendingReceiptId);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(receiptManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareReceiptActivateState();
+        changedStorageSlotCount = _countChangedSlots(address(receiptManager), baseline.receiptManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessReceiptMarkChallenged() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        vm.prank(AUDITOR);
-        auditManager.openChallenge(consensusTaskId, keccak256("gas-mark-challenged"));
+    function witnessReceiptMarkChallenged()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        prepareReceiptMarkChallengedState();
         bytes32[] memory slots = new bytes32[](1);
         slots[0] = bytes32(uint256(_mappingSlot(pendingReceiptId, 1)) + 5);
-        bytes32[] memory beforeValues = _snapshot(address(receiptManager), slots);
         vm.prank(RECEIPT_OPERATOR);
         uint256 gasBefore = gasleft();
         receiptManager.markChallenged(pendingReceiptId);
         gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(receiptManager), slots, beforeValues);
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareReceiptMarkChallengedState();
+        changedStorageSlotCount = _countChangedSlots(address(receiptManager), baseline.receiptManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
     }
 
-    function witnessReceiptSlash() public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
+    function witnessReceiptSlash()
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        uint256 receiptId = prepareReceiptSlashState();
+        bytes32[] memory slots = new bytes32[](1);
+        slots[0] = bytes32(uint256(_mappingSlot(receiptId, 1)) + 5);
+        vm.prank(RECEIPT_OPERATOR);
+        uint256 gasBefore = gasleft();
+        receiptManager.slash(receiptId);
+        gasUsed = gasBefore - gasleft();
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareReceiptSlashState();
+        changedStorageSlotCount = _countChangedSlots(address(receiptManager), baseline.receiptManagerAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
+    }
+
+    function witnessCreditAllocate(uint256 batchSize)
+        public
+        returns (uint256 gasUsed, uint256 changedStorageSlotCount, uint256 storageChangeUpperBoundBytes)
+    {
+        require(batchSize > 0 && batchSize <= 8, "unsupported batch");
+        (uint256 taskId, uint256[] memory receiptIds) = prepareCreditAllocateState(batchSize);
+        bytes32[] memory slots = _creditSlots(taskId, receiptIds, WORKER);
+        vm.prank(CREDIT_OPERATOR);
+        uint256 gasBefore = gasleft();
+        creditEngine.allocateCredit(taskId, receiptIds);
+        gasUsed = gasBefore - gasleft();
+        GasSnapshotBaseline baseline = _newBaselineFixture();
+        baseline.prepareCreditAllocateState(batchSize);
+        changedStorageSlotCount = _countChangedSlots(address(creditEngine), baseline.creditEngineAddress(), slots);
+        storageChangeUpperBoundBytes = _storageChangeUpperBoundBytes(changedStorageSlotCount);
+    }
+
+    function prepareCommitResponseState() public returns (uint256 taskId) {
+        taskId = _createTask(keccak256("gas-commit-task"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+    }
+
+    function prepareAuditOpenState() public returns (uint256 taskId) {
+        taskId = _createTask(keccak256("gas-audit-open"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+    }
+
+    function prepareOpenedAuditState(bytes32 taskRoot) public returns (uint256 taskId) {
+        taskId = _createTask(taskRoot, WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+        vm.prank(AUDITOR);
+        auditManager.openAudit(taskId, keccak256("gas-audit-id"), SEED_HASH, POLICY_HASH, 0);
+    }
+
+    function prepareReceiptMintPendingState() public returns (uint256 taskId) {
+        taskId = _createTask(keccak256("gas-receipt-mint"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+        _openAcceptedAudit(taskId);
+    }
+
+    function prepareReceiptActivateState() public {
+        _matureReceiptWindow(consensusTaskId);
+    }
+
+    function prepareReceiptMarkChallengedState() public {
+        vm.prank(AUDITOR);
+        auditManager.openChallenge(consensusTaskId, keccak256("gas-mark-challenged"));
+    }
+
+    function prepareReceiptSlashState() public returns (uint256 receiptId) {
         bytes32 nullifier = keccak256("gas-slash-nullifier");
-        uint256 receiptId = _mintPendingReceipt(nullifier);
+        receiptId = _mintPendingReceipt(nullifier);
         vm.prank(AUDITOR);
         auditManager.openChallenge(consensusTaskId, keccak256("gas-slash-dispute-root"));
         vm.prank(RECEIPT_OPERATOR);
         receiptManager.markChallenged(receiptId);
         vm.prank(AUDITOR);
         auditManager.slash(consensusTaskId);
-        bytes32[] memory slots = new bytes32[](1);
-        slots[0] = bytes32(uint256(_mappingSlot(receiptId, 1)) + 5);
-        bytes32[] memory beforeValues = _snapshot(address(receiptManager), slots);
-        vm.prank(RECEIPT_OPERATOR);
-        uint256 gasBefore = gasleft();
-        receiptManager.slash(receiptId);
-        gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(receiptManager), slots, beforeValues);
     }
 
-    function witnessCreditAllocate(uint256 batchSize) public returns (uint256 gasUsed, uint256 storageDeltaBytes) {
-        require(batchSize > 0 && batchSize <= 8, "unsupported batch");
-        (uint256 taskId, uint256[] memory receiptIds) = _prepareCreditBatch(batchSize);
-        bytes32[] memory slots = _creditSlots(taskId, receiptIds, WORKER);
-        bytes32[] memory beforeValues = _snapshot(address(creditEngine), slots);
-        vm.prank(CREDIT_OPERATOR);
-        uint256 gasBefore = gasleft();
-        creditEngine.allocateCredit(taskId, receiptIds);
-        gasUsed = gasBefore - gasleft();
-        storageDeltaBytes = _deltaBytes(address(creditEngine), slots, beforeValues);
-    }
-
-    function _prepareCreditBatch(uint256 batchSize) internal returns (uint256 taskId, uint256[] memory receiptIds) {
+    function prepareCreditAllocateState(uint256 batchSize) public returns (uint256 taskId, uint256[] memory receiptIds) {
         taskId = _createTask(keccak256(abi.encodePacked("credit-batch", batchSize)), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
         _commit(taskId, WORKER);
         _finalizeCommitment(taskId);
@@ -280,23 +356,50 @@ contract GasSnapshots is ProtocolKernelBase {
         }
     }
 
-    function _snapshot(address target, bytes32[] memory slots) internal view returns (bytes32[] memory values) {
-        values = new bytes32[](slots.length);
+    function modelRegistryAddress() public view returns (address) {
+        return address(modelRegistry);
+    }
+
+    function taskManagerAddress() public view returns (address) {
+        return address(taskManager);
+    }
+
+    function commitmentHubAddress() public view returns (address) {
+        return address(commitmentHub);
+    }
+
+    function auditManagerAddress() public view returns (address) {
+        return address(auditManager);
+    }
+
+    function receiptManagerAddress() public view returns (address) {
+        return address(receiptManager);
+    }
+
+    function creditEngineAddress() public view returns (address) {
+        return address(creditEngine);
+    }
+
+    function _newBaselineFixture() internal returns (GasSnapshotBaseline fixture) {
+        vmJson.roll(1);
+        fixture = new GasSnapshotBaseline();
+        fixture.setUp();
+    }
+
+    function _countChangedSlots(address afterTarget, address beforeTarget, bytes32[] memory slots)
+        internal
+        view
+        returns (uint256 changedSlots)
+    {
         for (uint256 index = 0; index < slots.length; index++) {
-            values[index] = vm.load(target, slots[index]);
+            if (vm.load(afterTarget, slots[index]) != vm.load(beforeTarget, slots[index])) {
+                changedSlots += 1;
+            }
         }
     }
 
-    function _deltaBytes(address target, bytes32[] memory slots, bytes32[] memory beforeValues)
-        internal
-        view
-        returns (uint256 changedBytes)
-    {
-        for (uint256 index = 0; index < slots.length; index++) {
-            if (vm.load(target, slots[index]) != beforeValues[index]) {
-                changedBytes += 32;
-            }
-        }
+    function _storageChangeUpperBoundBytes(uint256 changedSlots) internal pure returns (uint256) {
+        return changedSlots * 32;
     }
 
     function _mappingSlot(uint256 key, uint256 slot) internal pure returns (bytes32) {
@@ -360,6 +463,117 @@ contract GasSnapshots is ProtocolKernelBase {
 
 }
 
+contract GasSnapshotBaseline is ProtocolKernelBase {
+    function modelRegistryAddress() public view returns (address) {
+        return address(modelRegistry);
+    }
+
+    function taskManagerAddress() public view returns (address) {
+        return address(taskManager);
+    }
+
+    function commitmentHubAddress() public view returns (address) {
+        return address(commitmentHub);
+    }
+
+    function auditManagerAddress() public view returns (address) {
+        return address(auditManager);
+    }
+
+    function receiptManagerAddress() public view returns (address) {
+        return address(receiptManager);
+    }
+
+    function creditEngineAddress() public view returns (address) {
+        return address(creditEngine);
+    }
+
+    function prepareCommitResponseState() public returns (uint256 taskId) {
+        taskId = _createTask(keccak256("gas-commit-task"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+    }
+
+    function prepareAuditOpenState() public returns (uint256 taskId) {
+        taskId = _createTask(keccak256("gas-audit-open"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+    }
+
+    function prepareOpenedAuditState(bytes32 taskRoot) public returns (uint256 taskId) {
+        taskId = _createTask(taskRoot, WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+        vm.prank(AUDITOR);
+        auditManager.openAudit(taskId, keccak256("gas-audit-id"), SEED_HASH, POLICY_HASH, 0);
+    }
+
+    function prepareReceiptMintPendingState() public returns (uint256 taskId) {
+        taskId = _createTask(keccak256("gas-receipt-mint"), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+        _openAcceptedAudit(taskId);
+    }
+
+    function prepareReceiptActivateState() public {
+        _matureReceiptWindow(consensusTaskId);
+    }
+
+    function prepareReceiptMarkChallengedState() public {
+        vm.prank(AUDITOR);
+        auditManager.openChallenge(consensusTaskId, keccak256("gas-mark-challenged"));
+    }
+
+    function prepareReceiptSlashState() public returns (uint256 receiptId) {
+        bytes32 nullifier = keccak256("gas-slash-nullifier");
+        receiptId = _mintPendingReceipt(nullifier);
+        vm.prank(AUDITOR);
+        auditManager.openChallenge(consensusTaskId, keccak256("gas-slash-dispute-root"));
+        vm.prank(RECEIPT_OPERATOR);
+        receiptManager.markChallenged(receiptId);
+        vm.prank(AUDITOR);
+        auditManager.slash(consensusTaskId);
+    }
+
+    function prepareCreditAllocateState(uint256 batchSize) public returns (uint256 taskId, uint256[] memory receiptIds) {
+        taskId = _createTask(keccak256(abi.encodePacked("credit-batch", batchSize)), WORKER, TaskManager.TaskClass.CONSENSUS, 100);
+        _commit(taskId, WORKER);
+        _finalizeCommitment(taskId);
+        _openAcceptedAudit(taskId);
+        receiptIds = new uint256[](batchSize);
+        for (uint256 index = 0; index < batchSize; index++) {
+            vm.prank(RECEIPT_OPERATOR);
+            uint256 receiptId = receiptManager.mintPending(taskId, keccak256(abi.encodePacked("credit-nullifier", batchSize, index)));
+            receiptIds[index] = receiptId;
+        }
+        _matureReceiptWindow(taskId);
+        for (uint256 index = 0; index < batchSize; index++) {
+            vm.prank(RECEIPT_OPERATOR);
+            receiptManager.activate(receiptIds[index]);
+        }
+    }
+}
+
+contract GasSnapshotsValidation is ProtocolKernelBase {
+    function testWitnessModelRegisterIsDeterministicAcrossFreshFixtures() public {
+        GasSnapshots left = new GasSnapshots();
+        left.setUp();
+        GasSnapshots right = new GasSnapshots();
+        right.setUp();
+        (uint256 leftGas, uint256 leftSlots, uint256 leftUpperBound) = left.witnessModelRegister();
+        (uint256 rightGas, uint256 rightSlots, uint256 rightUpperBound) = right.witnessModelRegister();
+        assertEq(leftGas, rightGas, "witnessModelRegister gas must be deterministic across fresh fixtures");
+        assertEq(leftSlots, rightSlots, "witnessModelRegister slot count must be deterministic across fresh fixtures");
+        assertEq(leftUpperBound, rightUpperBound, "witnessModelRegister upper bound must be deterministic across fresh fixtures");
+    }
+
+    function testPackedAuditWriteUsesUpperBoundBytes() public {
+        GasSnapshots fixture = new GasSnapshots();
+        fixture.setUp();
+        (, uint256 changedSlots, uint256 storageUpperBoundBytes) = fixture.witnessAuditRecordResult();
+        assertEq(changedSlots, 1, "audit result packed write should affect exactly one storage slot");
+        assertEq(storageUpperBoundBytes, 32, "packed audit write must report a one-word upper bound");
+    }
+}
+
 contract GasSnapshotWitness {
     VmJson internal constant vmJson = VmJson(address(uint160(uint256(keccak256("hevm cheat code")))));
 
@@ -403,17 +617,23 @@ contract GasSnapshotWitness {
         string memory current,
         string memory operation,
         uint256 batchSize,
-        uint256[2] memory result,
+        uint256[3] memory result,
         bool trailingComma
     ) internal pure returns (string memory) {
         return string.concat(
             current,
-            _measurementJson(operation, batchSize, result[0], result[1]),
+            _measurementJson(operation, batchSize, result[0], result[1], result[2]),
             trailingComma ? "," : "]"
         );
     }
 
-    function _measurementJson(string memory operation, uint256 batchSize, uint256 gasUsed, uint256 storageDeltaBytes)
+    function _measurementJson(
+        string memory operation,
+        uint256 batchSize,
+        uint256 gasUsed,
+        uint256 changedStorageSlotCount,
+        uint256 storageChangeUpperBoundBytes
+    )
         internal
         pure
         returns (string memory)
@@ -429,8 +649,11 @@ contract GasSnapshotWitness {
             "\"gas_used\":",
             vmJson.toString(gasUsed),
             ",",
-            "\"storage_delta_bytes\":",
-            vmJson.toString(storageDeltaBytes),
+            "\"changed_storage_slot_count\":",
+            vmJson.toString(changedStorageSlotCount),
+            ",",
+            "\"storage_change_upper_bound_bytes\":",
+            vmJson.toString(storageChangeUpperBoundBytes),
             "}"
         );
     }
@@ -441,63 +664,63 @@ contract GasSnapshotWitness {
         fixture.setUp();
     }
 
-    function _modelRegister() internal returns (uint256[2] memory result) {
+    function _modelRegister() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessModelRegister();
+        (result[0], result[1], result[2]) = fixture.witnessModelRegister();
     }
 
-    function _taskCreate() internal returns (uint256[2] memory result) {
+    function _taskCreate() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessTaskCreate();
+        (result[0], result[1], result[2]) = fixture.witnessTaskCreate();
     }
 
-    function _commitResponse() internal returns (uint256[2] memory result) {
+    function _commitResponse() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessCommitResponse();
+        (result[0], result[1], result[2]) = fixture.witnessCommitResponse();
     }
 
-    function _auditOpen() internal returns (uint256[2] memory result) {
+    function _auditOpen() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessAuditOpen();
+        (result[0], result[1], result[2]) = fixture.witnessAuditOpen();
     }
 
-    function _auditRecordResult() internal returns (uint256[2] memory result) {
+    function _auditRecordResult() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessAuditRecordResult();
+        (result[0], result[1], result[2]) = fixture.witnessAuditRecordResult();
     }
 
-    function _auditRecordDa() internal returns (uint256[2] memory result) {
+    function _auditRecordDa() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessAuditRecordDa();
+        (result[0], result[1], result[2]) = fixture.witnessAuditRecordDa();
     }
 
-    function _openChallenge() internal returns (uint256[2] memory result) {
+    function _openChallenge() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessOpenChallenge();
+        (result[0], result[1], result[2]) = fixture.witnessOpenChallenge();
     }
 
-    function _receiptMintPending() internal returns (uint256[2] memory result) {
+    function _receiptMintPending() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessReceiptMintPending();
+        (result[0], result[1], result[2]) = fixture.witnessReceiptMintPending();
     }
 
-    function _receiptActivate() internal returns (uint256[2] memory result) {
+    function _receiptActivate() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessReceiptActivate();
+        (result[0], result[1], result[2]) = fixture.witnessReceiptActivate();
     }
 
-    function _receiptMarkChallenged() internal returns (uint256[2] memory result) {
+    function _receiptMarkChallenged() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessReceiptMarkChallenged();
+        (result[0], result[1], result[2]) = fixture.witnessReceiptMarkChallenged();
     }
 
-    function _receiptSlash() internal returns (uint256[2] memory result) {
+    function _receiptSlash() internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessReceiptSlash();
+        (result[0], result[1], result[2]) = fixture.witnessReceiptSlash();
     }
 
-    function _creditAllocate(uint256 batchSize) internal returns (uint256[2] memory result) {
+    function _creditAllocate(uint256 batchSize) internal returns (uint256[3] memory result) {
         GasSnapshots fixture = _newFixture();
-        (result[0], result[1]) = fixture.witnessCreditAllocate(batchSize);
+        (result[0], result[1], result[2]) = fixture.witnessCreditAllocate(batchSize);
     }
 }

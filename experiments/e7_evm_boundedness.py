@@ -13,6 +13,7 @@ if str(SRC_ROOT) not in sys.path:
 from poi_mpp.evidence.config import load_run_config
 from poi_mpp.experiments.e7_evm import (
     AuthorityBoundaryError,
+    _atomic_write_json,
     assert_cli_authority_boundary,
     collect_foundry_measurements,
     default_measurement_contract,
@@ -59,8 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         "summary": summary.model_dump(mode="json"),
     }
     output_path = Path(args.summary_out)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _atomic_write_json(output_path, payload)
     return 0
 
 
