@@ -65,6 +65,8 @@ class E6SeedPolicy(StrEnum):
 class E6AllowedScenario(_FrozenModel):
     scenario_id: str
     scenario_contract_hash: str
+    required_role: SybilScenarioRole
+    required_capacity_model: SybilCapacityModel
     required_seed: int = Field(ge=0)
 
     @field_validator("scenario_id", "scenario_contract_hash")
@@ -120,6 +122,9 @@ class E6ConfirmatoryContract(_FrozenModel):
             raise ValueError("allowed_scenarios must use unique scenario_id values")
         if len({item.scenario_contract_hash for item in self.allowed_scenarios}) != len(self.allowed_scenarios):
             raise ValueError("allowed_scenarios must use unique scenario_contract_hash values")
+        negative_controls = sum(1 for item in self.allowed_scenarios if item.required_role is SybilScenarioRole.NEGATIVE_CONTROL)
+        if negative_controls < self.minimum_negative_controls:
+            raise ValueError("allowed_scenarios must include at least minimum_negative_controls negative scenarios")
         return self
 
 
@@ -286,9 +291,16 @@ def _result_contract_material(row: "E6ScenarioRow") -> dict[str, object]:
         "attacker_weight_interval_micros": row.attacker_weight_interval_micros,
         "attacker_expected_share": row.attacker_expected_share,
         "attacker_share_interval": row.attacker_share_interval,
+        "allocated_task_count_mean": row.allocated_task_count_mean,
+        "allocated_task_count_interval": row.allocated_task_count_interval,
+        "unallocated_task_count_mean": row.unallocated_task_count_mean,
+        "unallocated_task_count_interval": row.unallocated_task_count_interval,
         "allocated_credit_mean_micros": row.allocated_credit_mean_micros,
         "allocated_credit_interval_micros": row.allocated_credit_interval_micros,
-        "exact_credit_conservation": row.exact_credit_conservation,
+        "task_accounting_exact": row.task_accounting_exact,
+        "credit_issuance_exact": row.credit_issuance_exact,
+        "budget_non_exceedance": row.budget_non_exceedance,
+        "credit_utilization_ratio": row.credit_utilization_ratio,
         "zero_credit_implies_zero_weight": row.zero_credit_implies_zero_weight,
         "estimated_cost_to_target_weight_micros": row.estimated_cost_to_target_weight_micros,
         "assumption_ledger": row.assumption_ledger,
@@ -342,9 +354,16 @@ class E6ScenarioRow(_FrozenModel):
     attacker_weight_interval_micros: tuple[str, str]
     attacker_expected_share: float = Field(ge=0.0, le=1.0)
     attacker_share_interval: tuple[float, float]
+    allocated_task_count_mean: str
+    allocated_task_count_interval: tuple[str, str]
+    unallocated_task_count_mean: str
+    unallocated_task_count_interval: tuple[str, str]
     allocated_credit_mean_micros: str
     allocated_credit_interval_micros: tuple[str, str]
-    exact_credit_conservation: bool
+    task_accounting_exact: bool
+    credit_issuance_exact: bool
+    budget_non_exceedance: bool
+    credit_utilization_ratio: float = Field(ge=0.0, le=1.0)
     zero_credit_implies_zero_weight: bool
     estimated_cost_to_target_weight_micros: str
     assumption_ledger: tuple[str, ...]
@@ -362,6 +381,8 @@ class E6ScenarioRow(_FrozenModel):
         "result_contract_hash",
         "attacker_expected_credit_micros",
         "attacker_expected_weight_micros",
+        "allocated_task_count_mean",
+        "unallocated_task_count_mean",
         "allocated_credit_mean_micros",
         "estimated_cost_to_target_weight_micros",
         mode="before",
@@ -375,6 +396,8 @@ class E6ScenarioRow(_FrozenModel):
     @field_validator(
         "attacker_credit_interval_micros",
         "attacker_weight_interval_micros",
+        "allocated_task_count_interval",
+        "unallocated_task_count_interval",
         "allocated_credit_interval_micros",
     )
     @classmethod
@@ -666,14 +689,19 @@ def run_sybil_scenario(
     attacker_credit_trials: list[Decimal] = []
     attacker_weight_trials: list[Decimal] = []
     attacker_share_trials: list[float] = []
+    allocated_task_count_trials: list[Decimal] = []
+    unallocated_task_count_trials: list[Decimal] = []
     allocated_credit_trials: list[Decimal] = []
-    credit_conservation_ok = True
+    task_accounting_exact = True
+    credit_issuance_exact = True
+    budget_non_exceedance = True
     zero_credit_zero_weight_ok = True
 
     for _ in range(config.simulations):
         attacker_credit = 0
         attacker_credit_by_identity = [0 for _ in range(scenario.attacker_identity_count)]
         honest_credit_by_operator = [0 for _ in range(scenario.honest_operator_count)]
+        allocated_task_count = 0
 
         for _ in range(scenario.task_count):
             attacker_successes = _attacker_identity_successes(
@@ -698,16 +726,25 @@ def run_sybil_scenario(
                 attacker_credit += scenario.task_credit_budget
                 assert attacker_identity is not None
                 attacker_credit_by_identity[attacker_identity] += scenario.task_credit_budget
+                allocated_task_count += 1
                 continue
             if sum(honest_successes) == 0:
                 continue
             weighted_honest = [(str(index), honest_successes[index]) for index, value in enumerate(honest_successes) if value > 0]
             honest_winner = int(_weighted_choice(generator, weighted_honest))
             honest_credit_by_operator[honest_winner] += scenario.task_credit_budget
+            allocated_task_count += 1
 
         allocated_credit = attacker_credit + sum(honest_credit_by_operator)
-        credit_conservation_ok = credit_conservation_ok and allocated_credit <= (
-            scenario.task_count * scenario.task_credit_budget
+        unallocated_task_count = scenario.task_count - allocated_task_count
+        task_accounting_exact = task_accounting_exact and (
+            allocated_task_count + unallocated_task_count == scenario.task_count
+        )
+        credit_issuance_exact = credit_issuance_exact and (
+            allocated_credit == allocated_task_count * scenario.task_credit_budget
+        )
+        budget_non_exceedance = budget_non_exceedance and (
+            allocated_credit <= scenario.task_count * scenario.task_credit_budget
         )
 
         attacker_weight = _attacker_weight(
@@ -723,11 +760,15 @@ def run_sybil_scenario(
 
         attacker_credit_trials.append(Decimal(attacker_credit).quantize(_MICRO_QUANTUM))
         attacker_weight_trials.append(Decimal(attacker_weight).quantize(_MICRO_QUANTUM))
+        allocated_task_count_trials.append(Decimal(allocated_task_count).quantize(_MICRO_QUANTUM))
+        unallocated_task_count_trials.append(Decimal(unallocated_task_count).quantize(_MICRO_QUANTUM))
         allocated_credit_trials.append(Decimal(allocated_credit).quantize(_MICRO_QUANTUM))
         attacker_share_trials.append(attacker_share)
 
     attacker_credit_mean = _decimal_mean(attacker_credit_trials)
     attacker_weight_mean = _decimal_mean(attacker_weight_trials)
+    allocated_task_count_mean = _decimal_mean(allocated_task_count_trials)
+    unallocated_task_count_mean = _decimal_mean(unallocated_task_count_trials)
     allocated_credit_mean = _decimal_mean(allocated_credit_trials)
     attacker_share_mean = sum(attacker_share_trials) / len(attacker_share_trials)
     target_fraction = Decimal(scenario.target_weight_numerator) / Decimal(scenario.target_weight_denominator)
@@ -791,13 +832,30 @@ def run_sybil_scenario(
             iterations=256,
             seed=config.seed + 307,
         ),
+        "allocated_task_count_mean": str(allocated_task_count_mean),
+        "allocated_task_count_interval": _bootstrap_decimal_interval(
+            allocated_task_count_trials,
+            iterations=256,
+            seed=config.seed + 353,
+        ),
+        "unallocated_task_count_mean": str(unallocated_task_count_mean),
+        "unallocated_task_count_interval": _bootstrap_decimal_interval(
+            unallocated_task_count_trials,
+            iterations=256,
+            seed=config.seed + 379,
+        ),
         "allocated_credit_mean_micros": str(allocated_credit_mean),
         "allocated_credit_interval_micros": _bootstrap_decimal_interval(
             allocated_credit_trials,
             iterations=256,
             seed=config.seed + 401,
         ),
-        "exact_credit_conservation": credit_conservation_ok,
+        "task_accounting_exact": task_accounting_exact,
+        "credit_issuance_exact": credit_issuance_exact,
+        "budget_non_exceedance": budget_non_exceedance,
+        "credit_utilization_ratio": float(
+            allocated_credit_mean / Decimal(scenario.task_count * scenario.task_credit_budget)
+        ),
         "zero_credit_implies_zero_weight": zero_credit_zero_weight_ok,
         "estimated_cost_to_target_weight_micros": estimated_cost_to_target,
         "assumption_ledger": _assumption_ledger(scenario),

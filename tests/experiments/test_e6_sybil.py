@@ -96,6 +96,8 @@ def _write_contract(tmp_path: Path, rows, *, epsilon_sybil: float = 0.02):
             [
                 f"  - scenario_id: {row.scenario_id}",
                 f"    scenario_contract_hash: {row.scenario_contract_hash}",
+                f"    required_role: {row.role.value}",
+                f"    required_capacity_model: {row.capacity_model.value}",
                 f"    required_seed: {row.seed}",
             ]
         )
@@ -167,6 +169,7 @@ def test_identity_uniform_scheduler_rewards_identity_splitting():
 
     summary = summarize_e6_rows([baseline, split])
     assert summary.max_negative_control_upper_advantage > summary.epsilon_sybil
+    assert summary.min_negative_control_lower_advantage > summary.epsilon_sybil
 
 
 def test_collateral_rich_zero_credit_operator_stays_at_zero_weight():
@@ -185,6 +188,9 @@ def test_collateral_rich_zero_credit_operator_stays_at_zero_weight():
     assert row.attacker_expected_credit_micros == "0.000000"
     assert row.attacker_expected_weight_micros == "0.000000"
     assert row.zero_credit_implies_zero_weight
+    assert row.task_accounting_exact
+    assert row.credit_issuance_exact
+    assert row.budget_non_exceedance
 
 
 def test_publication_support_requires_confirmatory_contract_and_replay_authority(tmp_path: Path):
@@ -308,10 +314,69 @@ def test_duplicate_scenarios_do_not_inflate_confirmatory_breadth(tmp_path: Path)
 
     baseline = _run_row(scenario=_scenario())
     duplicate = baseline.model_copy(update={"scenario_id": "support-capacity-committed-1"})
-    contract = _write_contract(tmp_path, [baseline])
 
     with pytest.raises(ValueError, match="unique scenario_id"):
-        summarize_e6_rows([baseline, duplicate], contract=contract)
+        summarize_e6_rows([baseline, duplicate])
+
+
+def test_flat_negative_controls_do_not_support_confirmatory_publication(tmp_path: Path):
+    from poi_mpp.reporting.e6 import summarize_e6_rows
+
+    safe_negative_one = _run_row(
+        scenario=_scenario(
+            scenario_id="negative-flat-operator-slot-1",
+            group_id="negative-flat-operator-slot",
+            role="NEGATIVE_CONTROL",
+            assumption_label="CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED",
+            capacity_model="OPERATOR_SLOT",
+            attacker_identity_count=1,
+        )
+    )
+    safe_negative_many = _run_row(
+        scenario=_scenario(
+            scenario_id="negative-flat-operator-slot-64",
+            group_id="negative-flat-operator-slot",
+            role="NEGATIVE_CONTROL",
+            assumption_label="CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED",
+            capacity_model="OPERATOR_SLOT",
+            attacker_identity_count=64,
+        )
+    )
+    support_one = _run_row(scenario=_scenario())
+    support_many = _run_row(
+        scenario=_scenario(
+            scenario_id="support-capacity-committed-64",
+            attacker_identity_count=64,
+        )
+    )
+    contract = _write_contract(tmp_path, [support_one, support_many, safe_negative_one, safe_negative_many])
+
+    assert summarize_e6_rows(
+        [support_one, support_many, safe_negative_one, safe_negative_many],
+        contract=contract,
+    ).claim_disposition == "INCONCLUSIVE"
+
+
+def test_zero_success_accounting_distinguishes_exact_equality_from_utilization():
+    row = _run_row(
+        scenario=_scenario(
+            scenario_id="boundary-zero-success-accounting",
+            group_id="boundary-zero-success-accounting",
+            role="BOUNDARY",
+            assumption_label="COLLATERAL_RICH_ZERO_CREDIT_DECLARED",
+            attacker_success_probability=0.0,
+            honest_success_probability=0.0,
+            attacker_collateral_micros=5_000_000_000,
+        )
+    )
+
+    assert row.task_accounting_exact
+    assert row.credit_issuance_exact
+    assert row.budget_non_exceedance
+    assert row.allocated_task_count_mean == "0.000000"
+    assert row.unallocated_task_count_mean == "48.000000"
+    assert row.allocated_credit_mean_micros == "0.000000"
+    assert row.credit_utilization_ratio == 0.0
 
 
 def test_cli_stops_at_publication_authority_boundary(tmp_path: Path):

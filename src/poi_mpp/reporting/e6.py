@@ -62,8 +62,11 @@ class E6Summary(_FrozenModel):
     epsilon_sybil: float = Field(gt=0.0, le=1.0)
     minimum_negative_controls: int = Field(ge=1)
     max_support_upper_advantage: float
+    min_negative_control_lower_advantage: float
     max_negative_control_upper_advantage: float
-    exact_credit_conservation_all: bool
+    task_accounting_exact_all: bool
+    credit_issuance_exact_all: bool
+    budget_non_exceedance_all: bool
     zero_credit_zero_weight_all: bool
     claim_disposition: str
 
@@ -238,6 +241,10 @@ def publication_precheck_reasons(
                 reasons.append(f"scenario_contract_hash mismatch for {scenario_id}")
             if contract.seed_policy is E6SeedPolicy.FIXED_PER_SCENARIO and row.seed != allowed.required_seed:
                 reasons.append(f"seed mismatch for {scenario_id}")
+            if row.role is not allowed.required_role:
+                reasons.append(f"role mismatch for {scenario_id}")
+            if row.capacity_model is not allowed.required_capacity_model:
+                reasons.append(f"capacity_model mismatch for {scenario_id}")
     return tuple(dict.fromkeys(reasons))
 
 
@@ -350,17 +357,27 @@ def summarize_e6_rows(
 
     t11 = t11_rows(canonical_rows)
     support_upper_advantages: list[float] = []
+    negative_lower_advantages: list[float] = []
     negative_upper_advantages: list[float] = []
+    negative_control_rows_present = 0
     for row, summary_row in zip(canonical_rows, t11, strict=True):
+        if row.role.value == "NEGATIVE_CONTROL":
+            negative_control_rows_present += 1
+        if row.attacker_identity_count <= 1:
+            continue
+        lower = float(Decimal(summary_row.confidence_interval_micros[0]))
         upper = float(Decimal(summary_row.confidence_interval_micros[1]))
         if row.role.value == "SUPPORT":
             support_upper_advantages.append(upper)
         elif row.role.value == "NEGATIVE_CONTROL":
+            negative_lower_advantages.append(lower)
             negative_upper_advantages.append(upper)
 
     origins = tuple(sorted({row.origin.value for row in canonical_rows}))
     assumptions = tuple(sorted({entry for row in canonical_rows for entry in row.assumption_ledger}))
-    exact_credit_conservation_all = all(row.exact_credit_conservation for row in canonical_rows)
+    task_accounting_exact_all = all(row.task_accounting_exact for row in canonical_rows)
+    credit_issuance_exact_all = all(row.credit_issuance_exact for row in canonical_rows)
+    budget_non_exceedance_all = all(row.budget_non_exceedance for row in canonical_rows)
     zero_credit_zero_weight_all = all(row.zero_credit_implies_zero_weight for row in canonical_rows)
 
     epsilon = contract.epsilon_sybil if contract is not None else 0.02
@@ -370,8 +387,12 @@ def summarize_e6_rows(
         and EvidenceOrigin.SYNTHETIC_NON_EVIDENCE.value not in origins
         and support_upper_advantages
         and max(support_upper_advantages) <= epsilon
-        and len(negative_upper_advantages) >= minimum_negative_controls
-        and exact_credit_conservation_all
+        and negative_control_rows_present >= minimum_negative_controls
+        and negative_lower_advantages
+        and min(negative_lower_advantages) > epsilon
+        and task_accounting_exact_all
+        and credit_issuance_exact_all
+        and budget_non_exceedance_all
         and zero_credit_zero_weight_all
     )
     claim_disposition = "SUPPORTED" if support_ready else "INCONCLUSIVE"
@@ -387,8 +408,11 @@ def summarize_e6_rows(
         epsilon_sybil=epsilon,
         minimum_negative_controls=minimum_negative_controls,
         max_support_upper_advantage=max(support_upper_advantages, default=0.0),
+        min_negative_control_lower_advantage=min(negative_lower_advantages, default=0.0),
         max_negative_control_upper_advantage=max(negative_upper_advantages, default=0.0),
-        exact_credit_conservation_all=exact_credit_conservation_all,
+        task_accounting_exact_all=task_accounting_exact_all,
+        credit_issuance_exact_all=credit_issuance_exact_all,
+        budget_non_exceedance_all=budget_non_exceedance_all,
         zero_credit_zero_weight_all=zero_credit_zero_weight_all,
         claim_disposition=claim_disposition,
     )

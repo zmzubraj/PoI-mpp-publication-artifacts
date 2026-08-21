@@ -40,3 +40,27 @@
 ## Ledger candidate
 
 - Task 17: implementation complete (typed E6 Sybil/task-budget simulator and reporting added; paired-seed operator-level schedulers stay flat across `1..64` identities; publication support now requires canonical replay, confirmatory-contract closure, and exact run authorization binding; unsafe negative controls retained; focused E6 tests PASS, `tests/experiments` PASS, full Python suite PASS, compileall PASS, git diff --check PASS).
+
+## Fix round 1
+
+- Negative-control publication semantics are now evidence-bearing rather than presence-only: the confirmatory contract binds each allowed row's `required_role` and `required_capacity_model`, and publication support additionally requires the split negative-control lower bound to exceed the frozen `epsilon_sybil`.
+- Flat safe rows can still exist as valid declared negative controls, but they now keep the summary `INCONCLUSIVE` instead of silently satisfying the negative-control count requirement.
+- The old `exact_credit_conservation` flag has been replaced by separate exact accounting invariants:
+  - `task_accounting_exact`
+  - `credit_issuance_exact`
+  - `budget_non_exceedance`
+  - `credit_utilization_ratio`
+- Result rows now expose allocated and unallocated task-count means and intervals so zero-success runs can satisfy accounting equalities without being misread as full task-budget utilization.
+
+### Additional RED regressions
+
+- Flat contract-bound negative controls with zero advantage remain `INCONCLUSIVE`.
+- Zero-success runs preserve exact task accounting and issuance equality while reporting zero utilization.
+
+### Fix-round verification
+
+- `./.venv/bin/python -m pytest tests/experiments/test_e6_sybil.py -q`
+- `./.venv/bin/python -m pytest tests/experiments -q`
+- `./.venv/bin/python -m pytest -q`
+- `./.venv/bin/python -m compileall src tests experiments`
+- `git diff --check`
