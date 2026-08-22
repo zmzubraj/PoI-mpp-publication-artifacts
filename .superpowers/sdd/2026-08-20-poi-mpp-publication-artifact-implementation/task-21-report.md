@@ -89,6 +89,80 @@ $ git diff --check
 PASS
 ```
 
+## Code quality fix round 2 — 2026-08-22
+
+### RED evidence
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_failure_paths.py -k 'warning_clean or managed_macos_alias or module_help_works_from_foreign_cwd_with_repo_src_pythonpath' -q
+.FF
+
+Representative failures:
+- RuntimeWarning: 'poi_mpp.orchestration.run_mpp' found in sys.modules after import of package 'poi_mpp.orchestration', but prior to execution of 'poi_mpp.orchestration.run_mpp'
+- ValueError: output root could not be opened without following symlinks for a managed /var/... alias path
+```
+
+### Fix delivered
+
+- macOS managed alias portability:
+  - `_absolute_lexical_path(...)` now canonicalizes only verified OS-managed Darwin aliases `/var -> /private/var` and `/tmp -> /private/tmp`.
+  - The canonicalization check is constrained to the alias prefix only and requires both `lstat(...)` and `realpath(...)` confirmation of the OS-managed mapping before rewrite.
+  - No broad `realpath()` fallback was introduced, so user-created or deeper symlinked model/tokenizer/output roots still fail closed under the existing anchored no-follow traversal.
+  - `load_local_mpp_config(...)` now stores canonical internal absolute paths for absolute or relative `output_root`, matching the existing model/tokenizer-root handling.
+- Warning-clean module entrypoint:
+  - `src/poi_mpp/orchestration/__init__.py` no longer eagerly imports `run_mpp`.
+  - The package now exposes the public API lazily through `__getattr__`, which removes the `runpy` warning from `python -m poi_mpp.orchestration.run_mpp` while preserving existing imports/tests.
+- Added regressions for:
+  - warning-clean `python -W error -m poi_mpp.orchestration.run_mpp --help`
+  - valid managed macOS alias model/tokenizer/output roots
+  - user-created symlinked model/tokenizer roots beneath managed alias prefixes remaining `WAITING_LOCAL_MODEL_ARTIFACT` without path leakage
+  - managed alias output-root writes canonicalizing to `/private/...` while still rejecting alias-path symlink escapes before any outside write
+
+### GREEN verification after code quality fix round 2
+
+Targeted regressions:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_failure_paths.py -k 'warning_clean or managed_macos_alias or module_help_works_from_foreign_cwd_with_repo_src_pythonpath' -q
+6 passed in clean rerun
+```
+
+Focused e2e:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e -q
+28 passed in clean rerun
+```
+
+Relevant regression surfaces:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e tests/integration/test_python_solidity_parity.py tests/protocol tests/worker tests/auditor tests/semantic tests/experiments/test_e4_da.py -q
+139 passed in clean rerun
+```
+
+Full Python / Foundry / hygiene:
+
+```text
+$ ./.venv/bin/python -m pytest -q
+[100%] full suite PASS
+
+$ ./.venv/bin/python -m pytest --collect-only -q | awk -F': ' '/: [0-9]+$/ {sum += $2} END {print sum}'
+376
+
+$ cd contracts && forge test -q
+PASS
+
+$ ./.venv/bin/python -m compileall -q src tests scripts
+PASS
+
+$ bash -n scripts/run_all.sh
+PASS
+
+$ git diff --check
+PASS
+```
+
 ## Exact mechanics that pass
 
 - Fresh parity verification via `verify_current_e7_parity(...)` before synthetic evidence-bearing mechanics.

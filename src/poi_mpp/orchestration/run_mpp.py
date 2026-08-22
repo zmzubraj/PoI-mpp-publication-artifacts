@@ -15,6 +15,7 @@ import shutil
 import socket
 import stat
 import subprocess
+import sys
 import threading
 import time
 from typing import Any
@@ -454,11 +455,33 @@ def _path_text(value: str | Path | PurePosixPath) -> str:
     return value
 
 
+def _canonicalize_managed_macos_alias(path: Path) -> Path:
+    absolute = Path(os.path.abspath(str(path)))
+    if sys.platform != "darwin":
+        return absolute
+    absolute_text = absolute.as_posix()
+    for alias_prefix, canonical_prefix in (("/var", "/private/var"), ("/tmp", "/private/tmp")):
+        if absolute_text != alias_prefix and not absolute_text.startswith(f"{alias_prefix}/"):
+            continue
+        try:
+            alias_status = os.lstat(alias_prefix)
+        except OSError:
+            continue
+        if not stat.S_ISLNK(alias_status.st_mode):
+            continue
+        if os.path.realpath(alias_prefix) != canonical_prefix:
+            continue
+        suffix = absolute_text[len(alias_prefix) :].lstrip("/")
+        canonical = Path(canonical_prefix)
+        return canonical / suffix if suffix else canonical
+    return absolute
+
+
 def _absolute_lexical_path(base: Path, candidate: str | Path) -> Path:
     path = Path(candidate)
     if not path.is_absolute():
         path = base / path
-    return Path(os.path.abspath(str(path)))
+    return _canonicalize_managed_macos_alias(path)
 
 
 def _open_directory_no_symlinks(path: Path, *, create: bool, label: str) -> tuple[int, Path]:
@@ -1018,8 +1041,8 @@ def load_local_mpp_config(path: str | Path) -> LocalMPPConfig:
             semantic["confirmatory_schema_path"] = str((config_path.parent / schema_path).resolve())
         raw["semantic"] = semantic
     output_root = raw.get("output_root")
-    if isinstance(output_root, str) and not Path(output_root).is_absolute():
-        raw["output_root"] = str((config_path.parent / output_root).resolve())
+    if isinstance(output_root, str | Path):
+        raw["output_root"] = str(_absolute_lexical_path(config_path.parent, output_root))
     try:
         return LocalMPPConfig.model_validate(raw)
     except ValidationError as error:

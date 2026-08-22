@@ -5,6 +5,7 @@ import os
 import socket
 import subprocess
 from pathlib import Path
+import sys
 
 import pytest
 import yaml
@@ -35,6 +36,18 @@ def _subprocess_env(*, pythonpath: str | None = None) -> dict[str, str]:
     if pythonpath is not None:
         env["PYTHONPATH"] = pythonpath
     return env
+
+
+def _managed_macos_alias_path(path: Path) -> tuple[Path, Path]:
+    if sys.platform != "darwin":
+        pytest.skip("managed /var and /tmp alias coverage is macOS-specific")
+    canonical = Path(os.path.abspath(str(path)))
+    canonical_text = canonical.as_posix()
+    for managed_prefix, alias_prefix in (("/private/var", "/var"), ("/private/tmp", "/tmp")):
+        if canonical_text == managed_prefix or canonical_text.startswith(f"{managed_prefix}/"):
+            suffix = canonical_text[len(managed_prefix) :]
+            return canonical, Path(f"{alias_prefix}{suffix}")
+    pytest.skip("tmp path is not rooted under a managed macOS /private alias prefix")
 
 
 def _config_with_local_artifacts(tmp_path: Path) -> LocalMPPConfig:
@@ -245,6 +258,20 @@ def test_module_help_works_from_foreign_cwd_with_repo_src_pythonpath(tmp_path: P
     assert "Run local Task 21 MPP orchestration" in completed.stdout
 
 
+def test_module_help_is_warning_clean_under_python_w_error(tmp_path: Path) -> None:
+    completed = subprocess.run(
+        [str(PYTHON_BIN), "-W", "error", "-m", "poi_mpp.orchestration.run_mpp", "--help"],
+        cwd=tmp_path,
+        env=_subprocess_env(pythonpath=str(ROOT / "src")),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "Run local Task 21 MPP orchestration" in completed.stdout
+
+
 def test_loader_resolves_relative_model_and_tokenizer_roots_from_config_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     config_dir = tmp_path / "config"
     foreign_cwd = tmp_path / "foreign-cwd"
@@ -325,6 +352,121 @@ def test_loader_resolves_relative_model_and_tokenizer_roots_from_config_director
 
     assert loaded.model.model_root == Path(os.path.abspath(str(config_dir / "models")))
     assert loaded.model.tokenizer_root == Path(os.path.abspath(str(config_dir / "tokenizers")))
+
+
+def test_loader_canonicalizes_managed_macos_alias_roots(tmp_path: Path) -> None:
+    canonical_root, alias_root = _managed_macos_alias_path(tmp_path)
+    model_root = canonical_root / "model"
+    tokenizer_root = canonical_root / "tokenizer"
+    output_root = canonical_root / "out"
+    model_root.mkdir(exist_ok=True)
+    tokenizer_root.mkdir(exist_ok=True)
+    model_file = model_root / "model.safetensors"
+    tokenizer_file = tokenizer_root / "tokenizer.json"
+    model_file.write_bytes(b"task21-macos-model")
+    tokenizer_file.write_bytes(b'{"tokenizer":"task21-macos"}')
+    config_path = canonical_root / "local.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": "POI_MPP_LOCAL_MPP_CONFIG_V1",
+                "run_config": {
+                    "schema_version": "POI_MPP_RUN_CONFIG_V1",
+                    "run_id": "managed-macos-alias",
+                    "experiment_id": "E3",
+                    "origin": "REAL_MODEL_EXECUTION",
+                    "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+                    "model_hash": "1" * 64,
+                    "dataset_hash": "2" * 64,
+                    "parent_hashes": [],
+                    "data_availability": {
+                        "total_shards": 8,
+                        "samples": 4,
+                        "replacement": False,
+                    },
+                },
+                "model": {
+                    "model_root": str(alias_root / "model"),
+                    "tokenizer_root": str(alias_root / "tokenizer"),
+                    "manifest": {
+                        "model_id": "local-qwen-1.5b",
+                        "repository": "Qwen/Qwen2.5-1.5B-Instruct",
+                        "revision": "1" * 40,
+                        "tokenizer_id": "Qwen/Qwen2.5-1.5B-Instruct",
+                        "tokenizer_revision": "2" * 40,
+                        "license_id": "apache-2.0",
+                        "parameter_scale": "1.5B",
+                        "precision": "int4",
+                        "quantization": "q4_k_m",
+                        "runtime_name": "transformers",
+                        "runtime_version": "4.44.0",
+                        "model_file_hashes": {"model.safetensors": _hash_file(model_file)},
+                        "tokenizer_file_hashes": {"tokenizer.json": _hash_file(tokenizer_file)},
+                    },
+                    "decode_policy": {
+                        "seed": 7,
+                        "max_new_tokens": 24,
+                        "do_sample": False,
+                        "temperature": 0.0,
+                        "top_p": 1.0,
+                        "top_k": 0,
+                        "repetition_penalty": 1.0,
+                        "stop_sequences": [],
+                    },
+                },
+                "chain": {
+                    "host": "127.0.0.1",
+                    "port": _free_port(),
+                    "chain_id": 31337,
+                    "startup_timeout_seconds": 20,
+                    "command_timeout_seconds": 120,
+                },
+                "semantic": {
+                    "confirmatory_schema_path": str(ROOT / "configs" / "confirmatory" / "e3.schema.yaml"),
+                    "evaluator_registry_reference": "authority://external-evaluator-registry/task21",
+                },
+                "output_root": str(alias_root / "out"),
+                "committee_size": 1,
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_local_mpp_config(config_path)
+    result = run_local_mpp(loaded)
+
+    assert loaded.model.model_root == model_root
+    assert loaded.model.tokenizer_root == tokenizer_root
+    assert loaded.output_root == output_root
+    assert result.real_path.blocker is RealPathBlocker.WAITING_EXTERNAL_EVALUATOR_AUTHORITY
+
+
+@pytest.mark.parametrize("label, filename", (("model", "model.safetensors"), ("tokenizer", "tokenizer.json")))
+def test_managed_macos_alias_rejects_user_symlinked_artifact_roots_without_path_leak(
+    tmp_path: Path,
+    label: str,
+    filename: str,
+) -> None:
+    canonical_root, alias_root = _managed_macos_alias_path(tmp_path)
+    external = canonical_root / "external"
+    external.mkdir()
+    (external / filename).write_bytes(b"task21-managed-alias-symlink")
+    symlink_root = canonical_root / f"{label}-link"
+    symlink_root.symlink_to(external, target_is_directory=True)
+
+    payload = _config_with_local_artifacts(canonical_root).model_dump(mode="python")
+    payload["model"][f"{label}_root"] = str(alias_root / f"{label}-link")
+    payload["model"]["manifest"][f"{'model' if label == 'model' else 'tokenizer'}_file_hashes"] = {
+        filename: hashlib.sha256(b"task21-managed-alias-symlink").hexdigest()
+    }
+
+    result = run_local_mpp(LocalMPPConfig.model_validate(payload))
+
+    assert result.real_path.blocker is RealPathBlocker.WAITING_LOCAL_MODEL_ARTIFACT
+    assert any(reason == f"configured {label} root is not a trusted local directory" for reason in result.real_path.reasons)
+    assert all(str(canonical_root) not in reason for reason in result.real_path.reasons)
+    assert all(str(alias_root) not in reason for reason in result.real_path.reasons)
 
 
 @pytest.mark.parametrize(
@@ -470,6 +612,25 @@ def test_direct_writer_rejects_symlinked_output_root_before_outside_write(tmp_pa
 
     with pytest.raises(ValueError, match="output root"):
         orchestration._write_json_atomic(symlink_root, "result.json", {"status": "blocked"})
+
+    assert list(external.iterdir()) == []
+
+
+def test_managed_macos_alias_output_root_supports_canonical_write_and_rejects_user_symlink(tmp_path: Path) -> None:
+    canonical_root, alias_root = _managed_macos_alias_path(tmp_path)
+    written_root = canonical_root / "alias-out"
+    target, _ = orchestration._write_json_atomic(alias_root / "alias-out", "result.json", {"status": "blocked"})
+
+    assert target == written_root / "result.json"
+    assert target.exists()
+
+    external = canonical_root / "external-out"
+    external.mkdir()
+    symlink_root = canonical_root / "alias-link"
+    symlink_root.symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output root"):
+        orchestration._write_json_atomic(alias_root / "alias-link", "result.json", {"status": "blocked"})
 
     assert list(external.iterdir()) == []
 
