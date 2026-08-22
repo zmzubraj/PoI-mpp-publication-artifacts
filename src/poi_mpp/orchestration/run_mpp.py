@@ -1763,7 +1763,6 @@ def _run_synthetic_mechanics(
         update={
             "service_task_credit_total": service_receipt_credit_after,
             "replay_rejection_error_code": replay_error,
-            "successful_challenge_state": "SLASHED",
         }
     )
     return SyntheticJourneySummary(

@@ -114,6 +114,23 @@ def test_valid_local_model_artifact_advances_to_external_evaluator_blocker(tmp_p
     assert result.synthetic.failure_paths.successful_challenge_state == "SLASHED"
 
 
+def test_successful_challenge_state_is_forwarded_from_kernel_failure_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = orchestration._run_reference_machine_failures
+
+    def _tampered(*args, **kwargs):
+        summary = original(*args, **kwargs)
+        return summary.model_copy(update={"successful_challenge_state": "CHALLENGED"})
+
+    monkeypatch.setattr(orchestration, "_run_reference_machine_failures", _tampered)
+
+    result = run_local_mpp(_config_with_local_artifacts(tmp_path))
+
+    assert result.synthetic.failure_paths.successful_challenge_state == "CHALLENGED"
+
+
 def test_loader_rejects_unknown_fields(tmp_path: Path) -> None:
     config_path = tmp_path / "local.yaml"
     config_path.write_text(

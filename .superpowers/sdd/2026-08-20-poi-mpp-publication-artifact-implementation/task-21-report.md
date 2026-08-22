@@ -205,3 +205,62 @@ PASS
 $ shellcheck scripts/run_all.sh
 shellcheck not installed
 ```
+
+## Spec fix round 2 — 2026-08-22
+
+### RED evidence
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_failure_paths.py -k forwarded_from_kernel_failure_summary -q
+F                                                                        [100%]
+
+AssertionError: assert 'SLASHED' == 'CHALLENGED'
+```
+
+The production summary was still manually overwriting the kernel-derived
+`successful_challenge_state` with `"SLASHED"`.
+
+### Fix delivered
+
+- Removed the manual `successful_challenge_state: "SLASHED"` overwrite from the production Task 21 summary path.
+- The production summary now forwards the exact challenge/slash state returned by `_run_reference_machine_failures()` after the real kernel transition sequence.
+- Added a regression that monkeypatches the kernel-derived failure summary to `CHALLENGED`; the orchestration summary must forward that value, so any future hardcoded overwrite fails immediately.
+
+### GREEN verification after spec fix round 2
+
+Focused regression:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_failure_paths.py -k 'forwarded_from_kernel_failure_summary or valid_local_model_artifact_advances_to_external_evaluator_blocker' -q
+2 passed, 10 deselected in 43.12s
+```
+
+Focused e2e:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e -q
+14 passed in 127.90s (0:02:07)
+```
+
+Relevant regression surfaces:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e tests/integration/test_python_solidity_parity.py tests/protocol tests/worker tests/auditor tests/semantic tests/experiments/test_e4_da.py -q
+125 passed in 128.94s (0:02:08)
+```
+
+Full Python / hygiene:
+
+```text
+$ ./.venv/bin/python -m pytest -q
+[100%] full suite PASS
+
+$ ./.venv/bin/python -m compileall -q src tests scripts
+PASS
+
+$ bash -n scripts/run_all.sh
+PASS
+
+$ git diff --check
+PASS
+```
