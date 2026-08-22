@@ -17,7 +17,7 @@ from yaml.tokens import AliasToken, AnchorToken
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence.config import RunConfig, config_hash, load_run_config
+from poi_mpp.evidence.config import RunConfig, config_hash
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.protocol.committee import sample_committee
 from poi_mpp.protocol.credit import allocate_credit, derive_active_weight
@@ -479,47 +479,83 @@ def _load_strict_yaml_mapping(path: Path, *, label: str) -> tuple[dict[str, obje
     return dict(loaded), contents
 
 
-def _resolve_existing_plain_file(path: str | Path, *, label: str) -> Path:
+def _managed_alias_pairs() -> tuple[tuple[Path, Path], ...]:
+    pairs: list[tuple[Path, Path]] = []
+    for alias_root, canonical_root in (("/var", "/private/var"), ("/tmp", "/private/tmp")):
+        alias_path = Path(alias_root)
+        canonical_path = Path(canonical_root)
+        try:
+            if not os.path.islink(alias_path):
+                continue
+            if alias_path.resolve(strict=True) != canonical_path.resolve(strict=True):
+                continue
+        except FileNotFoundError:
+            continue
+        pairs.append((alias_path, canonical_path))
+    return tuple(pairs)
+
+
+def _absolute_managed_path(path: str | Path) -> Path:
     candidate = Path(path)
-    current = candidate
+    absolute = Path(os.path.abspath(os.fspath(candidate if candidate.is_absolute() else Path.cwd() / candidate)))
+    text = absolute.as_posix()
+    for alias_root, canonical_root in _managed_alias_pairs():
+        alias_text = alias_root.as_posix()
+        canonical_text = canonical_root.as_posix()
+        if text == alias_text:
+            return canonical_root
+        prefix = f"{alias_text}/"
+        if text.startswith(prefix):
+            return Path(f"{canonical_text}{text[len(alias_text):]}")
+    return absolute
+
+
+def _reject_existing_symlink_components(path: Path, *, label: str) -> None:
+    current = path
     while True:
-        if current.exists() and os.path.islink(current):
-            raise ValueError(f"{label} cannot be symlinked: {candidate}")
+        try:
+            os.lstat(current)
+        except FileNotFoundError:
+            pass
+        else:
+            if os.path.islink(current):
+                raise ValueError(f"{label} cannot be symlinked: {path}")
         if current == current.parent:
             break
         current = current.parent
-    try:
-        resolved = candidate.resolve(strict=True)
-    except FileNotFoundError as error:
-        raise ValueError(f"{label} is missing: {candidate}") from error
-    if not resolved.is_file():
+
+
+def _resolve_existing_plain_file(path: str | Path, *, label: str) -> Path:
+    candidate = _absolute_managed_path(path)
+    _reject_existing_symlink_components(candidate, label=label)
+    if not candidate.exists():
+        raise ValueError(f"{label} is missing: {candidate}")
+    if not candidate.is_file():
         raise ValueError(f"{label} must be a regular file: {candidate}")
-    if os.path.islink(resolved):
-        raise ValueError(f"{label} cannot be symlinked: {candidate}")
-    if os.stat(resolved).st_nlink != 1:
+    if os.stat(candidate).st_nlink != 1:
         raise ValueError(f"{label} cannot be hardlinked: {candidate}")
-    return resolved
+    return candidate
 
 
 def _resolve_contained_relative_file(base_dir: Path, relative_path: str, *, label: str) -> Path:
     if not relative_path.strip():
         raise ValueError(f"{label} must not be blank")
-    candidate = base_dir / relative_path
+    canonical_base_dir = _absolute_managed_path(base_dir)
+    candidate = _absolute_managed_path(canonical_base_dir / relative_path)
     resolved = _resolve_existing_plain_file(candidate, label=label)
     try:
-        resolved.relative_to(base_dir.resolve(strict=True))
+        resolved.relative_to(canonical_base_dir)
     except ValueError as error:
-        raise ValueError(f"{label} must stay inside {base_dir}") from error
+        raise ValueError(f"{label} must stay inside {canonical_base_dir}") from error
     return resolved
 
 
 def _validate_output_target(path: Path) -> Path:
-    candidate = path if path.is_absolute() else Path.cwd() / path
+    candidate = _absolute_managed_path(path)
+    _reject_existing_symlink_components(candidate, label="E8 publication output")
     if candidate.exists():
         if not candidate.is_file():
             raise ValueError(f"E8 publication output must be a regular file: {path}")
-        if os.path.islink(candidate):
-            raise ValueError(f"E8 publication output cannot be symlinked: {path}")
         if os.stat(candidate).st_nlink != 1:
             raise ValueError(f"E8 publication output cannot be hardlinked: {path}")
     return candidate

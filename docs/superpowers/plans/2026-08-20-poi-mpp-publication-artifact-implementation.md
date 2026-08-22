@@ -946,6 +946,8 @@ Expected: PASS with deterministic histories and valid probabilities.
 
 Run: `git add src/poi_mpp/experiments/e8_consensus.py src/poi_mpp/reporting/e8.py experiments/e8_consensus_weight_sim.py tests/experiments/test_e8_consensus.py configs/confirmatory/e8.yaml && git commit -m "feat: simulate bounded next-epoch PoI weight"`
 
+Append-only note 2026-08-22: follow-up production replay hardening added managed `/var` and `/tmp` alias normalization only for verified OS-managed roots, while preserving no-follow rejection for deeper/user-created symlink components and symlink or hardlink leaves.
+
 ---
 
 ### Task 20: Generate deterministic tables, figures, and manifests

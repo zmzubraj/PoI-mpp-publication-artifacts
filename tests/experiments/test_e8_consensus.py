@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -189,6 +190,33 @@ def _publication_contract_path() -> Path:
 
 def _publication_plan_path() -> Path:
     return _repo_root() / "configs/confirmatory/e8.publication.yaml"
+
+
+def _managed_alias_variant(path: Path) -> Path | None:
+    text = path.as_posix()
+    for canonical_prefix, alias_prefix in (("/private/var", "/var"), ("/private/tmp", "/tmp")):
+        alias_root = Path(alias_prefix)
+        canonical_root = Path(canonical_prefix)
+        try:
+            if not os.path.islink(alias_root):
+                continue
+            if alias_root.resolve(strict=True) != canonical_root.resolve(strict=True):
+                continue
+        except FileNotFoundError:
+            continue
+        if text == canonical_prefix:
+            return alias_root
+        prefix = f"{canonical_prefix}/"
+        if text.startswith(prefix):
+            return Path(f"{alias_prefix}{text[len(canonical_prefix):]}")
+    return None
+
+
+def _require_managed_alias_path(path: Path) -> Path:
+    alias_path = _managed_alias_variant(path)
+    if alias_path is None:
+        pytest.skip("managed /var or /tmp alias is not present for this tempfile root")
+    return alias_path
 
 
 def _publication_artifact(tmp_path: Path, *, output_name: str = "e8_rows.json"):
@@ -790,3 +818,63 @@ def test_publication_runner_rejects_symlinked_output(tmp_path: Path):
 
     with pytest.raises(ValueError, match="cannot be symlinked"):
         load_and_run_e8_publication(_publication_plan_path(), output_path=symlink_path)
+
+
+def test_managed_var_alias_write_and_reload_succeeds(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import (
+        load_and_run_e8_publication,
+        load_e8_publication_artifact,
+    )
+
+    canonical_root = tmp_path / "managed-alias"
+    canonical_root.mkdir()
+    alias_root = _require_managed_alias_path(canonical_root)
+    canonical_plan = canonical_root / "e8.publication.yaml"
+    canonical_contract = canonical_root / "e8.yaml"
+    canonical_output = canonical_root / "rows.json"
+    canonical_plan.write_text(_publication_plan_path().read_text(encoding="utf-8"), encoding="utf-8")
+    canonical_contract.write_text(_publication_contract_path().read_text(encoding="utf-8"), encoding="utf-8")
+
+    alias_plan = alias_root / canonical_plan.name
+    alias_output = alias_root / canonical_output.name
+    written = load_and_run_e8_publication(alias_plan, output_path=alias_output)
+    loaded = load_e8_publication_artifact(alias_output)
+
+    assert alias_output.read_bytes() == canonical_output.read_bytes()
+    assert loaded.model_dump(mode="json") == written.model_dump(mode="json")
+    assert loaded.claim_disposition == "INCONCLUSIVE"
+
+
+def test_managed_var_alias_rejects_deeper_user_symlink_component(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
+
+    canonical_root = tmp_path / "managed-symlink-component"
+    canonical_root.mkdir()
+    alias_root = _require_managed_alias_path(canonical_root)
+    real_dir = canonical_root / "real"
+    real_dir.mkdir()
+    canonical_plan = real_dir / "e8.publication.yaml"
+    canonical_contract = real_dir / "e8.yaml"
+    canonical_plan.write_text(_publication_plan_path().read_text(encoding="utf-8"), encoding="utf-8")
+    canonical_contract.write_text(_publication_contract_path().read_text(encoding="utf-8"), encoding="utf-8")
+    (canonical_root / "jump").symlink_to(real_dir, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="cannot be symlinked"):
+        load_e8_publication_plan(alias_root / "jump" / canonical_plan.name)
+
+
+def test_managed_var_alias_rejects_symlink_leaf(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_artifact, load_and_run_e8_publication
+
+    canonical_root = tmp_path / "managed-symlink-leaf"
+    canonical_root.mkdir()
+    alias_root = _require_managed_alias_path(canonical_root)
+    canonical_target = canonical_root / "real.json"
+    canonical_target.write_text("{}", encoding="utf-8")
+    alias_leaf = alias_root / "linked.json"
+    (canonical_root / "linked.json").symlink_to(canonical_target)
+
+    with pytest.raises(ValueError, match="cannot be symlinked"):
+        load_and_run_e8_publication(_publication_plan_path(), output_path=alias_leaf)
+    with pytest.raises(ValueError, match="cannot be symlinked"):
+        load_e8_publication_artifact(alias_leaf)
