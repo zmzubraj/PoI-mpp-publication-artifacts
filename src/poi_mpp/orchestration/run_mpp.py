@@ -70,6 +70,8 @@ _TASK_DEADLINE = 500
 _AUDIT_DOMAIN_SIZE = 16
 _ANVIL_LOG_LIMIT = 4096
 _CANONICAL_PREFIX = "POI_MPP_V1"
+_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_DIRECTORY = getattr(os, "O_DIRECTORY", 0)
 _OFFLINE_ENV = {
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1",
@@ -452,6 +454,62 @@ def _path_text(value: str | Path | PurePosixPath) -> str:
     return value
 
 
+def _absolute_lexical_path(base: Path, candidate: str | Path) -> Path:
+    path = Path(candidate)
+    if not path.is_absolute():
+        path = base / path
+    return Path(os.path.abspath(str(path)))
+
+
+def _open_directory_no_symlinks(path: Path, *, create: bool, label: str) -> tuple[int, Path]:
+    absolute = _absolute_lexical_path(Path.cwd(), path)
+    components = [part for part in absolute.parts if part not in {absolute.anchor, "."}]
+    if not components:
+        raise ValueError(f"{label} is invalid")
+    flags = os.O_RDONLY | _DIRECTORY | _NOFOLLOW
+    descriptor = os.open(absolute.anchor, flags)
+    current = Path(absolute.anchor)
+    try:
+        for component in components:
+            try:
+                child = os.open(component, flags, dir_fd=descriptor)
+            except FileNotFoundError as error:
+                if not create:
+                    raise ValueError(f"{label} is missing or not a trusted local directory") from error
+                try:
+                    os.mkdir(component, mode=0o700, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+                try:
+                    child = os.open(component, flags, dir_fd=descriptor)
+                except OSError as open_error:
+                    raise ValueError(f"{label} could not be opened without following symlinks") from open_error
+            except OSError as error:
+                raise ValueError(f"{label} could not be opened without following symlinks") from error
+            os.close(descriptor)
+            descriptor = child
+            current = current / component
+            details = os.fstat(descriptor)
+            if not stat.S_ISDIR(details.st_mode):
+                raise ValueError(f"{label} is not a directory")
+        return descriptor, current
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _prepare_output_root(path: Path) -> Path:
+    descriptor, absolute = _open_directory_no_symlinks(path, create=True, label="output root")
+    os.close(descriptor)
+    return absolute
+
+
+def _existing_output_root(path: Path) -> Path:
+    descriptor, absolute = _open_directory_no_symlinks(path, create=False, label="output root")
+    os.close(descriptor)
+    return absolute
+
+
 def _run(
     args: Sequence[str],
     *,
@@ -719,8 +777,7 @@ def _start_anvil(config: ChainConfig, output_root: Path) -> _AnvilProcess:
 
 
 def _ensure_directory(root: Path, relative: PurePosixPath) -> Path:
-    current = root.resolve(strict=False)
-    current.mkdir(mode=0o700, parents=True, exist_ok=True)
+    current = root
     parts = [part for part in relative.parts if part not in ("", ".")]
     for part in parts:
         candidate = current / part
@@ -756,7 +813,7 @@ def _validated_relative_posix_path(value: str | Path | PurePosixPath) -> str:
 
 def _resolve_output_relative_path(root: Path, value: str | Path | PurePosixPath) -> Path:
     relative = _validate_relative_path(_path_text(value))
-    current = root.resolve(strict=False)
+    current = _existing_output_root(root)
     for part in relative.parts:
         candidate = current / part
         if candidate.exists():
@@ -768,7 +825,7 @@ def _resolve_output_relative_path(root: Path, value: str | Path | PurePosixPath)
 
 
 def _relative_output_path(root: Path, target: Path) -> str:
-    relative = target.resolve(strict=False).relative_to(root.resolve(strict=False))
+    relative = target.relative_to(root)
     return _validated_relative_posix_path(PurePosixPath(relative.as_posix()))
 
 
@@ -782,9 +839,77 @@ def _decode_canonical_json(raw: bytes, domain: str) -> dict[str, Any]:
     return payload
 
 
+def _artifact_relative_parts(filename: str) -> tuple[str, ...]:
+    if not isinstance(filename, str) or not filename.strip():
+        raise ValueError("configured artifact filename is invalid")
+    if "\x00" in filename or "\\" in filename or filename.startswith("/") or (len(filename) >= 2 and filename[1] == ":"):
+        raise ValueError("configured artifact filename is invalid")
+    relative = PurePosixPath(filename)
+    if relative.as_posix() != filename or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError("configured artifact filename is invalid")
+    return relative.parts
+
+
+def _hash_local_artifact_file(root: Path, filename: str, *, label: str) -> str:
+    descriptor, _ = _open_directory_no_symlinks(root, create=False, label=f"configured {label} root")
+    opened_parents: list[int] = []
+    try:
+        current_fd = descriptor
+        parts = _artifact_relative_parts(filename)
+        for parent in parts[:-1]:
+            try:
+                next_fd = os.open(parent, os.O_RDONLY | _DIRECTORY | _NOFOLLOW, dir_fd=current_fd)
+            except FileNotFoundError as error:
+                raise FileNotFoundError(filename) from error
+            except OSError as error:
+                raise ValueError(f"configured {label} artifact file is not a trusted local file: {filename}") from error
+            parent_stat = os.fstat(next_fd)
+            if not stat.S_ISDIR(parent_stat.st_mode):
+                os.close(next_fd)
+                raise ValueError(f"configured {label} artifact file is not a trusted local file: {filename}")
+            opened_parents.append(next_fd)
+            current_fd = next_fd
+        leaf = parts[-1]
+        try:
+            pre_stat = os.stat(leaf, dir_fd=current_fd, follow_symlinks=False)
+        except FileNotFoundError as error:
+            raise FileNotFoundError(filename) from error
+        if not stat.S_ISREG(pre_stat.st_mode) or pre_stat.st_nlink != 1:
+            raise ValueError(f"configured {label} artifact file is not a trusted local file: {filename}")
+        try:
+            file_fd = os.open(leaf, os.O_RDONLY | _NOFOLLOW, dir_fd=current_fd)
+        except OSError as error:
+            raise ValueError(f"configured {label} artifact file is not a trusted local file: {filename}") from error
+        try:
+            fd_stat = os.fstat(file_fd)
+            post_stat = os.stat(leaf, dir_fd=current_fd, follow_symlinks=False)
+            identities = {
+                (pre_stat.st_dev, pre_stat.st_ino),
+                (fd_stat.st_dev, fd_stat.st_ino),
+                (post_stat.st_dev, post_stat.st_ino),
+            }
+            if len(identities) != 1:
+                raise ValueError(f"configured {label} artifact file changed identity during access: {filename}")
+            if not stat.S_ISREG(fd_stat.st_mode) or fd_stat.st_nlink != 1:
+                raise ValueError(f"configured {label} artifact file is not a trusted local file: {filename}")
+            hasher = hashlib.sha256()
+            while True:
+                chunk = os.read(file_fd, 65536)
+                if not chunk:
+                    return hasher.hexdigest()
+                hasher.update(chunk)
+        finally:
+            os.close(file_fd)
+    finally:
+        for parent_fd in reversed(opened_parents):
+            os.close(parent_fd)
+        os.close(descriptor)
+
+
 def _write_json_atomic(root: Path, relative_path: str, payload: Mapping[str, Any]) -> tuple[Path, str]:
+    safe_root = _prepare_output_root(root)
     relative = _validate_relative_path(relative_path)
-    directory = _ensure_directory(root, relative.parent)
+    directory = _ensure_directory(safe_root, relative.parent)
     target = directory / relative.name
     if target.exists():
         status = os.lstat(target)
@@ -792,7 +917,7 @@ def _write_json_atomic(root: Path, relative_path: str, payload: Mapping[str, Any
             raise ValueError(f"symlinked output target is forbidden: {target}")
     content = canonical_bytes("TASK21_JSON", payload)
     temp_name = directory / f".{relative.name}.{secrets.token_hex(8)}.tmp"
-    fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | _NOFOLLOW, 0o600)
     try:
         offset = 0
         while offset < len(content):
@@ -879,6 +1004,13 @@ def _validation_error_message(error: ValidationError) -> str:
 def load_local_mpp_config(path: str | Path) -> LocalMPPConfig:
     config_path = Path(path).resolve()
     raw = _load_yaml(config_path)
+    if isinstance(raw.get("model"), dict):
+        model = dict(raw["model"])
+        for key in ("model_root", "tokenizer_root"):
+            candidate = model.get(key)
+            if isinstance(candidate, str | Path):
+                model[key] = str(_absolute_lexical_path(config_path.parent, candidate))
+        raw["model"] = model
     if isinstance(raw.get("semantic"), dict):
         semantic = dict(raw["semantic"])
         schema_path = semantic.get("confirmatory_schema_path")
@@ -900,15 +1032,26 @@ def _verify_local_model_artifact(config: LocalMPPConfig) -> tuple[RealPathBlocke
         ("model", config.model.model_root, config.model.manifest.model_file_hashes),
         ("tokenizer", config.model.tokenizer_root, config.model.manifest.tokenizer_file_hashes),
     ):
-        if not root.is_dir():
-            reasons.append(f"{label} root missing at configured local path")
+        try:
+            descriptor, _ = _open_directory_no_symlinks(root, create=False, label=f"configured {label} root")
+            os.close(descriptor)
+        except ValueError:
+            reasons.append(f"configured {label} root is not a trusted local directory")
             continue
         for filename, expected_hash in file_hashes.items():
-            candidate = root / filename
-            if not candidate.is_file():
+            try:
+                observed_hash = _hash_local_artifact_file(root, filename, label=label)
+            except FileNotFoundError:
                 reasons.append(f"missing local artifact file under configured {label} root: {filename}")
                 continue
-            if _hash_file(candidate) != expected_hash:
+            except ValueError as error:
+                detail = str(error)
+                if "changed identity during access" in detail:
+                    reasons.append(f"configured {label} artifact file changed identity during access: {filename}")
+                else:
+                    reasons.append(f"configured {label} artifact file is not a trusted local file: {filename}")
+                continue
+            if observed_hash != expected_hash:
                 reasons.append(f"hash mismatch for local artifact file under configured {label} root: {filename}")
     if reasons:
         return (RealPathBlocker.WAITING_LOCAL_MODEL_ARTIFACT, tuple(reasons))
@@ -1781,8 +1924,7 @@ def _run_synthetic_mechanics(
 
 
 def run_local_mpp(config: LocalMPPConfig) -> LocalMPPResult:
-    output_root = config.output_root.resolve()
-    output_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    output_root = _prepare_output_root(config.output_root)
     parity_result = verify_current_e7_parity(
         repo_root=_ROOT,
         contracts_root=_CONTRACTS,
@@ -1838,7 +1980,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     config = load_local_mpp_config(args.config)
     if args.output_root is not None:
-        config = config.model_copy(update={"output_root": Path(args.output_root)})
+        config = config.model_copy(update={"output_root": _absolute_lexical_path(Path.cwd(), args.output_root)})
     result = run_local_mpp(config)
     print(json.dumps(result.model_dump(mode="json"), indent=2, sort_keys=True))
     return 0

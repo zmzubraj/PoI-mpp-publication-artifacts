@@ -264,3 +264,81 @@ PASS
 $ git diff --check
 PASS
 ```
+
+## Code quality fix round 1 — 2026-08-22
+
+### RED evidence
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_failure_paths.py -k 'wrapper_help or module_help or relative_model_and_tokenizer_roots or symlinked_local_artifact_root or hardlinked_local_artifact_leaf or run_all_script_pins_offline_localhost_only_execution or direct_writer_rejects_symlinked_output_root or run_local_mpp_rejects_symlinked_output_root' -q
+9 failed, 1 passed, 11 deselected in 105.85s (0:01:45)
+
+Representative failures:
+- scripts/run_mpp.py --help from foreign cwd raised ModuleNotFoundError: No module named 'poi_mpp'
+- load_local_mpp_config(...) left model_root/tokenizer_root relative instead of resolving against config_path.parent
+- symlinked model/tokenizer roots still advanced to WAITING_EXTERNAL_EVALUATOR_AUTHORITY
+- hardlinked model/tokenizer leaves still advanced to WAITING_EXTERNAL_EVALUATOR_AUTHORITY
+- scripts/run_all.sh did not export repo PYTHONPATH or invoke the module entrypoint
+- direct writer and full runner still accepted a symlinked output_root
+```
+
+### Fix delivered
+
+- Runner/bootstrap:
+  - `scripts/run_mpp.py` now performs a deterministic repo-root/src bootstrap from `__file__`, so `scripts/run_mpp.py --help` works from a clean src-layout and foreign cwd without editable install assumptions.
+  - `scripts/run_all.sh` now exports `PYTHONPATH="${repo_root}/src..."` and invokes `python -m poi_mpp.orchestration.run_mpp`.
+  - Added subprocess smoke tests for the wrapper and module entrypoint from a foreign cwd.
+- Loader:
+  - `load_local_mpp_config(...)` now resolves `model.model_root` and `model.tokenizer_root` relative to `config_path.parent`, storing absolute lexical paths internally without leaking them into serialized evidence.
+  - Added a foreign-cwd loader regression.
+- Anchored model/tokenizer verification:
+  - local model/tokenizer roots are now opened with directory `O_NOFOLLOW` semantics and reject symlink roots or symlink components
+  - artifact leaves now reject invalid relative names, non-regular files, hardlinks, symlink substitution, and identity changes during access
+  - hashing is now performed via fd-based no-follow reads
+  - symlink-root and hardlink-leaf regressions now stay `WAITING_LOCAL_MODEL_ARTIFACT` with stable non-path-leaking reasons
+- Output-root containment:
+  - output-root preparation now rejects symlinked roots and any symlinked existing component before create/use
+  - `_write_json_atomic(...)` now revalidates the root through the same anchored preparation path
+  - direct-writer and full-runner symlink-root regressions now fail before any outside write
+
+### GREEN verification after code quality fix round 1
+
+Targeted regressions:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_failure_paths.py -k 'wrapper_help or module_help or relative_model_and_tokenizer_roots or symlinked_local_artifact_root or hardlinked_local_artifact_leaf or run_all_script_pins_offline_localhost_only_execution or direct_writer_rejects_symlinked_output_root or run_local_mpp_rejects_symlinked_output_root' -q
+10 passed, 11 deselected in 85.90s (0:01:25)
+```
+
+Focused e2e:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e -q
+23 passed in 217.50s (0:03:37)
+```
+
+Relevant regression surfaces:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e tests/integration/test_python_solidity_parity.py tests/protocol tests/worker tests/auditor tests/semantic tests/experiments/test_e4_da.py -q
+134 passed in 218.50s (0:03:38)
+```
+
+Full Python / Foundry / hygiene:
+
+```text
+$ ./.venv/bin/python -m pytest -q
+[100%] full suite PASS
+
+$ cd contracts && forge test -q
+PASS
+
+$ ./.venv/bin/python -m compileall -q src tests scripts
+PASS
+
+$ bash -n scripts/run_all.sh
+PASS
+
+$ git diff --check
+PASS
+```

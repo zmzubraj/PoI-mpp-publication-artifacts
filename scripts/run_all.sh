@@ -22,9 +22,10 @@ export PIP_NO_INDEX=1
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 export NO_PROXY=127.0.0.1,localhost
 export no_proxy=127.0.0.1,localhost
+export PYTHONPATH="${repo_root}/src${PYTHONPATH:+:${PYTHONPATH}}"
 unset HTTP_PROXY HTTPS_PROXY ALL_PROXY
 unset http_proxy https_proxy all_proxy
 unset FTP_PROXY ftp_proxy
 
-"${python_bin}" "${repo_root}/scripts/run_mpp.py" --config "${config_path}" --output-root "${output_root}"
+"${python_bin}" -m poi_mpp.orchestration.run_mpp --config "${config_path}" --output-root "${output_root}"
 "${python_bin}" -m pytest -o addopts='' "${repo_root}/tests/e2e" -q
