@@ -1,6 +1,6 @@
 # Task 22 — Reproduce from a clean environment and freeze the publication bundle
 
-**Status:** DONE_WITH_CONCERNS
+**Status:** DONE
 
 ## Scope
 
@@ -47,6 +47,7 @@ The Task 22 freeze surface was absent at the start of the task.
   - enforces exact bundle-file closure and anchored no-follow/hardlink-safe reads
   - re-runs Task 20 publication-manifest validation instead of trusting status strings
   - replays the live E7 authority boundary and compares the stored raw bundle/hash/closure
+  - replays the production E8 publication artifact against the current frozen plan/contract/source closure instead of trusting copied status fields
   - requires manual-review signature verification from an external allowed-signers file plus detached signature
   - preserves negative or inconclusive claim dispositions without upgrading completeness
 - Promotion to `results/frozen/<run_id>/` is implemented but gated on:
@@ -65,9 +66,33 @@ The final clean Saturday, August 22, 2026 candidate root and verification-report
 - missing accountable manual scientific review
 - missing external review signature / trusted signers
 - missing authorized publication evidence for `E1`-`E6`
-- `NEEDS_CONTEXT` for a production-owned canonical E8 rows artifact/runner
+- real-authority E7 replay is still required in full mode, and current E8 publication replay remains explicitly `REPRODUCIBLE_SIMULATION` with `C8=INCONCLUSIVE`
 
-`C7` remains `SUPPORTED`; `C8` remains `INCONCLUSIVE`; no frozen sentinel is created.
+`C7` remains tied to the live local Foundry boundary; `C8` remains `INCONCLUSIVE`; no frozen sentinel is created.
+
+Final committed-tree replay on Saturday, August 22, 2026:
+
+- candidate root: `results/tmp/candidates/task22-741d9fb3f4e8d00f/`
+- verification report: `results/tmp/candidates/task22-741d9fb3f4e8d00f/verification_report.json`
+- verification report SHA-256: `80ae07314f4ba040a76bf3bf3b11d97ab06d5bfbd96c44a7b96356d191724672`
+- completeness: `INCOMPLETE`
+- direct verifier claims:
+  - `C7=SUPPORTED`
+  - `C8=INCONCLUSIVE`
+- sentinel: absent
+
+Final committed-tree blockers:
+
+- `WAITING_LOCAL_MODEL_ARTIFACT: exact local model artifact is absent`
+- `WAITING_EXTERNAL_EVALUATOR_AUTHORITY: external evaluator authority remains absent`
+- `missing experiment evidence: E1`
+- `missing experiment evidence: E2`
+- `missing experiment evidence: E3`
+- `missing experiment evidence: E4`
+- `missing experiment evidence: E5`
+- `missing experiment evidence: E6`
+- `manual scientific review record is absent`
+- `C1`-`C6` remain `INCOMPLETE` with their required artifacts missing
 
 ## Verification
 
@@ -97,8 +122,17 @@ PASS
 Live current-workspace replay after the hardening pass:
 
 ```text
-$ make reproduce
+$ ./.venv/bin/python scripts/reproduce.py --mode candidate-only
 INCOMPLETE by design; candidate written, no frozen bundle, no sentinel
+
+$ ./.venv/bin/python scripts/reproduce.py
+INCOMPLETE by design; candidate written, no frozen bundle, no sentinel
+
+$ ./.venv/bin/python scripts/verify_bundle.py --bundle-root results/tmp/candidates/task22-741d9fb3f4e8d00f
+INCOMPLETE by design; direct verifier agrees, `C7=SUPPORTED`, `C8=INCONCLUSIVE`, no sentinel
+
+$ forge test -q
+PASS
 ```
 
 ## Design notes
@@ -112,5 +146,5 @@ INCOMPLETE by design; candidate written, no frozen bundle, no sentinel
 ## Residual concerns
 
 - `results/tmp/candidates/` is intentionally ignored runtime evidence for the current incomplete replay and no longer poisons the Task 22 run id by itself.
-- E8 remains a documented canonical simulation surface, but the clean Task 22 candidate still records `NEEDS_CONTEXT` because no production-owned canonical rows artifact/runner is available outside test helpers today.
+- E8 is now a production-owned canonical simulation surface for Task 22 replay, but it still cannot upgrade the bundle beyond `INCOMPLETE` because the remaining blockers are evidence-authority and independent-review gaps, not E8 mechanics.
 - A future complete freeze still requires an externally authenticated manual scientific review record; AI output, self-review, or user approval cannot satisfy that gate.

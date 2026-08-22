@@ -81,7 +81,7 @@ Current expected outcome on Saturday, August 22, 2026:
 Current expected blockers:
 
 - `E1`-`E6` do not have authorized executed publication artifacts in this workspace
-- `E8` still lacks a production-owned canonical scenario artifact/runner for clean Task 22 replay, so the bundle records `NEEDS_CONTEXT` instead of fabricating rows from tests
+- `E8` is now rebuilt from the production publication replay (`REPRODUCIBLE_SIMULATION`) and cleanly regenerates `T13` / `F11` with `C8=INCONCLUSIVE`, but that does not remove the wider completeness blockers
 - Task 21 real replay remains blocked at `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
 - accountable manual scientific/rendered review is absent
 - no trusted external reviewer signature is present for manual scientific review

@@ -22,9 +22,12 @@ if str(SRC_ROOT) not in sys.path:
 
 from poi_mpp.evidence.config import load_run_config
 from poi_mpp.experiments.e7_evm import E7Bundle, default_measurement_contract
-from poi_mpp.experiments.e8_consensus import E8ScenarioRow, load_e8_confirmatory_contract
+from poi_mpp.experiments.e8_consensus import (
+    default_e8_publication_plan_path,
+    load_e8_confirmatory_contract,
+    load_e8_publication_artifact,
+)
 from poi_mpp.reporting.e7 import collect_and_summarize_e7_publication
-from poi_mpp.reporting.e8 import summarize_e8_rows
 from poi_mpp.reporting.load import PublicationEligibilityError
 from poi_mpp.reporting.manifest import PublicationReportManifestModel, validate_existing_manifest
 
@@ -713,17 +716,6 @@ def _revalidate_e7(bundle: LoadedBundle) -> tuple[str, ...]:
     return tuple(dict.fromkeys(reasons))
 
 
-def _load_e8_rows(bundle_root: Path, relative_path: str) -> tuple[E8ScenarioRow, ...]:
-    payload = _safe_read_json(_resolve_relative(bundle_root, relative_path), root=bundle_root)
-    rows_payload = payload.get("rows", payload)
-    if not isinstance(rows_payload, list) or not rows_payload:
-        raise BundleVerificationError("E8 rows input must contain a non-empty rows list")
-    try:
-        return tuple(E8ScenarioRow.model_validate(row) for row in rows_payload)
-    except ValidationError as error:
-        raise BundleVerificationError(str(error)) from error
-
-
 def _revalidate_e8(bundle: LoadedBundle) -> tuple[str, ...]:
     rows_relative_path = bundle.manifest.authoritative_inputs.e8_rows_relative_path
     contract_relative_path = bundle.manifest.authoritative_inputs.e8_contract_relative_path
@@ -735,15 +727,79 @@ def _revalidate_e8(bundle: LoadedBundle) -> tuple[str, ...]:
             return ("E8 publication replay requires authoritative_inputs.e8_rows_relative_path and e8_contract_relative_path",)
         return ()
     bundle_root = Path(bundle.root)
-    rows = _load_e8_rows(bundle_root, rows_relative_path)
     try:
-        contract = load_e8_confirmatory_contract(_resolve_relative(bundle_root, contract_relative_path))
-        summary = summarize_e8_rows(rows, contract=contract)
+        artifact = load_e8_publication_artifact(
+            _resolve_relative(bundle_root, rows_relative_path),
+            plan_path=default_e8_publication_plan_path(),
+        )
+        staged_contract = load_e8_confirmatory_contract(_resolve_relative(bundle_root, contract_relative_path))
+        current_contract = load_e8_confirmatory_contract(REPO_ROOT / "configs" / "confirmatory" / "e8.yaml")
     except (ValueError, ValidationError) as error:
         raise BundleVerificationError(str(error)) from error
     reasons: list[str] = []
-    if bundle.claim_matrix.claims[-1].disposition != summary.claim_disposition:
+    if staged_contract.model_dump(mode="json") != artifact.contract_snapshot.model_dump(mode="json"):
+        reasons.append("E8 staged contract does not match the publication artifact contract snapshot")
+    if staged_contract.model_dump(mode="json") != current_contract.model_dump(mode="json"):
+        reasons.append("E8 staged contract does not match configs/confirmatory/e8.yaml")
+    if bundle.claim_matrix.claims[-1].disposition != artifact.claim_disposition:
         reasons.append("C8 disposition does not match the E8 authoritative replay summary")
+    rows_input_sha = _digest_for_relative_path(bundle_root, rows_relative_path)
+    contract_input_sha = _digest_for_relative_path(bundle_root, contract_relative_path)
+    e8_outputs = [
+        item
+        for item in (bundle.publication_manifest_model.outputs if bundle.publication_manifest_model else ())
+        if item.artifact_id in {"T13", "F11"}
+    ]
+    observed_artifact_ids = {item.artifact_id for item in e8_outputs}
+    if observed_artifact_ids != {"T13", "F11"}:
+        reasons.append("validated publication manifest must expose both T13 and F11 outputs for E8")
+    for output in e8_outputs:
+        if output.experiment_id != "E8":
+            reasons.append(f"{output.artifact_id} output is not bound to experiment E8")
+        if output.origin != artifact.origin.value:
+            reasons.append(f"{output.artifact_id} output origin does not match the authoritative E8 artifact")
+        if output.disposition != artifact.claim_disposition:
+            reasons.append(f"{output.artifact_id} output disposition does not match the authoritative E8 artifact")
+        if output.run_id != artifact.run_id:
+            reasons.append(f"{output.artifact_id} output run_id does not match the authoritative E8 artifact")
+        if output.config_hash != artifact.run_config_hash:
+            reasons.append(f"{output.artifact_id} output config_hash does not match the authoritative E8 artifact")
+        if output.source_hashes != (rows_input_sha, contract_input_sha):
+            reasons.append(f"{output.artifact_id} output source_hashes do not match the authoritative E8 inputs")
+    e8_inputs = [
+        item for item in (bundle.publication_manifest_model.inputs if bundle.publication_manifest_model else ()) if item.experiment_id == "E8"
+    ]
+    if len(e8_inputs) != 2:
+        reasons.append("validated publication manifest must expose exactly two E8 inputs")
+    input_by_role = {item.input_role: item for item in e8_inputs}
+    rows_input = input_by_role.get("rows")
+    contract_input = input_by_role.get("confirmatory_contract")
+    if rows_input is None:
+        reasons.append("validated publication manifest is missing the E8 rows input record")
+    else:
+        if rows_input.sha256 != rows_input_sha:
+            reasons.append("E8 rows input sha256 does not match the bundled publication artifact")
+        if rows_input.origin != artifact.origin.value:
+            reasons.append("E8 rows input origin does not match the authoritative E8 artifact")
+        if rows_input.disposition != artifact.claim_disposition:
+            reasons.append("E8 rows input disposition does not match the authoritative E8 artifact")
+        if rows_input.run_id != artifact.run_id:
+            reasons.append("E8 rows input run_id does not match the authoritative E8 artifact")
+        if rows_input.config_hash != artifact.run_config_hash:
+            reasons.append("E8 rows input config_hash does not match the authoritative E8 artifact")
+    if contract_input is None:
+        reasons.append("validated publication manifest is missing the E8 confirmatory_contract input record")
+    else:
+        if contract_input.sha256 != contract_input_sha:
+            reasons.append("E8 contract input sha256 does not match the bundled contract file")
+        if contract_input.origin != artifact.origin.value:
+            reasons.append("E8 contract input origin does not match the authoritative E8 artifact")
+        if contract_input.disposition != artifact.claim_disposition:
+            reasons.append("E8 contract input disposition does not match the authoritative E8 artifact")
+        if contract_input.run_id != artifact.run_id:
+            reasons.append("E8 contract input run_id does not match the authoritative E8 artifact")
+        if contract_input.config_hash != artifact.run_config_hash:
+            reasons.append("E8 contract input config_hash does not match the authoritative E8 artifact")
     return tuple(dict.fromkeys(reasons))
 
 

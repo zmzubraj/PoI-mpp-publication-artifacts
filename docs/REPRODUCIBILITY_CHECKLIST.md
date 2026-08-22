@@ -16,7 +16,7 @@
 
 - [ ] each of `E1`-`E8` has its required authorized paper artifacts (`T4`, `T6`-`T13`, `F5`-`F12`) or an explicit omission record
 - [ ] E7 support comes only from a fresh local Foundry collection plus current parity verification
-- [ ] E8 remains labeled `REPRODUCIBLE_SIMULATION` and keeps its measured `SUPPORTED` / `NOT_SUPPORTED` / `INCONCLUSIVE` disposition without relabeling
+- [ ] E8 comes only from `load_and_run_e8_publication(default_e8_publication_plan_path(), ...)`, remains labeled `REPRODUCIBLE_SIMULATION`, and keeps its measured `SUPPORTED` / `NOT_SUPPORTED` / `INCONCLUSIVE` disposition without relabeling
 - [ ] Task 21 real-path blocker chain is recorded when real execution remains blocked
 - [ ] synthetic or manual fixtures are rejected from publication completeness
 

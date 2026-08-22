@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import hashlib
 import json
 import os
@@ -23,6 +22,8 @@ if str(SRC_ROOT) not in sys.path:
 
 from poi_mpp.evidence import UNVERSIONED_BLOCKED, approved_schema_hash, collect_environment
 from poi_mpp.evidence.models import EvidenceOrigin
+from poi_mpp.experiments.e8_consensus import default_e8_publication_plan_path, load_and_run_e8_publication
+from poi_mpp.reporting.manifest import PublicationReportManifestModel, validate_existing_manifest
 from verify_bundle import VERIFY_REPORT_SCHEMA, verify_bundle
 
 
@@ -36,12 +37,7 @@ TASK22_SCHEMA = "POI_MPP_FREEZE_BUNDLE_V1"
 CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
 MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
 MANUAL_REVIEW_ABSENT = "manual scientific review record is absent"
-NEEDS_CONTEXT_E8 = (
-    "NEEDS_CONTEXT: Task19 production canonical-scenario artifact/runner missing; "
-    "need a production-owned E8 rows artifact or src/poi_mpp/experiments/e8_consensus.py API "
-    "that emits the frozen publication scenario closure without importing "
-    "tests/experiments/test_e8_consensus.py::_publication_rows or _write_contract"
-)
+ALLOWED_CLAIM_DISPOSITIONS = {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"}
 EXPECTED_CLAIMS = {
     "C1": ("E1", ("T6", "F5")),
     "C2": ("E2", ("T7", "F6")),
@@ -51,6 +47,10 @@ EXPECTED_CLAIMS = {
     "C6": ("E6", ("T11", "F9", "F10")),
     "C7": ("E7", ("T12", "F12")),
     "C8": ("E8", ("T13", "F11")),
+}
+EXPERIMENT_TO_CLAIM = {experiment_id: claim_id for claim_id, (experiment_id, _) in EXPECTED_CLAIMS.items()}
+EXPERIMENT_REQUIRED_ARTIFACTS = {
+    experiment_id: required_artifacts for _, (experiment_id, required_artifacts) in EXPECTED_CLAIMS.items()
 }
 
 
@@ -239,6 +239,24 @@ def _tool_versions() -> dict[str, str]:
     return versions
 
 
+def _artifact_root_relative(bundle_relative_path: str) -> str:
+    canonical = _canonical_bundle_relative_path(bundle_relative_path)
+    parts = PurePosixPath(canonical).parts
+    if not parts or parts[0] != "inputs":
+        raise ValueError(f"artifact-root relative path must live under inputs/: {bundle_relative_path}")
+    relative = PurePosixPath(*parts[1:])
+    if not relative.parts:
+        raise ValueError(f"artifact-root relative path must target a file under inputs/: {bundle_relative_path}")
+    return relative.as_posix()
+
+
+def _canonical_bundle_relative_path(value: str) -> str:
+    canonical = str(PurePosixPath(value))
+    if canonical != value or canonical.startswith("/") or any(part in {"", ".", ".."} for part in PurePosixPath(value).parts):
+        raise ValueError(f"bundle relative path must already be canonical: {value}")
+    return canonical
+
+
 def _report_spec(
     staging_root: Path,
     run_context: RunContext,
@@ -269,13 +287,13 @@ def _report_spec(
         }
         run_config_path = _write_json(input_root / "e7_run_config.json", run_config)
         sources["E7"] = {
-            "run_config_path": str(run_config_path.resolve()),
+            "run_config_path": _artifact_root_relative(str(run_config_path.relative_to(staging_root))),
             "contracts_root": str((REPO_ROOT / "contracts").resolve()),
         }
     if e8_rows_relative_path is not None and e8_contract_relative_path is not None:
         sources["E8"] = {
-            "rows_path": str((staging_root / e8_rows_relative_path).resolve()),
-            "contract_path": str((staging_root / e8_contract_relative_path).resolve()),
+            "rows_path": _artifact_root_relative(e8_rows_relative_path),
+            "contract_path": _artifact_root_relative(e8_contract_relative_path),
         }
     return {
         "artifact_root": str(input_root.resolve()),
@@ -361,113 +379,109 @@ def _copy_if_exists(source: Path, destination: Path) -> Path | None:
     return destination
 
 
-def _locate_production_e8_inputs(staging_root: Path) -> tuple[str | None, str | None, list[str]]:
-    contract_path = REPO_ROOT / "configs" / "confirmatory" / "e8.yaml"
-    if not contract_path.is_file():
-        return None, None, [NEEDS_CONTEXT_E8]
-    candidate_rows: list[Path] = []
-    for path in REPO_ROOT.rglob("*.json"):
-        if "tests" in path.parts or "results" in path.parts and "raw" not in path.parts:
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if "POI_MPP_E8_SCENARIO_ROW_V1" in text:
-            candidate_rows.append(path)
-    if not candidate_rows:
-        return None, None, [NEEDS_CONTEXT_E8]
-    selected_rows = sorted(candidate_rows)[0]
-    staged_rows = staging_root / "inputs" / "e8_rows.json"
-    staged_contract = staging_root / "inputs" / "e8_contract.yaml"
-    _copy_if_exists(selected_rows, staged_rows)
-    _copy_if_exists(contract_path, staged_contract)
+def _stage_e8_publication_inputs(staging_root: Path) -> tuple[str, str]:
+    staged_rows = staging_root / "inputs" / "e8_publication_artifact.json"
+    staged_contract = staging_root / "inputs" / "configs" / "confirmatory" / "e8.yaml"
+    load_and_run_e8_publication(default_e8_publication_plan_path(), output_path=staged_rows)
+    copied_contract = _copy_if_exists(REPO_ROOT / "configs" / "confirmatory" / "e8.yaml", staged_contract)
+    if copied_contract is None:
+        raise FileNotFoundError("configs/confirmatory/e8.yaml is missing")
     return (
         str(staged_rows.relative_to(staging_root)),
         str(staged_contract.relative_to(staging_root)),
-        [],
     )
 
 
-def _publication_outputs(staging_root: Path) -> dict[str, dict[str, str]]:
-    manifest_path = staging_root / "publication" / "artifact_manifest.json"
+def _validated_publication_artifacts(
+    staging_root: Path,
+) -> tuple[PublicationReportManifestModel | None, tuple[dict[str, object], ...], tuple[dict[str, object], ...], list[str]]:
+    publication_root = staging_root / "publication"
+    manifest_path = publication_root / "artifact_manifest.json"
+    claim_matrix_path = publication_root / "tables" / "claim_matrix.json"
+    omissions_path = publication_root / "tables" / "omissions.json"
     if not manifest_path.is_file():
-        return {}
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    outputs = payload.get("outputs", [])
-    if not isinstance(outputs, list):
-        return {}
-    index: dict[str, dict[str, str]] = {}
-    for item in outputs:
-        if not isinstance(item, dict):
-            continue
-        artifact_id = item.get("artifact_id")
-        if isinstance(artifact_id, str) and artifact_id:
-            index[artifact_id] = {key: str(value) for key, value in item.items() if isinstance(key, str)}
-    return index
+        return None, (), (), ["publication report manifest is absent"]
+    try:
+        validate_existing_manifest(publication_root)
+        manifest = PublicationReportManifestModel.model_validate(json.loads(manifest_path.read_text(encoding="utf-8")))
+    except Exception as error:
+        return None, (), (), [f"publication report validation failed: {error}"]
+    try:
+        claim_matrix_payload = json.loads(claim_matrix_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as error:
+        return manifest, (), (), [f"publication claim matrix is unavailable: {error}"]
+    try:
+        omissions_payload = json.loads(omissions_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as error:
+        return manifest, (), (), [f"publication omission ledger is unavailable: {error}"]
+    if not isinstance(claim_matrix_payload, list):
+        return manifest, (), (), ["publication claim matrix must remain a JSON list"]
+    if not isinstance(omissions_payload, list):
+        return manifest, (), (), ["publication omission ledger must remain a JSON list"]
+    claim_rows: tuple[dict[str, object], ...] = tuple(
+        row for row in claim_matrix_payload if isinstance(row, dict) and isinstance(row.get("experiment_id"), str)
+    )
+    omission_rows: tuple[dict[str, object], ...] = tuple(
+        row for row in omissions_payload if isinstance(row, dict) and isinstance(row.get("experiment_id"), str)
+    )
+    return manifest, claim_rows, omission_rows, []
 
 
 def _experiment_states(
-    publication_outputs: dict[str, dict[str, str]],
-    *,
-    e8_rows_relative_path: str | None,
+    publication_manifest: PublicationReportManifestModel | None,
+    publication_claim_rows: tuple[dict[str, object], ...],
 ) -> tuple[dict[str, ExperimentState], list[str]]:
-    blockers: list[str] = []
-    states = {
-        "E1": ExperimentState(status="MISSING", required_artifacts=("T6", "F5"), present_artifacts=(), origin=None),
-        "E2": ExperimentState(status="MISSING", required_artifacts=("T7", "F6"), present_artifacts=(), origin=None),
-        "E3": ExperimentState(
-            status="WAITING_EXTERNAL",
-            required_artifacts=("T4", "T8", "F7"),
-            present_artifacts=(),
-            origin=EvidenceOrigin.REAL_MODEL_EXECUTION.value,
-        ),
-        "E4": ExperimentState(status="MISSING", required_artifacts=("T9", "F8"), present_artifacts=(), origin=None),
-        "E5": ExperimentState(status="MISSING", required_artifacts=("T10",), present_artifacts=(), origin=None),
-        "E6": ExperimentState(status="MISSING", required_artifacts=("T11", "F9", "F10"), present_artifacts=(), origin=None),
-        "E7": ExperimentState(
-            status="LOCAL_ONLY",
-            required_artifacts=("T12", "F12"),
-            present_artifacts=tuple(
-                artifact_id
-                for artifact_id in ("T12", "F12")
-                if publication_outputs.get(artifact_id, {}).get("disposition") in {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"}
-            ),
-            origin=EvidenceOrigin.FOUNDRY_MEASUREMENT.value,
-        ),
-        "E8": ExperimentState(
-            status="NEEDS_CONTEXT" if e8_rows_relative_path is None else "INCONCLUSIVE",
-            required_artifacts=("T13", "F11"),
-            present_artifacts=tuple(
-                artifact_id
-                for artifact_id in ("T13", "F11")
-                if publication_outputs.get(artifact_id, {}).get("disposition") in {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"}
-            ),
-            origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION.value,
-        ),
+    claim_by_experiment = {
+        str(row["experiment_id"]): row
+        for row in publication_claim_rows
+        if str(row.get("experiment_id")) in EXPERIMENT_REQUIRED_ARTIFACTS
     }
-    if states["E7"].present_artifacts == ("T12", "F12"):
-        states["E7"] = states["E7"].model_copy(update={"status": "COMPLETE"})
-    for experiment_id in ("E1", "E2", "E3", "E4", "E5", "E6"):
-        blockers.append(f"missing experiment evidence: {experiment_id}")
-    if e8_rows_relative_path is None:
-        blockers.append(NEEDS_CONTEXT_E8)
-    elif set(states["E8"].present_artifacts) != {"T13", "F11"}:
-        blockers.append("missing experiment evidence: E8")
+    output_artifacts: dict[str, set[str]] = {experiment_id: set() for experiment_id in EXPERIMENT_REQUIRED_ARTIFACTS}
+    if publication_manifest is not None:
+        for output in publication_manifest.outputs:
+            if output.experiment_id not in output_artifacts:
+                continue
+            if output.omission_reason is not None:
+                continue
+            if output.artifact_id in EXPERIMENT_REQUIRED_ARTIFACTS[output.experiment_id]:
+                output_artifacts[output.experiment_id].add(output.artifact_id)
+    blockers: list[str] = []
+    states: dict[str, ExperimentState] = {}
+    for experiment_id, required_artifacts in EXPERIMENT_REQUIRED_ARTIFACTS.items():
+        publication_row = claim_by_experiment.get(experiment_id, {})
+        present_artifacts = tuple(
+            artifact_id for artifact_id in required_artifacts if artifact_id in output_artifacts.get(experiment_id, set())
+        )
+        disposition = str(publication_row.get("disposition", "MISSING"))
+        status = "COMPLETE" if set(present_artifacts) == set(required_artifacts) else disposition
+        if status not in {"COMPLETE", "MISSING", "WAITING_EXTERNAL", "INCOMPLETE"}:
+            status = "INCOMPLETE" if present_artifacts else "MISSING"
+        origin = publication_row.get("origin")
+        states[experiment_id] = ExperimentState(
+            status=status,
+            required_artifacts=required_artifacts,
+            present_artifacts=present_artifacts,
+            origin=str(origin) if isinstance(origin, str) and origin else None,
+        )
+        if set(present_artifacts) != set(required_artifacts):
+            blockers.append(f"missing experiment evidence: {experiment_id}")
     return states, blockers
 
 
-def _claim_rows(experiments: dict[str, ExperimentState]) -> list[ClaimRow]:
+def _claim_rows(experiments: dict[str, ExperimentState], publication_claim_rows: tuple[dict[str, object], ...]) -> list[ClaimRow]:
+    claim_rows_by_experiment = {
+        str(row["experiment_id"]): row
+        for row in publication_claim_rows
+        if str(row.get("experiment_id")) in EXPERIMENT_REQUIRED_ARTIFACTS
+    }
     rows: list[ClaimRow] = []
     for claim_id, (experiment_id, required_artifacts) in EXPECTED_CLAIMS.items():
         experiment = experiments[experiment_id]
+        publication_row = claim_rows_by_experiment.get(experiment_id, {})
         present = tuple(artifact_id for artifact_id in required_artifacts if artifact_id in experiment.present_artifacts)
         completeness = "COMPLETE" if set(required_artifacts).issubset(set(present)) else "INCOMPLETE"
-        if experiment_id == "E7" and completeness == "COMPLETE":
-            disposition = "SUPPORTED"
-        elif experiment_id == "E8" and experiment.origin == EvidenceOrigin.REPRODUCIBLE_SIMULATION.value:
-            disposition = "INCONCLUSIVE"
-        else:
+        disposition = str(publication_row.get("disposition", "INCONCLUSIVE"))
+        if disposition not in ALLOWED_CLAIM_DISPOSITIONS or completeness != "COMPLETE":
             disposition = "INCONCLUSIVE"
         rows.append(
             ClaimRow(
@@ -477,7 +491,7 @@ def _claim_rows(experiments: dict[str, ExperimentState]) -> list[ClaimRow]:
                 required_artifacts=required_artifacts,
                 present_artifacts=present,
                 paper_language_status="MATCHES_EVIDENCE",
-                maturity=experiment.origin or "ABSENT",
+                maturity=str(publication_row.get("maturity", experiment.origin or "ABSENT")),
             )
         )
     return rows
@@ -540,7 +554,7 @@ def _placeholder_report(run_id: str) -> dict[str, object]:
 
 
 def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full_mode: bool) -> tuple[Path, dict[str, object]]:
-    e8_rows_relative_path, e8_contract_relative_path, e8_blockers = _locate_production_e8_inputs(staging_root)
+    e8_rows_relative_path, e8_contract_relative_path = _stage_e8_publication_inputs(staging_root)
     publication_blockers = _build_publication_report(
         staging_root,
         run_context,
@@ -548,16 +562,16 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
         e8_rows_relative_path=e8_rows_relative_path,
         e8_contract_relative_path=e8_contract_relative_path,
     )
+    publication_manifest, publication_claim_rows, _, publication_validation_blockers = _validated_publication_artifacts(staging_root)
     task21_reasons, task21_result_path = _task21_blockers(staging_root, full_mode=full_mode)
-    publication_outputs = _publication_outputs(staging_root)
     experiments, experiment_blockers = _experiment_states(
-        publication_outputs,
-        e8_rows_relative_path=e8_rows_relative_path,
+        publication_manifest,
+        publication_claim_rows,
     )
     blockers: list[str] = []
     blockers.extend(publication_blockers)
+    blockers.extend(publication_validation_blockers)
     blockers.extend(task21_reasons)
-    blockers.extend(e8_blockers)
     blockers.extend(experiment_blockers)
     blockers.append(MANUAL_REVIEW_ABSENT)
     if run_context.effective_code_revision == UNVERSIONED_BLOCKED:
@@ -573,7 +587,7 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
         e8_contract_relative_path=e8_contract_relative_path,
     )
     manifest = _candidate_manifest(run_context, blockers, experiments, authoritative_inputs)
-    claim_rows = _claim_rows(experiments)
+    claim_rows = _claim_rows(experiments, publication_claim_rows)
     _write_json(
         staging_root / "claim_support_matrix.json",
         {"schema_version": CLAIM_SCHEMA, "claims": [row.model_dump(mode="json") for row in claim_rows]},
@@ -583,13 +597,12 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
     _write_json(staging_root / "verification_report.json", _placeholder_report(run_context.run_id))
     summary = verify_bundle(staging_root, enforce_stored_report=False)
     _write_json(staging_root / "verification_report.json", summary.model_dump(mode="json"))
-    final_summary = verify_bundle(staging_root)
     payload = {
-        "status": final_summary.completeness,
+        "status": summary.completeness,
         "run_id": manifest.run_id,
         "candidate_relative_path": str(Path("results") / "tmp" / "candidates" / manifest.run_id),
         "report_relative_path": str(Path("results") / "tmp" / "candidates" / manifest.run_id / "verification_report.json"),
-        "blockers": list(final_summary.blockers),
+        "blockers": list(summary.blockers),
     }
     return staging_root, payload
 

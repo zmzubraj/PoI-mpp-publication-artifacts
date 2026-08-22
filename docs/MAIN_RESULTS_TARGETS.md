@@ -7,7 +7,7 @@ Current status on Saturday, August 22, 2026:
 - Task 22 candidate replay is expected to end `INCOMPLETE`
 - no `results/frozen/<run_id>/MPP_ARTIFACT_COMPLETE` sentinel should exist
 - `E1`-`E6` still lack authorized executed publication artifacts in this workspace
-- `E8` remains a canonical reproducible-simulation target, but the current clean replay still needs a production-owned canonical scenario artifact/runner before Task 22 can rebuild `T13` / `F11` without importing tests
+- `E8` is now rebuilt through the production publication replay and remains a canonical `REPRODUCIBLE_SIMULATION` surface with current `C8=INCONCLUSIVE`
 - Task 21 real replay remains blocked by `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
 - accountable manual review also remains incomplete until a trusted external reviewer signature and allowed-signers registry are supplied
 - any language stronger than the current evidence disposition must stay out of the paper map and candidate bundle

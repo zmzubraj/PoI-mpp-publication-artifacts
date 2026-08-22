@@ -27,6 +27,15 @@ def _run_python(*argv: str, cwd: Path | None = None) -> subprocess.CompletedProc
     )
 
 
+def _run_candidate_only_reproduce() -> tuple[dict[str, object], Path]:
+    completed = _run_python(str(REPRODUCE), "--mode", "candidate-only")
+    assert completed.returncode != 0
+    payload = json.loads(completed.stdout)
+    candidate_root = REPO_ROOT / str(payload["candidate_relative_path"])
+    assert candidate_root.is_dir()
+    return payload, candidate_root
+
+
 def _read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -190,12 +199,8 @@ def _build_test_only_structural_candidate(
 
 
 def test_reproduce_current_workspace_is_incomplete_and_writes_no_frozen_sentinel() -> None:
-    completed = _run_python(str(REPRODUCE))
-    assert completed.returncode != 0
-    payload = json.loads(completed.stdout)
+    payload, candidate_root = _run_candidate_only_reproduce()
     assert payload["status"] == "INCOMPLETE"
-    candidate_root = REPO_ROOT / payload["candidate_relative_path"]
-    assert candidate_root.is_dir()
     manifest = _read_json(candidate_root / "manifest.json")
     assert manifest["completeness"] == "INCOMPLETE"
     blockers = "\n".join(str(item) for item in payload["blockers"])
@@ -283,6 +288,54 @@ def test_reproduce_candidate_report_is_deterministic_and_run_path_matches_return
     run_id = first_payload["run_id"]
     assert first_payload["candidate_relative_path"] == f"results/tmp/candidates/{run_id}"
     assert (REPO_ROOT / first_payload["candidate_relative_path"]).is_dir()
+
+
+def test_reproduce_candidate_only_integrates_production_e8_as_inconclusive() -> None:
+    payload, candidate_root = _run_candidate_only_reproduce()
+    manifest = _read_json(candidate_root / "manifest.json")
+    claims = _read_json(candidate_root / "claim_support_matrix.json")["claims"]
+    assert manifest["authoritative_inputs"]["e8_rows_relative_path"] == "inputs/e8_publication_artifact.json"
+    assert manifest["authoritative_inputs"]["e8_contract_relative_path"] == "inputs/configs/confirmatory/e8.yaml"
+    assert manifest["experiments"]["E8"]["status"] == "COMPLETE"
+    assert manifest["experiments"]["E8"]["present_artifacts"] == ["T13", "F11"]
+    c8 = next(row for row in claims if row["claim_id"] == "C8")
+    assert c8["completeness"] == "COMPLETE"
+    assert c8["disposition"] == "INCONCLUSIVE"
+    assert c8["present_artifacts"] == ["T13", "F11"]
+    assert "missing experiment evidence: E8" not in "\n".join(str(item) for item in payload["blockers"])
+    assert not any((REPO_ROOT / "results" / "frozen").glob("*/MPP_ARTIFACT_COMPLETE"))
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_fragment"),
+    (
+        (("claim_disposition", "SUPPORTED"), "deterministic plan replay"),
+        (("plan_hash", "0" * 64), "plan_hash does not match the supplied plan_path"),
+        (("origin", "SYNTHETIC_NON_EVIDENCE"), "origin must equal REPRODUCIBLE_SIMULATION"),
+    ),
+)
+def test_production_verifier_rejects_tampered_e8_publication_artifact(
+    mutation: tuple[str, object], expected_fragment: str
+) -> None:
+    _, candidate_root = _run_candidate_only_reproduce()
+    bundle = verify_module._load_bundle(candidate_root, allow_test_only=False)
+    artifact_path = candidate_root / "inputs" / "e8_publication_artifact.json"
+    artifact = _read_json(artifact_path)
+    key, value = mutation
+    artifact[key] = value
+    _write_json(artifact_path, artifact)
+    with pytest.raises(verify_module.BundleVerificationError, match=expected_fragment):
+        verify_module._revalidate_e8(bundle)
+    assert not any((REPO_ROOT / "results" / "frozen").glob("*/MPP_ARTIFACT_COMPLETE"))
+
+
+def test_production_verifier_rejects_missing_e8_authoritative_artifact() -> None:
+    _, candidate_root = _run_candidate_only_reproduce()
+    (candidate_root / "inputs" / "e8_publication_artifact.json").unlink()
+    completed = _run_python(str(VERIFY_BUNDLE), "--bundle-root", str(candidate_root))
+    assert completed.returncode != 0
+    assert "unable to open file without following symlinks" in completed.stdout
+    assert not any((REPO_ROOT / "results" / "frozen").glob("*/MPP_ARTIFACT_COMPLETE"))
 
 
 def test_promote_bundle_refuses_existing_target_and_cleans_up_simulated_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
