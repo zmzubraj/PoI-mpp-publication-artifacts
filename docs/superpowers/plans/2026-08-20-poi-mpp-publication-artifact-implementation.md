@@ -1114,3 +1114,5 @@ Run: `git add scripts/reproduce.py scripts/verify_bundle.py tests/reproducibilit
 | Freeze | 22 | Clean replay and publication bundle verification pass |
 
 Do not begin a confirmatory evidence run merely because its software task is green. Confirmation additionally requires a frozen protocol, approved evidence-acquisition authority, dataset/model/license review, sample-size and analysis specification, and a clean pilot-to-confirmation separation.
+
+Append-only note 2026-08-22: E8 publication replay quality hardening removed serialized host paths from the canonical artifact, embedded typed plan and contract snapshots for replay, expanded the frozen dependency closure allowlist to all runtime imports used by E8 replay, and preserved YAML parser reasons without leaking absolute paths.

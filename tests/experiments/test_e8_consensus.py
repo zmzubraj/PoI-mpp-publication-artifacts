@@ -192,6 +192,15 @@ def _publication_plan_path() -> Path:
     return _repo_root() / "configs/confirmatory/e8.publication.yaml"
 
 
+def _copy_publication_bundle(root: Path) -> tuple[Path, Path]:
+    root.mkdir(parents=True, exist_ok=True)
+    plan_path = root / "e8.publication.yaml"
+    contract_path = root / "e8.yaml"
+    plan_path.write_bytes(_publication_plan_path().read_bytes())
+    contract_path.write_bytes(_publication_contract_path().read_bytes())
+    return plan_path, contract_path
+
+
 def _managed_alias_variant(path: Path) -> Path | None:
     text = path.as_posix()
     for canonical_prefix, alias_prefix in (("/private/var", "/var"), ("/private/tmp", "/tmp")):
@@ -798,14 +807,48 @@ def test_publication_runner_is_byte_identical_across_two_runs(tmp_path: Path):
     assert first_path.read_bytes() == second_path.read_bytes()
 
 
+def test_publication_runner_is_byte_identical_across_two_directories(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_and_run_e8_publication
+
+    left_plan, _ = _copy_publication_bundle(tmp_path / "left")
+    right_plan, _ = _copy_publication_bundle(tmp_path / "right")
+    left_output = tmp_path / "left" / "rows.json"
+    right_output = tmp_path / "right" / "rows.json"
+
+    load_and_run_e8_publication(left_plan, output_path=left_output)
+    load_and_run_e8_publication(right_plan, output_path=right_output)
+
+    left_bytes = left_output.read_bytes()
+    right_bytes = right_output.read_bytes()
+    assert left_bytes == right_bytes
+    artifact_text = left_bytes.decode("utf-8")
+    assert str((tmp_path / "left").resolve()) not in artifact_text
+    assert str((tmp_path / "right").resolve()) not in artifact_text
+
+
+def test_publication_artifact_loader_replays_from_embedded_snapshots(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_and_run_e8_publication, load_e8_publication_artifact
+
+    plan_path, contract_path = _copy_publication_bundle(tmp_path / "embedded")
+    output_path = tmp_path / "embedded" / "rows.json"
+    written = load_and_run_e8_publication(plan_path, output_path=output_path)
+    plan_path.unlink()
+    contract_path.unlink()
+
+    loaded = load_e8_publication_artifact(output_path)
+
+    assert loaded.model_dump(mode="json") == written.model_dump(mode="json")
+
+
 def test_publication_plan_loader_rejects_symlinked_plan(tmp_path: Path):
     from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
 
     symlink_path = tmp_path / "linked-plan.yaml"
     symlink_path.symlink_to(_publication_plan_path())
 
-    with pytest.raises(ValueError, match="cannot be symlinked"):
+    with pytest.raises(ValueError, match="cannot be symlinked") as excinfo:
         load_e8_publication_plan(symlink_path)
+    assert str(symlink_path) not in str(excinfo.value)
 
 
 def test_publication_runner_rejects_symlinked_output(tmp_path: Path):
@@ -818,6 +861,88 @@ def test_publication_runner_rejects_symlinked_output(tmp_path: Path):
 
     with pytest.raises(ValueError, match="cannot be symlinked"):
         load_and_run_e8_publication(_publication_plan_path(), output_path=symlink_path)
+
+
+def test_publication_plan_loader_preserves_duplicate_key_reason_without_paths(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
+
+    _, contract_copy = _copy_publication_bundle(tmp_path / "duplicate-key")
+    plan_copy = tmp_path / "duplicate-key" / "e8.publication.yaml"
+    lines = _publication_plan_path().read_text(encoding="utf-8").splitlines()
+    duplicate_index = next(index for index, line in enumerate(lines) if line.startswith("contract_path:"))
+    lines.insert(duplicate_index + 1, lines[duplicate_index])
+    plan_copy.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError) as excinfo:
+        load_e8_publication_plan(plan_copy)
+
+    message = str(excinfo.value)
+    assert "E8 publication plan" in message
+    assert "duplicate key" in message
+    assert str(plan_copy) not in message
+    assert str(contract_copy) not in message
+
+
+def test_publication_artifact_loader_rejects_mismatched_supplied_plan_path(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_and_run_e8_publication, load_e8_publication_artifact
+
+    plan_path, _ = _copy_publication_bundle(tmp_path / "primary")
+    output_path = tmp_path / "primary" / "rows.json"
+    load_and_run_e8_publication(plan_path, output_path=output_path)
+
+    mismatched_plan_path, _ = _copy_publication_bundle(tmp_path / "secondary")
+    plan_lines = mismatched_plan_path.read_text(encoding="utf-8").splitlines()
+    for index, line in enumerate(plan_lines):
+        if line.strip().startswith("run_id:"):
+            plan_lines[index] = "  run_id: run-e8-publication-v2"
+            break
+    mismatched_plan_path.write_text("\n".join(plan_lines) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="does not match the supplied plan_path"):
+        load_e8_publication_artifact(output_path, plan_path=mismatched_plan_path)
+
+
+def test_publication_source_closure_allowlist_covers_runtime_dependencies():
+    from poi_mpp.experiments.e8_consensus import (
+        _E8_PUBLICATION_SOURCE_RELATIVE_PATHS,
+        _e8_publication_source_closure_manifest,
+    )
+
+    expected = {
+        "src/poi_mpp/evidence/canonical.py",
+        "src/poi_mpp/evidence/config.py",
+        "src/poi_mpp/evidence/models.py",
+        "src/poi_mpp/experiments/e8_consensus.py",
+        "src/poi_mpp/protocol/committee.py",
+        "src/poi_mpp/protocol/credit.py",
+        "src/poi_mpp/protocol/types.py",
+        "src/poi_mpp/reporting/e8.py",
+        "experiments/e8_consensus_weight_sim.py",
+    }
+    actual = {path.as_posix() for path in _E8_PUBLICATION_SOURCE_RELATIVE_PATHS}
+
+    assert expected <= actual
+    assert set(_e8_publication_source_closure_manifest()) == actual
+
+
+def test_publication_source_closure_hash_changes_when_dependency_changes(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import (
+        _E8_PUBLICATION_SOURCE_RELATIVE_PATHS,
+        _e8_publication_source_closure_hash,
+    )
+
+    closure_root = tmp_path / "closure-copy"
+    for relative_path in _E8_PUBLICATION_SOURCE_RELATIVE_PATHS:
+        destination = closure_root / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes((_repo_root() / relative_path).read_bytes())
+
+    before = _e8_publication_source_closure_hash(closure_root)
+    target = closure_root / "src/poi_mpp/reporting/e8.py"
+    target.write_text(target.read_text(encoding="utf-8") + "\n# temporary closure drift\n", encoding="utf-8")
+    after = _e8_publication_source_closure_hash(closure_root)
+
+    assert before != after
 
 
 def test_managed_var_alias_write_and_reload_succeeds(tmp_path: Path):

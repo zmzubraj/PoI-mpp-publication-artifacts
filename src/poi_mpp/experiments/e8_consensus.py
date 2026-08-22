@@ -413,7 +413,20 @@ class E8ConfirmatoryContract(_FrozenModel):
 
 _PLACEHOLDER_DIGESTS = frozenset(character * 64 for character in "0123456789abcdef")
 _E8_PUBLICATION_PLAN_SCHEMA_VERSION = "POI_MPP_E8_PUBLICATION_PLAN_V1"
-_E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION = "POI_MPP_E8_PUBLICATION_ARTIFACT_V1"
+_E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION = "POI_MPP_E8_PUBLICATION_ARTIFACT_V3"
+_E8_PUBLICATION_PLAN_ID = "E8_PUBLICATION_REPLAY_PLAN_V1"
+_E8_CONFIRMATORY_CONTRACT_ID = "E8_CONFIRMATORY_CONTRACT_V1"
+_E8_PUBLICATION_SOURCE_RELATIVE_PATHS = (
+    Path("src/poi_mpp/evidence/canonical.py"),
+    Path("src/poi_mpp/evidence/config.py"),
+    Path("src/poi_mpp/evidence/models.py"),
+    Path("src/poi_mpp/experiments/e8_consensus.py"),
+    Path("src/poi_mpp/protocol/committee.py"),
+    Path("src/poi_mpp/protocol/credit.py"),
+    Path("src/poi_mpp/protocol/types.py"),
+    Path("src/poi_mpp/reporting/e8.py"),
+    Path("experiments/e8_consensus_weight_sim.py"),
+)
 
 
 class _StrictYAMLLoader(yaml.SafeLoader):
@@ -454,26 +467,46 @@ def _is_placeholder_digest(value: str) -> bool:
     return value in _PLACEHOLDER_DIGESTS
 
 
+def _yaml_error_reason(error: yaml.YAMLError) -> str:
+    reasons = tuple(
+        part.strip()
+        for part in (
+            getattr(error, "problem", None),
+            getattr(error, "context", None),
+        )
+        if isinstance(part, str) and part.strip()
+    )
+    if reasons:
+        return "; ".join(dict.fromkeys(reasons))
+    message = str(error).strip()
+    if message:
+        return message.splitlines()[0].strip()
+    return error.__class__.__name__
+
+
 def _reject_yaml_aliases(text: str, *, label: str) -> None:
     try:
         for token in yaml.scan(text):
             if isinstance(token, (AliasToken, AnchorToken)):
                 raise ValueError(f"{label} cannot contain YAML anchors or aliases")
     except yaml.YAMLError as error:
-        raise ValueError(f"unable to parse {label}") from error
+        raise ValueError(f"unable to parse {label}: {_yaml_error_reason(error)}") from error
 
 
 def _load_strict_yaml_mapping(path: Path, *, label: str) -> tuple[dict[str, object], bytes]:
     try:
         contents = path.read_bytes()
     except OSError as error:
-        raise ValueError(f"unable to load {label}: {path}") from error
-    text = contents.decode("utf-8")
+        raise ValueError(f"unable to load {label}: file is not readable") from error
+    try:
+        text = contents.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError(f"unable to load {label}: invalid UTF-8") from error
     _reject_yaml_aliases(text, label=label)
     try:
         loaded = yaml.load(text, Loader=_StrictYAMLLoader)
     except yaml.YAMLError as error:
-        raise ValueError(f"unable to load {label}: {path}") from error
+        raise ValueError(f"unable to load {label}: {_yaml_error_reason(error)}") from error
     if not isinstance(loaded, Mapping):
         raise ValueError(f"{label} must be a mapping")
     return dict(loaded), contents
@@ -519,7 +552,7 @@ def _reject_existing_symlink_components(path: Path, *, label: str) -> None:
             pass
         else:
             if os.path.islink(current):
-                raise ValueError(f"{label} cannot be symlinked: {path}")
+                raise ValueError(f"{label} cannot be symlinked")
         if current == current.parent:
             break
         current = current.parent
@@ -529,11 +562,11 @@ def _resolve_existing_plain_file(path: str | Path, *, label: str) -> Path:
     candidate = _absolute_managed_path(path)
     _reject_existing_symlink_components(candidate, label=label)
     if not candidate.exists():
-        raise ValueError(f"{label} is missing: {candidate}")
+        raise ValueError(f"{label} is missing")
     if not candidate.is_file():
-        raise ValueError(f"{label} must be a regular file: {candidate}")
+        raise ValueError(f"{label} must be a regular file")
     if os.stat(candidate).st_nlink != 1:
-        raise ValueError(f"{label} cannot be hardlinked: {candidate}")
+        raise ValueError(f"{label} cannot be hardlinked")
     return candidate
 
 
@@ -546,7 +579,7 @@ def _resolve_contained_relative_file(base_dir: Path, relative_path: str, *, labe
     try:
         resolved.relative_to(canonical_base_dir)
     except ValueError as error:
-        raise ValueError(f"{label} must stay inside {canonical_base_dir}") from error
+        raise ValueError(f"{label} must stay inside the containing directory") from error
     return resolved
 
 
@@ -555,9 +588,9 @@ def _validate_output_target(path: Path) -> Path:
     _reject_existing_symlink_components(candidate, label="E8 publication output")
     if candidate.exists():
         if not candidate.is_file():
-            raise ValueError(f"E8 publication output must be a regular file: {path}")
+            raise ValueError("E8 publication output must be a regular file")
         if os.stat(candidate).st_nlink != 1:
-            raise ValueError(f"E8 publication output cannot be hardlinked: {path}")
+            raise ValueError("E8 publication output cannot be hardlinked")
     return candidate
 
 
@@ -578,9 +611,9 @@ def _atomic_write_json(path: Path, payload: Mapping[str, object]) -> str:
         finally:
             os.close(parent_fd)
         if path.read_bytes() != contents:
-            raise ValueError(f"atomic E8 publication write verification failed for {path}")
+            raise ValueError("atomic E8 publication write verification failed")
         if os.stat(path).st_nlink != 1:
-            raise ValueError(f"E8 publication output cannot be hardlinked: {path}")
+            raise ValueError("E8 publication output cannot be hardlinked")
     finally:
         if tmp_path.exists():
             tmp_path.unlink()
@@ -591,17 +624,37 @@ def _path_sha256(path: Path) -> str:
     return _sha256_bytes(path.read_bytes())
 
 
-def _e8_publication_source_closure_hash() -> str:
-    repo_root = Path(__file__).resolve().parents[3]
-    relative_paths = (
-        Path("src/poi_mpp/experiments/e8_consensus.py"),
-        Path("src/poi_mpp/reporting/e8.py"),
-        Path("experiments/e8_consensus_weight_sim.py"),
-    )
-    return digest(
-        "E8_PUBLICATION_SOURCE_CLOSURE",
-        {str(item): _path_sha256(repo_root / item) for item in relative_paths},
-    )
+def _e8_publication_repo_root() -> Path:
+    return _absolute_managed_path(Path(__file__).resolve().parents[3])
+
+
+def _resolve_e8_source_dependency(repo_root: Path, relative_path: Path) -> Path:
+    candidate = _absolute_managed_path(repo_root / relative_path)
+    label = f"E8 publication source dependency {relative_path.as_posix()}"
+    resolved = _resolve_existing_plain_file(candidate, label=label)
+    try:
+        resolved.relative_to(repo_root)
+    except ValueError as error:
+        raise ValueError(f"{label} must stay inside the repository root") from error
+    return resolved
+
+
+def _e8_publication_source_closure_manifest(repo_root: Path | None = None) -> dict[str, str]:
+    resolved_root = _absolute_managed_path(_e8_publication_repo_root() if repo_root is None else repo_root)
+    manifest: dict[str, str] = {}
+    for relative_path in _E8_PUBLICATION_SOURCE_RELATIVE_PATHS:
+        manifest[relative_path.as_posix()] = _path_sha256(
+            _resolve_e8_source_dependency(resolved_root, relative_path)
+        )
+    return manifest
+
+
+def _e8_publication_source_closure_hash(repo_root: Path | None = None) -> str:
+    return digest("E8_PUBLICATION_SOURCE_CLOSURE", _e8_publication_source_closure_manifest(repo_root))
+
+
+def _publication_snapshot_hash(namespace: str, payload: Mapping[str, object]) -> str:
+    return digest(namespace, payload)
 
 
 def load_e8_confirmatory_contract(path: str | Path) -> E8ConfirmatoryContract:
@@ -633,54 +686,107 @@ class E8PublicationPlan(_FrozenModel):
             raise ValueError(f"{info.field_name} must not be blank")
         return value
 
+    @staticmethod
+    def _validate_frozen_content(
+        *,
+        publication_scope: str,
+        required_model_version: str,
+        required_algorithm_version: str,
+        run_config: RunConfig,
+        scenarios: tuple["E8PublicationScenario", ...],
+    ) -> None:
+        if publication_scope != E8_CONFIRMATORY_SCOPE:
+            raise ValueError(f"publication_scope must equal {E8_CONFIRMATORY_SCOPE}")
+        if required_model_version != E8_SIMULATION_MODEL_VERSION:
+            raise ValueError(f"required_model_version must equal {E8_SIMULATION_MODEL_VERSION}")
+        if required_algorithm_version != COMMITTEE_ALGORITHM_VERSION:
+            raise ValueError(f"required_algorithm_version must equal {COMMITTEE_ALGORITHM_VERSION}")
+        if run_config.experiment_id != "E8":
+            raise ValueError("run_config.experiment_id must equal E8")
+        if run_config.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
+            raise ValueError("run_config.origin must equal REPRODUCIBLE_SIMULATION")
+        if run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+            raise ValueError(
+                f"run_config.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+            )
+        if _is_placeholder_digest(run_config.model_hash) or _is_placeholder_digest(run_config.dataset_hash):
+            raise ValueError("run_config model_hash and dataset_hash cannot use placeholder or sentinel digests")
+        if tuple(item.scenario.scenario_id for item in scenarios) != _REQUIRED_PUBLICATION_SCENARIO_IDS:
+            raise ValueError("scenarios must exactly match the frozen E8 publication scenario closure")
+        if len({item.scenario.scenario_id for item in scenarios}) != len(scenarios):
+            raise ValueError("scenarios must use unique scenario_id values")
+
     @model_validator(mode="after")
     def validate_plan(self) -> "E8PublicationPlan":
         if self.schema_version != _E8_PUBLICATION_PLAN_SCHEMA_VERSION:
             raise ValueError(f"schema_version must equal {_E8_PUBLICATION_PLAN_SCHEMA_VERSION}")
-        if self.publication_scope != E8_CONFIRMATORY_SCOPE:
-            raise ValueError(f"publication_scope must equal {E8_CONFIRMATORY_SCOPE}")
-        if self.required_model_version != E8_SIMULATION_MODEL_VERSION:
-            raise ValueError(f"required_model_version must equal {E8_SIMULATION_MODEL_VERSION}")
-        if self.required_algorithm_version != COMMITTEE_ALGORITHM_VERSION:
-            raise ValueError(f"required_algorithm_version must equal {COMMITTEE_ALGORITHM_VERSION}")
-        if self.run_config.experiment_id != "E8":
-            raise ValueError("run_config.experiment_id must equal E8")
-        if self.run_config.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
-            raise ValueError("run_config.origin must equal REPRODUCIBLE_SIMULATION")
-        if self.run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
-            raise ValueError(
-                f"run_config.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
-            )
-        if _is_placeholder_digest(self.run_config.model_hash) or _is_placeholder_digest(self.run_config.dataset_hash):
-            raise ValueError("run_config model_hash and dataset_hash cannot use placeholder or sentinel digests")
-        if tuple(item.scenario.scenario_id for item in self.scenarios) != _REQUIRED_PUBLICATION_SCENARIO_IDS:
-            raise ValueError("scenarios must exactly match the frozen E8 publication scenario closure")
-        if len({item.scenario.scenario_id for item in self.scenarios}) != len(self.scenarios):
-            raise ValueError("scenarios must use unique scenario_id values")
+        self._validate_frozen_content(
+            publication_scope=self.publication_scope,
+            required_model_version=self.required_model_version,
+            required_algorithm_version=self.required_algorithm_version,
+            run_config=self.run_config,
+            scenarios=self.scenarios,
+        )
+        return self
+
+
+class E8EmbeddedPublicationPlan(_FrozenModel):
+    plan_id: str = _E8_PUBLICATION_PLAN_ID
+    run_config: RunConfig
+    simulations: int
+    publication_scope: str
+    required_model_version: str
+    required_algorithm_version: str
+    scenarios: tuple[E8PublicationScenario, ...]
+    notes: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_plan_snapshot(self) -> "E8EmbeddedPublicationPlan":
+        if self.plan_id != _E8_PUBLICATION_PLAN_ID:
+            raise ValueError(f"plan_id must equal {_E8_PUBLICATION_PLAN_ID}")
+        E8PublicationPlan._validate_frozen_content(
+            publication_scope=self.publication_scope,
+            required_model_version=self.required_model_version,
+            required_algorithm_version=self.required_algorithm_version,
+            run_config=self.run_config,
+            scenarios=self.scenarios,
+        )
         return self
 
 
 class E8ResolvedPublicationPlan(_FrozenModel):
-    schema_version: str = _E8_PUBLICATION_PLAN_SCHEMA_VERSION
-    plan_path: str
+    plan_id: str = _E8_PUBLICATION_PLAN_ID
     plan_hash: str
-    contract_path: str
+    plan_snapshot: E8EmbeddedPublicationPlan
+    contract_id: str = _E8_CONFIRMATORY_CONTRACT_ID
     contract_hash: str
     source_closure_hash: str
-    contract: E8ConfirmatoryContract
-    run_config: RunConfig
-    simulations: int
-    publication_scope: str
-    scenarios: tuple[E8PublicationScenario, ...]
-    notes: tuple[str, ...] = ()
+    contract_snapshot: E8ConfirmatoryContract
+
+    @field_validator("plan_hash", "contract_hash", "source_closure_hash")
+    @classmethod
+    def require_hash_shape(cls, value: str) -> str:
+        if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+            raise ValueError("resolved publication hashes must be lowercase SHA-256 hex digests")
+        return value
+
+    @model_validator(mode="after")
+    def validate_resolved_plan(self) -> "E8ResolvedPublicationPlan":
+        if self.plan_id != _E8_PUBLICATION_PLAN_ID:
+            raise ValueError(f"plan_id must equal {_E8_PUBLICATION_PLAN_ID}")
+        if self.contract_id != _E8_CONFIRMATORY_CONTRACT_ID:
+            raise ValueError(f"contract_id must equal {_E8_CONFIRMATORY_CONTRACT_ID}")
+        return self
 
 
 class E8PublicationArtifact(_FrozenModel):
-    schema_version: str = _E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION
-    plan_path: str
+    schema_version: str = "POI_MPP_E8_PUBLICATION_ARTIFACT_V3"
+    plan_id: str
     plan_hash: str
-    contract_path: str
+    plan_snapshot: E8EmbeddedPublicationPlan
+    contract_id: str
     contract_hash: str
+    contract_snapshot: E8ConfirmatoryContract
     source_closure_hash: str
     run_id: str
     run_config_hash: str
@@ -691,9 +797,9 @@ class E8PublicationArtifact(_FrozenModel):
     rows: tuple[E8ScenarioRow, ...]
 
     @field_validator(
-        "plan_path",
+        "plan_id",
         "plan_hash",
-        "contract_path",
+        "contract_id",
         "contract_hash",
         "source_closure_hash",
         "run_id",
@@ -716,12 +822,32 @@ class E8PublicationArtifact(_FrozenModel):
 
     @model_validator(mode="after")
     def validate_artifact(self) -> "E8PublicationArtifact":
-        if self.schema_version != _E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION:
-            raise ValueError(f"schema_version must equal {_E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION}")
+        if self.schema_version != "POI_MPP_E8_PUBLICATION_ARTIFACT_V3":
+            raise ValueError("schema_version must equal POI_MPP_E8_PUBLICATION_ARTIFACT_V3")
+        if self.plan_id != _E8_PUBLICATION_PLAN_ID:
+            raise ValueError(f"plan_id must equal {_E8_PUBLICATION_PLAN_ID}")
+        if self.contract_id != _E8_CONFIRMATORY_CONTRACT_ID:
+            raise ValueError(f"contract_id must equal {_E8_CONFIRMATORY_CONTRACT_ID}")
         if self.publication_scope != E8_CONFIRMATORY_SCOPE:
             raise ValueError(f"publication_scope must equal {E8_CONFIRMATORY_SCOPE}")
         if self.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
             raise ValueError("origin must equal REPRODUCIBLE_SIMULATION")
+        if self.plan_snapshot.plan_id != self.plan_id:
+            raise ValueError("plan_snapshot must bind the artifact plan_id")
+        if self.contract_snapshot.schema_version != "POI_MPP_E8_CONFIRMATORY_CONTRACT_V1":
+            raise ValueError("contract_snapshot must remain the canonical E8 confirmatory contract schema")
+        if self.publication_scope != self.plan_snapshot.publication_scope:
+            raise ValueError("publication_scope must bind the embedded plan snapshot")
+        if self.publication_scope != self.contract_snapshot.publication_scope:
+            raise ValueError("publication_scope must bind the embedded contract snapshot")
+        if self.origin is not self.plan_snapshot.run_config.origin:
+            raise ValueError("origin must bind the embedded run_config")
+        if self.origin is not self.contract_snapshot.required_run_origin:
+            raise ValueError("origin must bind the embedded contract snapshot")
+        if self.run_id != self.plan_snapshot.run_config.run_id:
+            raise ValueError("run_id must bind the embedded run_config")
+        if self.run_config_hash != config_hash(self.plan_snapshot.run_config):
+            raise ValueError("run_config_hash must match the embedded run_config")
         if not self.rows:
             raise ValueError("rows must not be empty")
         if any(row.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION for row in self.rows):
@@ -1360,31 +1486,61 @@ def _summary_and_limits(rows: Sequence[E8ScenarioRow], contract: E8ConfirmatoryC
     return summary.claim_disposition, tuple(dict.fromkeys(limits))
 
 
-def load_e8_publication_plan(path: str | Path) -> E8ResolvedPublicationPlan:
-    plan_path = _resolve_existing_plain_file(path, label="E8 publication plan")
-    raw, plan_bytes = _load_strict_yaml_mapping(plan_path, label="E8 publication plan")
-    plan = E8PublicationPlan.model_validate(raw)
-    contract_path = _resolve_contained_relative_file(
-        plan_path.parent,
-        plan.contract_path,
-        label="E8 publication contract",
+def _publication_plan_snapshot_from_plan(plan: E8PublicationPlan) -> E8EmbeddedPublicationPlan:
+    return E8EmbeddedPublicationPlan.model_validate(
+        {
+            "plan_id": _E8_PUBLICATION_PLAN_ID,
+            "run_config": plan.run_config,
+            "simulations": plan.simulations,
+            "publication_scope": plan.publication_scope,
+            "required_model_version": plan.required_model_version,
+            "required_algorithm_version": plan.required_algorithm_version,
+            "scenarios": plan.scenarios,
+            "notes": plan.notes,
+        }
     )
-    contract = load_e8_confirmatory_contract(contract_path)
-    if plan.publication_scope != contract.publication_scope:
+
+
+def _publication_plan_hash(plan_snapshot: E8EmbeddedPublicationPlan) -> str:
+    return _publication_snapshot_hash("E8_PUBLICATION_PLAN_SNAPSHOT", plan_snapshot.model_dump(mode="json"))
+
+
+def _confirmatory_contract_hash(contract: E8ConfirmatoryContract) -> str:
+    return _publication_snapshot_hash("E8_CONFIRMATORY_CONTRACT_SNAPSHOT", contract.model_dump(mode="json"))
+
+
+def _resolve_e8_publication_plan(
+    plan_snapshot: E8EmbeddedPublicationPlan,
+    contract: E8ConfirmatoryContract,
+    *,
+    plan_hash: str,
+    contract_hash: str,
+    source_closure_hash: str,
+) -> E8ResolvedPublicationPlan:
+    expected_plan_hash = _publication_plan_hash(plan_snapshot)
+    if plan_hash != expected_plan_hash:
+        raise ValueError("plan_hash must match the canonical embedded plan snapshot")
+    expected_contract_hash = _confirmatory_contract_hash(contract)
+    if contract_hash != expected_contract_hash:
+        raise ValueError("contract_hash must match the canonical embedded contract snapshot")
+    expected_source_hash = _e8_publication_source_closure_hash()
+    if source_closure_hash != expected_source_hash:
+        raise ValueError("source_closure_hash must match the frozen E8 replay dependency closure")
+    if plan_snapshot.publication_scope != contract.publication_scope:
         raise ValueError("publication_scope must exactly match the confirmatory contract")
-    if plan.simulations != contract.required_simulations:
+    if plan_snapshot.simulations != contract.required_simulations:
         raise ValueError("simulations must exactly match the confirmatory contract")
-    if plan.required_model_version != contract.required_model_version:
+    if plan_snapshot.required_model_version != contract.required_model_version:
         raise ValueError("required_model_version must exactly match the confirmatory contract")
-    if plan.required_algorithm_version != contract.required_algorithm_version:
+    if plan_snapshot.required_algorithm_version != contract.required_algorithm_version:
         raise ValueError("required_algorithm_version must exactly match the confirmatory contract")
-    if plan.run_config.origin is not contract.required_run_origin:
+    if plan_snapshot.run_config.origin is not contract.required_run_origin:
         raise ValueError("run_config.origin must exactly match the confirmatory contract")
-    if plan.run_config.authorization_scope != contract.required_run_authorization_scope:
+    if plan_snapshot.run_config.authorization_scope != contract.required_run_authorization_scope:
         raise ValueError("run_config.authorization_scope must exactly match the confirmatory contract")
 
     allowed_by_id = {item.scenario_id: item for item in contract.allowed_scenarios}
-    plan_by_id = {item.scenario.scenario_id: item for item in plan.scenarios}
+    plan_by_id = {item.scenario.scenario_id: item for item in plan_snapshot.scenarios}
     if set(plan_by_id) != set(allowed_by_id):
         raise ValueError("scenarios must exactly close against the confirmatory contract")
 
@@ -1419,47 +1575,66 @@ def load_e8_publication_plan(path: str | Path) -> E8ResolvedPublicationPlan:
             raise ValueError(f"negative exogenous hash mismatch for {allowed.scenario_id}")
 
     return E8ResolvedPublicationPlan(
-        plan_path=str(plan_path),
-        plan_hash=_sha256_bytes(plan_bytes),
-        contract_path=str(contract_path),
-        contract_hash=_path_sha256(contract_path),
+        plan_id=_E8_PUBLICATION_PLAN_ID,
+        plan_hash=plan_hash,
+        plan_snapshot=plan_snapshot,
+        contract_id=_E8_CONFIRMATORY_CONTRACT_ID,
+        contract_hash=contract_hash,
+        source_closure_hash=source_closure_hash,
+        contract_snapshot=contract,
+    )
+
+
+def load_e8_publication_plan(path: str | Path) -> E8ResolvedPublicationPlan:
+    plan_path = _resolve_existing_plain_file(path, label="E8 publication plan")
+    raw, _ = _load_strict_yaml_mapping(plan_path, label="E8 publication plan")
+    plan = E8PublicationPlan.model_validate(raw)
+    contract_path = _resolve_contained_relative_file(
+        plan_path.parent,
+        plan.contract_path,
+        label="E8 publication contract",
+    )
+    contract = load_e8_confirmatory_contract(contract_path)
+    plan_snapshot = _publication_plan_snapshot_from_plan(plan)
+    return _resolve_e8_publication_plan(
+        plan_snapshot,
+        contract,
+        plan_hash=_publication_plan_hash(plan_snapshot),
+        contract_hash=_confirmatory_contract_hash(contract),
         source_closure_hash=_e8_publication_source_closure_hash(),
-        contract=contract,
-        run_config=plan.run_config,
-        simulations=plan.simulations,
-        publication_scope=plan.publication_scope,
-        scenarios=plan.scenarios,
-        notes=plan.notes,
     )
 
 
 def run_e8_publication_plan(plan: E8ResolvedPublicationPlan) -> E8PublicationArtifact:
     rows = tuple(
         run_committee_scenario(
-            run_id=plan.run_config.run_id,
-            experiment_id=plan.run_config.experiment_id,
-            run_config=plan.run_config,
+            run_id=plan.plan_snapshot.run_config.run_id,
+            experiment_id=plan.plan_snapshot.run_config.experiment_id,
+            run_config=plan.plan_snapshot.run_config,
             scenario=item.scenario,
             config=E8SimulationConfig(
-                simulations=plan.simulations,
+                simulations=plan.plan_snapshot.simulations,
                 seed=item.seed,
-                origin=plan.run_config.origin,
-                publication_scope=plan.publication_scope,
+                origin=plan.plan_snapshot.run_config.origin,
+                publication_scope=plan.plan_snapshot.publication_scope,
             ),
         )
-        for item in plan.scenarios
+        for item in plan.plan_snapshot.scenarios
     )
-    claim_disposition, limits = _summary_and_limits(rows, plan.contract)
+    claim_disposition, limits = _summary_and_limits(rows, plan.contract_snapshot)
     return E8PublicationArtifact(
-        plan_path=plan.plan_path,
+        schema_version=_E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION,
+        plan_id=plan.plan_id,
         plan_hash=plan.plan_hash,
-        contract_path=plan.contract_path,
+        plan_snapshot=plan.plan_snapshot,
+        contract_id=plan.contract_id,
         contract_hash=plan.contract_hash,
+        contract_snapshot=plan.contract_snapshot,
         source_closure_hash=plan.source_closure_hash,
-        run_id=plan.run_config.run_id,
-        run_config_hash=config_hash(plan.run_config),
-        publication_scope=plan.publication_scope,
-        origin=plan.run_config.origin,
+        run_id=plan.plan_snapshot.run_config.run_id,
+        run_config_hash=config_hash(plan.plan_snapshot.run_config),
+        publication_scope=plan.plan_snapshot.publication_scope,
+        origin=plan.plan_snapshot.run_config.origin,
         claim_disposition=claim_disposition,
         limitations=limits,
         rows=rows,
@@ -1471,6 +1646,12 @@ def load_and_run_e8_publication(
     *,
     output_path: str | Path | None = None,
 ) -> E8PublicationArtifact:
+    """Run the frozen E8 replay plan and optionally write the canonical rows artifact.
+
+    Task22 handoff:
+    - rows artifact: `load_and_run_e8_publication(plan_path, output_path=rows_path)`
+    - preserve the exact `plan_path` used alongside the emitted artifact for downstream validation
+    """
     plan = load_e8_publication_plan(plan_path)
     artifact = run_e8_publication_plan(plan)
     if output_path is not None:
@@ -1479,7 +1660,11 @@ def load_and_run_e8_publication(
     return artifact
 
 
-def load_e8_publication_artifact(path: str | Path) -> E8PublicationArtifact:
+def load_e8_publication_artifact(
+    path: str | Path,
+    *,
+    plan_path: str | Path | None = None,
+) -> E8PublicationArtifact:
     artifact_path = _resolve_existing_plain_file(path, label="E8 publication artifact")
     try:
         payload = json.loads(
@@ -1490,10 +1675,35 @@ def load_e8_publication_artifact(path: str | Path) -> E8PublicationArtifact:
                 else dict(pairs)
             ),
         )
-    except Exception as error:
-        raise ValueError(f"unable to load E8 publication artifact: {artifact_path}") from error
+    except json.JSONDecodeError as error:
+        raise ValueError(f"unable to load E8 publication artifact: {error.msg}") from error
+    except ValueError as error:
+        raise ValueError(f"unable to load E8 publication artifact: {error}") from error
     artifact = E8PublicationArtifact.model_validate(payload)
-    rerun = load_and_run_e8_publication(artifact.plan_path)
+    if plan_path is not None:
+        explicit_plan = load_e8_publication_plan(plan_path)
+        if artifact.plan_hash != explicit_plan.plan_hash:
+            raise ValueError("E8 publication artifact plan_hash does not match the supplied plan_path")
+        if artifact.contract_hash != explicit_plan.contract_hash:
+            raise ValueError("E8 publication artifact contract_hash does not match the supplied plan_path")
+        if artifact.source_closure_hash != explicit_plan.source_closure_hash:
+            raise ValueError("E8 publication artifact source_closure_hash does not match the supplied plan_path")
+        if artifact.plan_snapshot.model_dump(mode="json") != explicit_plan.plan_snapshot.model_dump(mode="json"):
+            raise ValueError("E8 publication artifact plan snapshot does not match the supplied plan_path")
+        if artifact.contract_snapshot.model_dump(mode="json") != explicit_plan.contract_snapshot.model_dump(
+            mode="json"
+        ):
+            raise ValueError("E8 publication artifact contract snapshot does not match the supplied plan_path")
+        resolved_plan = explicit_plan
+    else:
+        resolved_plan = _resolve_e8_publication_plan(
+            artifact.plan_snapshot,
+            artifact.contract_snapshot,
+            plan_hash=artifact.plan_hash,
+            contract_hash=artifact.contract_hash,
+            source_closure_hash=artifact.source_closure_hash,
+        )
+    rerun = run_e8_publication_plan(resolved_plan)
     if artifact.model_dump(mode="json") != rerun.model_dump(mode="json"):
         raise ValueError("E8 publication artifact does not match deterministic plan replay")
     return artifact
