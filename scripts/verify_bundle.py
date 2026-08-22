@@ -1,15 +1,32 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
 import shutil
 import stat
+import subprocess
+import sys
 import tempfile
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from poi_mpp.evidence.config import load_run_config
+from poi_mpp.experiments.e7_evm import E7Bundle, default_measurement_contract
+from poi_mpp.experiments.e8_consensus import E8ScenarioRow, load_e8_confirmatory_contract
+from poi_mpp.reporting.e7 import collect_and_summarize_e7_publication
+from poi_mpp.reporting.e8 import summarize_e8_rows
+from poi_mpp.reporting.load import PublicationEligibilityError
+from poi_mpp.reporting.manifest import PublicationReportManifestModel, validate_existing_manifest
 
 
 class BundleVerificationError(ValueError):
@@ -22,6 +39,34 @@ class BundleVerificationError(ValueError):
 
 class _FrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+TASK22_SCHEMA = "POI_MPP_FREEZE_BUNDLE_V1"
+CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
+MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
+VERIFY_REPORT_SCHEMA = "POI_MPP_FREEZE_VERIFICATION_REPORT_V1"
+PUBLICATION_SCHEMA = "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3"
+SENTINEL = "MPP_ARTIFACT_COMPLETE"
+TEST_ONLY_SCHEMA = "TEST_ONLY_NON_EVIDENCE"
+NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+EXPECTED_EXPERIMENTS = tuple(f"E{index}" for index in range(1, 9))
+EXPECTED_CLAIMS = {
+    "C1": ("E1", ("T6", "F5")),
+    "C2": ("E2", ("T7", "F6")),
+    "C3": ("E3", ("T4", "T8", "F7")),
+    "C4": ("E4", ("T9", "F8")),
+    "C5": ("E5", ("T10",)),
+    "C6": ("E6", ("T11", "F9", "F10")),
+    "C7": ("E7", ("T12", "F12")),
+    "C8": ("E8", ("T13", "F11")),
+}
+EXPECTED_CLAIM_ORDER = tuple(EXPECTED_CLAIMS)
+REQUIRED_MANUAL_REVIEW_HASH_KEYS = (
+    "manifest.json",
+    "claim_support_matrix.json",
+    "publication/artifact_manifest.json",
+    "verification_report.json",
+)
 
 
 class ManualReviewChecks(_FrozenModel):
@@ -42,6 +87,19 @@ class ManualReviewRecord(_FrozenModel):
     review_date: str | None = None
     reviewed_artifact_hashes: dict[str, str] = Field(default_factory=dict)
     checks: ManualReviewChecks | None = None
+
+    @field_validator("schema_version")
+    @classmethod
+    def _validate_schema(cls, value: str) -> str:
+        if value != MANUAL_REVIEW_SCHEMA:
+            raise ValueError(f"schema_version must equal {MANUAL_REVIEW_SCHEMA}")
+        return value
+
+
+class ManualReviewSummary(_FrozenModel):
+    status: str
+    reviewer_identity: str | None = None
+    review_date: str | None = None
 
 
 class ClaimSupportRow(_FrozenModel):
@@ -65,6 +123,13 @@ class ClaimSupportMatrix(_FrozenModel):
     schema_version: str
     claims: tuple[ClaimSupportRow, ...]
 
+    @field_validator("schema_version")
+    @classmethod
+    def _validate_schema(cls, value: str) -> str:
+        if value != CLAIM_SCHEMA:
+            raise ValueError(f"schema_version must equal {CLAIM_SCHEMA}")
+        return value
+
     @model_validator(mode="after")
     def _unique_claims(self) -> "ClaimSupportMatrix":
         claim_ids = [row.claim_id for row in self.claims]
@@ -80,6 +145,30 @@ class ExperimentEntry(_FrozenModel):
     origin: str | None = None
 
 
+class AuthoritativeInputs(_FrozenModel):
+    report_spec_relative_path: str
+    task21_config_relative_path: str
+    task21_blocker_relative_path: str
+    e7_run_config_relative_path: str | None = None
+    e8_rows_relative_path: str | None = None
+    e8_contract_relative_path: str | None = None
+
+    @field_validator(
+        "report_spec_relative_path",
+        "task21_config_relative_path",
+        "task21_blocker_relative_path",
+        "e7_run_config_relative_path",
+        "e8_rows_relative_path",
+        "e8_contract_relative_path",
+        mode="before",
+    )
+    @classmethod
+    def _validate_relative_path(cls, value: object) -> object:
+        if value is None:
+            return None
+        return _canonical_relative_path(value)
+
+
 class BundleManifest(_FrozenModel):
     schema_version: str
     bundle_kind: str
@@ -89,64 +178,124 @@ class BundleManifest(_FrozenModel):
     claim_matrix_relative_path: str
     publication_report_relative_path: str
     manual_review_relative_path: str
+    authoritative_inputs: AuthoritativeInputs
     completeness: str
     claim_support_overall: str
     blockers: tuple[str, ...]
     required_experiments: tuple[str, ...]
     experiments: dict[str, ExperimentEntry]
-    manual_review: dict[str, Any]
+    manual_review: ManualReviewSummary
     sentinel_present: bool
     frozen_manifest_relative_path: str | None = None
     tool_versions: dict[str, str] = Field(default_factory=dict)
     argv_contract: dict[str, tuple[str, ...]]
+
+    @field_validator("schema_version")
+    @classmethod
+    def _validate_schema(cls, value: str) -> str:
+        if value != TASK22_SCHEMA:
+            raise ValueError(f"schema_version must equal {TASK22_SCHEMA}")
+        return value
 
     @field_validator(
         "report_relative_path",
         "claim_matrix_relative_path",
         "publication_report_relative_path",
         "manual_review_relative_path",
+        "frozen_manifest_relative_path",
         mode="before",
     )
     @classmethod
-    def _validate_relative_path(cls, value: object) -> str:
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("relative path must not be blank")
-        if value.startswith("/") or "\\" in value:
-            raise ValueError("relative path must be a canonical POSIX relative path")
-        parts = PurePosixPath(value).parts
-        if not parts or any(part in {"", ".", ".."} for part in parts):
-            raise ValueError("relative path must not contain '.', '..', or empty parts")
-        normalized = str(PurePosixPath(value))
-        if normalized != value:
-            raise ValueError("relative path must already be normalized")
-        return value
+    def _validate_manifest_relative_paths(cls, value: object) -> object:
+        if value is None:
+            return None
+        return _canonical_relative_path(value)
 
     @model_validator(mode="after")
     def _validate_experiments(self) -> "BundleManifest":
-        required = set(self.required_experiments)
-        missing = sorted(required - set(self.experiments))
-        if missing:
-            raise ValueError(f"missing experiment entries: {', '.join(missing)}")
+        if self.required_experiments != EXPECTED_EXPERIMENTS:
+            raise ValueError("required_experiments must exactly equal E1..E8 in order")
+        if tuple(self.experiments) != EXPECTED_EXPERIMENTS:
+            raise ValueError("experiment records must exactly equal E1..E8 in order")
         return self
 
 
 class VerificationSummary(_FrozenModel):
+    schema_version: str = VERIFY_REPORT_SCHEMA
     run_id: str
     completeness: str
     blockers: tuple[str, ...]
     claims: dict[str, str]
     sentinel_present: bool
+    manual_review_authenticated: bool = False
+
+    @field_validator("schema_version")
+    @classmethod
+    def _validate_schema(cls, value: str) -> str:
+        if value != VERIFY_REPORT_SCHEMA:
+            raise ValueError(f"schema_version must equal {VERIFY_REPORT_SCHEMA}")
+        return value
 
 
-_SENTINEL = "MPP_ARTIFACT_COMPLETE"
-_TEST_ONLY_SCHEMA = "TEST_ONLY_NON_EVIDENCE"
+class LoadedBundle(_FrozenModel):
+    root: str
+    manifest: BundleManifest
+    claim_matrix: ClaimSupportMatrix
+    manual_review_record: ManualReviewRecord
+    stored_report: VerificationSummary
+    publication_manifest_json: dict[str, Any]
+    publication_manifest_model: PublicationReportManifestModel | None = None
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _canonical_relative_path(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("relative path must not be blank")
+    if value.startswith("/") or "\\" in value:
+        raise ValueError("relative path must be a canonical POSIX relative path")
+    normalized = str(PurePosixPath(value))
+    if normalized != value:
+        raise ValueError("relative path must already be normalized")
+    parts = PurePosixPath(value).parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise ValueError("relative path must not contain '.', '..', or empty parts")
+    return value
 
 
 def _print_json(payload: dict[str, object]) -> None:
     print(json.dumps(payload, indent=2, sort_keys=True))
 
 
-def _safe_path(path: Path) -> Path:
+def _fsync_directory(path: Path) -> None:
+    directory_fd = os.open(str(path), os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def _atomic_write_bytes(path: Path, data: bytes) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, path)
+        _fsync_directory(path.parent)
+        return _sha256_bytes(data)
+    except Exception:
+        if temp_path.exists():
+            temp_path.unlink()
+        raise
+
+
+def _assert_no_symlink_components(path: Path, *, stop_at: Path | None = None, require_directory: bool = False) -> None:
     current = path
     while True:
         try:
@@ -155,19 +304,47 @@ def _safe_path(path: Path) -> Path:
             raise BundleVerificationError(f"unable to stat path component: {current}") from error
         if stat.S_ISLNK(metadata.st_mode):
             raise BundleVerificationError(f"symlinked path component is forbidden: {current}")
+        if require_directory and current == path and not stat.S_ISDIR(metadata.st_mode):
+            raise BundleVerificationError(f"bundle root must be a directory: {current}")
+        if stop_at is not None and current == stop_at:
+            break
         parent = current.parent
         if parent == current:
             break
         current = parent
-    return path.resolve(strict=True)
 
 
-def _safe_read_json(path: Path) -> dict[str, Any]:
+def _safe_root(bundle_root: Path) -> Path:
+    _assert_no_symlink_components(bundle_root, require_directory=True)
+    return bundle_root.resolve(strict=True)
+
+
+def _safe_read_bytes(path: Path, *, root: Path) -> bytes:
+    _assert_no_symlink_components(path.parent, stop_at=root, require_directory=True)
     try:
-        resolved = _safe_path(path)
-        if not resolved.is_file():
+        file_descriptor = os.open(str(path), os.O_RDONLY | NOFOLLOW)
+    except OSError as error:
+        raise BundleVerificationError(f"unable to open file without following symlinks: {path}") from error
+    try:
+        metadata = os.fstat(file_descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
             raise BundleVerificationError(f"path is not a regular file: {path}")
-        return json.loads(resolved.read_text(encoding="utf-8"))
+        if metadata.st_nlink != 1:
+            raise BundleVerificationError(f"hardlinked output/input file is forbidden: {path}")
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(file_descriptor, 65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        return b"".join(chunks)
+    finally:
+        os.close(file_descriptor)
+
+
+def _safe_read_json(path: Path, *, root: Path) -> dict[str, Any]:
+    try:
+        return json.loads(_safe_read_bytes(path, root=root).decode("utf-8"))
     except json.JSONDecodeError as error:
         raise BundleVerificationError(f"invalid JSON: {path}") from error
 
@@ -181,56 +358,153 @@ def _resolve_relative(root: Path, relative_path: str) -> Path:
     return path
 
 
-def _load_bundle(bundle_root: Path) -> tuple[BundleManifest, ClaimSupportMatrix, ManualReviewRecord]:
-    resolved_root = _safe_path(bundle_root)
-    if not resolved_root.is_dir():
-        raise BundleVerificationError(f"bundle root must be a directory: {bundle_root}")
-    manifest = BundleManifest.model_validate(_safe_read_json(resolved_root / "manifest.json"))
+def _enumerate_files(root: Path) -> set[str]:
+    files: set[str] = set()
+    _assert_no_symlink_components(root, require_directory=True)
+    for current_root, directory_names, file_names in os.walk(root, topdown=True, followlinks=False):
+        current_path = Path(current_root)
+        for directory_name in list(directory_names):
+            directory_path = current_path / directory_name
+            metadata = os.lstat(directory_path)
+            if stat.S_ISLNK(metadata.st_mode):
+                raise BundleVerificationError(f"symlinked output directory is forbidden: {directory_path}")
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise BundleVerificationError(f"non-directory bundle component is forbidden: {directory_path}")
+        for file_name in file_names:
+            file_path = current_path / file_name
+            _safe_read_bytes(file_path, root=root)
+            files.add(str(file_path.relative_to(root).as_posix()))
+    return files
+
+
+def _contains_test_only(payload: object) -> bool:
+    if payload == TEST_ONLY_SCHEMA:
+        return True
+    if isinstance(payload, dict):
+        return any(_contains_test_only(key) or _contains_test_only(value) for key, value in payload.items())
+    if isinstance(payload, (list, tuple)):
+        return any(_contains_test_only(item) for item in payload)
+    return False
+
+
+def _load_bundle(bundle_root: Path, *, allow_test_only: bool) -> LoadedBundle:
+    resolved_root = _safe_root(bundle_root)
+    manifest_json = _safe_read_json(resolved_root / "manifest.json", root=resolved_root)
+    claim_matrix_json = _safe_read_json(resolved_root / "claim_support_matrix.json", root=resolved_root)
+    manual_review_json = _safe_read_json(resolved_root / "manual_review.json", root=resolved_root)
+    report_json = _safe_read_json(resolved_root / "verification_report.json", root=resolved_root)
+    publication_manifest_json = _safe_read_json(resolved_root / "publication" / "artifact_manifest.json", root=resolved_root)
+    if not allow_test_only:
+        for payload in (manifest_json, claim_matrix_json, manual_review_json, report_json, publication_manifest_json):
+            if _contains_test_only(payload):
+                raise BundleVerificationError("TEST_ONLY_NON_EVIDENCE records are forbidden in production verification")
+    manifest = BundleManifest.model_validate(manifest_json)
     claim_matrix = ClaimSupportMatrix.model_validate(
-        _safe_read_json(_resolve_relative(resolved_root, manifest.claim_matrix_relative_path))
+        _safe_read_json(_resolve_relative(resolved_root, manifest.claim_matrix_relative_path), root=resolved_root)
     )
-    manual_review = ManualReviewRecord.model_validate(
-        _safe_read_json(_resolve_relative(resolved_root, manifest.manual_review_relative_path))
+    manual_review_record = ManualReviewRecord.model_validate(
+        _safe_read_json(_resolve_relative(resolved_root, manifest.manual_review_relative_path), root=resolved_root)
     )
-    publication_manifest = _safe_read_json(
-        _resolve_relative(resolved_root, manifest.publication_report_relative_path)
+    stored_report = VerificationSummary.model_validate(
+        _safe_read_json(_resolve_relative(resolved_root, manifest.report_relative_path), root=resolved_root)
     )
-    if publication_manifest.get("schema_version") != _TEST_ONLY_SCHEMA and "schema_version" not in publication_manifest:
-        raise BundleVerificationError("publication report manifest is missing schema_version")
-    return manifest, claim_matrix, manual_review
-
-
-def _validate_manual_review(manual_review: ManualReviewRecord) -> tuple[str, ...]:
-    if manual_review.status != "COMPLETE":
-        return ("manual scientific review record is absent",)
-    reasons: list[str] = []
-    if not manual_review.reviewer_identity:
-        reasons.append("manual review requires reviewer_identity")
-    if not manual_review.review_basis:
-        reasons.append("manual review requires review_basis")
-    if not manual_review.review_date:
-        reasons.append("manual review requires review_date")
-    if manual_review.checks is None:
-        reasons.append("manual review requires explicit checks")
+    publication_manifest_model: PublicationReportManifestModel | None = None
+    if allow_test_only and publication_manifest_json.get("schema_version") == TEST_ONLY_SCHEMA:
+        publication_manifest_model = None
     else:
-        for key, passed in manual_review.checks.model_dump(mode="json").items():
-            if not passed:
-                reasons.append(f"manual review check failed: {key}")
-    return tuple(reasons)
+        if publication_manifest_json.get("schema_version") != PUBLICATION_SCHEMA:
+            raise BundleVerificationError(f"publication report manifest schema_version must equal {PUBLICATION_SCHEMA}")
+        try:
+            validate_existing_manifest(_resolve_relative(resolved_root, "publication"))
+            publication_manifest_model = PublicationReportManifestModel.model_validate(publication_manifest_json)
+        except (PublicationEligibilityError, ValidationError) as error:
+            reasons = error.reasons if isinstance(error, PublicationEligibilityError) else (str(error),)
+            raise BundleVerificationError(list(reasons)) from error
+    return LoadedBundle(
+        root=str(resolved_root),
+        manifest=manifest,
+        claim_matrix=claim_matrix,
+        manual_review_record=manual_review_record,
+        stored_report=stored_report,
+        publication_manifest_json=publication_manifest_json,
+        publication_manifest_model=publication_manifest_model,
+    )
 
 
-def verify_bundle(bundle_root: Path) -> VerificationSummary:
-    manifest, claim_matrix, manual_review = _load_bundle(bundle_root)
-    reasons: list[str] = list(manifest.blockers)
-    reasons.extend(_validate_manual_review(manual_review))
+def _publication_expected_files(bundle: LoadedBundle) -> set[str]:
+    publication_root = PurePosixPath(bundle.manifest.publication_report_relative_path).parent
+    publication_root_text = str(publication_root)
+    if publication_root_text == ".":
+        raise BundleVerificationError("publication report manifest must live under a dedicated publication directory")
+    if bundle.publication_manifest_model is None:
+        return {str(publication_root / "artifact_manifest.json")}
+    return {str(publication_root / "artifact_manifest.json")} | {
+        str(publication_root / PurePosixPath(item.relative_path)) for item in bundle.publication_manifest_model.outputs
+    }
 
-    for experiment_id, experiment in sorted(manifest.experiments.items()):
-        if experiment.origin == "SYNTHETIC_NON_EVIDENCE":
-            reasons.append(f"{experiment_id} synthetic substitution is forbidden")
 
-    claims: dict[str, str] = {}
-    for row in claim_matrix.claims:
-        claims[row.claim_id] = row.disposition
+def _validate_bundle_closure(bundle: LoadedBundle) -> tuple[str, ...]:
+    expected = {
+        "manifest.json",
+        bundle.manifest.report_relative_path,
+        bundle.manifest.claim_matrix_relative_path,
+        bundle.manifest.publication_report_relative_path,
+        bundle.manifest.manual_review_relative_path,
+        bundle.manifest.authoritative_inputs.report_spec_relative_path,
+        bundle.manifest.authoritative_inputs.task21_config_relative_path,
+        bundle.manifest.authoritative_inputs.task21_blocker_relative_path,
+    }
+    for optional_path in (
+        bundle.manifest.authoritative_inputs.e7_run_config_relative_path,
+        bundle.manifest.authoritative_inputs.e8_rows_relative_path,
+        bundle.manifest.authoritative_inputs.e8_contract_relative_path,
+        bundle.manifest.frozen_manifest_relative_path,
+    ):
+        if optional_path is not None:
+            expected.add(optional_path)
+    expected |= _publication_expected_files(bundle)
+    actual = _enumerate_files(Path(bundle.root))
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extras = sorted(actual - expected)
+        reasons: list[str] = []
+        if missing:
+            reasons.append(f"bundle closure missing files: {', '.join(missing)}")
+        if extras:
+            reasons.append(f"bundle closure has unexpected files: {', '.join(extras)}")
+        return tuple(reasons)
+    return ()
+
+
+def _validate_experiments(bundle: LoadedBundle) -> tuple[str, ...]:
+    reasons: list[str] = []
+    for claim_id, (experiment_id, required_artifacts) in EXPECTED_CLAIMS.items():
+        experiment = bundle.manifest.experiments[experiment_id]
+        if experiment.required_artifacts != required_artifacts:
+            reasons.append(f"{experiment_id} required_artifacts do not match the frozen claim map")
+        unknown_present = sorted(set(experiment.present_artifacts) - set(required_artifacts))
+        if unknown_present:
+            reasons.append(f"{experiment_id} declares unknown present_artifacts: {', '.join(unknown_present)}")
+        claim_row = next(row for row in bundle.claim_matrix.claims if row.claim_id == claim_id)
+        expected_present = tuple(
+            artifact_id for artifact_id in required_artifacts if artifact_id in experiment.present_artifacts
+        )
+        if claim_row.required_artifacts != required_artifacts:
+            reasons.append(f"{claim_id} required_artifacts do not match the frozen claim map")
+        if claim_row.present_artifacts != expected_present:
+            reasons.append(f"{claim_id} present_artifacts contradict {experiment_id}")
+    return tuple(dict.fromkeys(reasons))
+
+
+def _structural_reasons(bundle: LoadedBundle) -> tuple[str, ...]:
+    reasons: list[str] = []
+    reasons.extend(_validate_bundle_closure(bundle))
+    reasons.extend(bundle.manifest.blockers)
+    claim_order = tuple(row.claim_id for row in bundle.claim_matrix.claims)
+    if claim_order != EXPECTED_CLAIM_ORDER:
+        reasons.append("claim rows must exactly equal C1..C8 in order")
+    reasons.extend(_validate_experiments(bundle))
+    for row in bundle.claim_matrix.claims:
         if row.completeness != "COMPLETE":
             reasons.append(f"{row.claim_id} is {row.completeness}")
         missing_artifacts = sorted(set(row.required_artifacts) - set(row.present_artifacts))
@@ -238,52 +512,346 @@ def verify_bundle(bundle_root: Path) -> VerificationSummary:
             reasons.append(f"{row.claim_id} missing artifacts: {', '.join(missing_artifacts)}")
         if row.paper_language_status != "MATCHES_EVIDENCE":
             reasons.append(f"{row.claim_id} paper language does not match evidence")
+    if bundle.manifest.manual_review.status != bundle.manual_review_record.status:
+        reasons.append("manifest manual_review summary contradicts manual_review.json")
+    if bundle.manifest.manual_review.reviewer_identity != bundle.manual_review_record.reviewer_identity:
+        reasons.append("manifest manual_review reviewer_identity contradicts manual_review.json")
+    if bundle.manifest.manual_review.review_date != bundle.manual_review_record.review_date:
+        reasons.append("manifest manual_review review_date contradicts manual_review.json")
+    for experiment_id, experiment in sorted(bundle.manifest.experiments.items()):
+        if experiment.origin == "SYNTHETIC_NON_EVIDENCE":
+            reasons.append(f"{experiment_id} synthetic substitution is forbidden")
+    sentinel_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    if bundle.manifest.sentinel_present != sentinel_present:
+        reasons.append("manifest sentinel_present contradicts filesystem state")
+    return tuple(dict.fromkeys(reasons))
 
-    sentinel_path = bundle_root / _SENTINEL
-    sentinel_present = sentinel_path.exists()
-    completeness = "COMPLETE" if not reasons else "INCOMPLETE"
+
+def _claims_map(bundle: LoadedBundle) -> dict[str, str]:
+    return {row.claim_id: row.disposition for row in bundle.claim_matrix.claims}
+
+
+def verify_bundle_structure(bundle_root: Path, *, enforce_stored_report: bool = False) -> VerificationSummary:
+    bundle = _load_bundle(bundle_root, allow_test_only=True)
+    reasons = list(_structural_reasons(bundle))
+    sentinel_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    completeness = "COMPLETE" if not reasons and bundle.manifest.completeness == "COMPLETE" else "INCOMPLETE"
     if completeness != "COMPLETE" and sentinel_present:
         reasons.append("sentinel present before verification completed")
         completeness = "INCOMPLETE"
-
-    return VerificationSummary(
-        run_id=manifest.run_id,
+    summary = VerificationSummary(
+        run_id=bundle.manifest.run_id,
         completeness=completeness,
         blockers=tuple(dict.fromkeys(reasons)),
-        claims=claims,
+        claims=_claims_map(bundle),
         sentinel_present=sentinel_present,
+        manual_review_authenticated=bundle.manual_review_record.status == "COMPLETE",
     )
+    if enforce_stored_report and bundle.stored_report.model_dump(mode="json") != summary.model_dump(mode="json"):
+        summary = summary.model_copy(
+            update={
+                "completeness": "INCOMPLETE",
+                "blockers": tuple(
+                    dict.fromkeys((*summary.blockers, "verification report does not match the recomputed structural summary"))
+                ),
+            }
+        )
+    return summary
+
+
+def _assert_external_file(path: Path, *, bundle_root: Path, label: str) -> Path:
+    candidate = Path(path)
+    try:
+        candidate.relative_to(bundle_root)
+    except ValueError:
+        pass
+    else:
+        raise BundleVerificationError(f"{label} must live outside the bundle root")
+    _assert_no_symlink_components(candidate.parent, require_directory=True)
+    data = _safe_read_bytes(candidate, root=candidate.parent)
+    if not data:
+        raise BundleVerificationError(f"{label} must not be empty: {candidate}")
+    return candidate.resolve(strict=True)
+
+
+def _digest_for_relative_path(bundle_root: Path, relative_path: str) -> str:
+    return _sha256_bytes(_safe_read_bytes(_resolve_relative(bundle_root, relative_path), root=bundle_root))
+
+
+def _validate_manual_review(
+    bundle: LoadedBundle,
+    *,
+    allowed_signers_path: Path | None,
+    signature_path: Path | None,
+) -> tuple[tuple[str, ...], bool]:
+    record = bundle.manual_review_record
+    if record.status != "COMPLETE":
+        return (("manual scientific review record is absent",), False)
+    reasons: list[str] = []
+    if not record.reviewer_identity:
+        reasons.append("manual review requires reviewer_identity")
+    if not record.review_basis:
+        reasons.append("manual review requires review_basis")
+    if not record.review_date:
+        reasons.append("manual review requires review_date")
+    if record.checks is None:
+        reasons.append("manual review requires explicit checks")
+    else:
+        for key, passed in record.checks.model_dump(mode="json").items():
+            if not passed:
+                reasons.append(f"manual review check failed: {key}")
+    bundle_root = Path(bundle.root)
+    observed_hashes = {
+        "manifest.json": _digest_for_relative_path(bundle_root, "manifest.json"),
+        "claim_support_matrix.json": _digest_for_relative_path(bundle_root, bundle.manifest.claim_matrix_relative_path),
+        "publication/artifact_manifest.json": _digest_for_relative_path(
+            bundle_root, bundle.manifest.publication_report_relative_path
+        ),
+        "verification_report.json": _digest_for_relative_path(bundle_root, bundle.manifest.report_relative_path),
+    }
+    for key in REQUIRED_MANUAL_REVIEW_HASH_KEYS:
+        expected = record.reviewed_artifact_hashes.get(key)
+        if expected is None:
+            reasons.append(f"manual review requires reviewed_artifact_hashes[{key}]")
+            continue
+        if expected != observed_hashes[key]:
+            reasons.append(f"manual review artifact hash mismatch for {key}")
+    if allowed_signers_path is None or signature_path is None:
+        reasons.append("manual scientific review signature is absent")
+        return (tuple(dict.fromkeys(reasons)), False)
+    if record.reviewer_identity is None:
+        return (tuple(dict.fromkeys(reasons)), False)
+    try:
+        verified_allowed = _assert_external_file(
+            allowed_signers_path, bundle_root=bundle_root, label="manual review allowed signers file"
+        )
+        verified_signature = _assert_external_file(
+            signature_path, bundle_root=bundle_root, label="manual review detached signature"
+        )
+        manual_review_path = _resolve_relative(bundle_root, bundle.manifest.manual_review_relative_path)
+        signed_bytes = _safe_read_bytes(manual_review_path, root=bundle_root)
+        completed = subprocess.run(
+            [
+                "ssh-keygen",
+                "-Y",
+                "verify",
+                "-f",
+                str(verified_allowed),
+                "-I",
+                record.reviewer_identity,
+                "-n",
+                "file",
+                "-s",
+                str(verified_signature),
+            ],
+            input=signed_bytes,
+            capture_output=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            reasons.append(
+                "manual scientific review signature verification failed: "
+                + ((completed.stderr or completed.stdout).decode("utf-8", errors="replace").strip() or "unknown failure")
+            )
+            return (tuple(dict.fromkeys(reasons)), False)
+    except (BundleVerificationError, OSError) as error:
+        reasons.append(str(error))
+        return (tuple(dict.fromkeys(reasons)), False)
+    return (tuple(dict.fromkeys(reasons)), not reasons)
+
+
+def _revalidate_e7(bundle: LoadedBundle) -> tuple[str, ...]:
+    if bundle.publication_manifest_model is None:
+        return ("production publication manifest is required for E7 authority replay",)
+    raw_entry = next(
+        (item for item in bundle.publication_manifest_model.outputs if item.artifact_id == "RAW_E7_LIVE_BUNDLE"),
+        None,
+    )
+    if raw_entry is None:
+        return ("E7 publication bundle is missing RAW_E7_LIVE_BUNDLE",)
+    run_config_relative_path = bundle.manifest.authoritative_inputs.e7_run_config_relative_path
+    if run_config_relative_path is None:
+        return ("E7 live authority replay requires authoritative_inputs.e7_run_config_relative_path",)
+    bundle_root = Path(bundle.root)
+    run_config = load_run_config(_resolve_relative(bundle_root, run_config_relative_path))
+    candidate_raw_path = _resolve_relative(
+        bundle_root,
+        str(PurePosixPath(bundle.manifest.publication_report_relative_path).parent / PurePosixPath(raw_entry.relative_path)),
+    )
+    candidate_bundle = E7Bundle.model_validate(_safe_read_json(candidate_raw_path, root=bundle_root))
+    candidate_raw_hash = _sha256_bytes(_safe_read_bytes(candidate_raw_path, root=bundle_root))
+    reasons: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="task22-e7-revalidate-") as temp_dir:
+        fresh_output = Path(temp_dir) / "E7_live_bundle.json"
+        result = collect_and_summarize_e7_publication(
+            contracts_root=REPO_ROOT / "contracts",
+            run_config=run_config,
+            bundle_output_path=fresh_output,
+            contract=default_measurement_contract(),
+            timeout=120,
+        )
+        fresh_hash = _sha256_bytes(fresh_output.read_bytes())
+        if fresh_hash != candidate_raw_hash or raw_entry.sha256 != candidate_raw_hash:
+            reasons.append("E7 stored raw bundle hash does not match a fresh live-authority replay")
+        if candidate_bundle.model_dump(mode="json") != result.bundle.model_dump(mode="json"):
+            reasons.append("E7 stored raw bundle does not match a fresh live-authority replay")
+        if raw_entry.run_id != result.bundle.run_config_snapshot.run_id:
+            reasons.append("E7 publication raw output run_id does not match the fresh replay")
+        if raw_entry.config_hash != result.bundle.run_config_hash:
+            reasons.append("E7 publication raw output config_hash does not match the fresh replay")
+        if raw_entry.source_closure_hash != result.parity_verification.source_closure_hash:
+            reasons.append("E7 publication raw output source_closure_hash does not match the fresh replay")
+        expected_source_hashes = (
+            result.bundle.raw_report_hash,
+            result.bundle.run_config_hash,
+            result.parity_verification.source_closure_hash,
+            result.parity_verification.protocol_vectors_hash,
+            result.parity_verification.protocol_witness_hash,
+        )
+        if raw_entry.source_hashes != expected_source_hashes:
+            reasons.append("E7 publication raw output source_hashes do not match the fresh replay")
+    return tuple(dict.fromkeys(reasons))
+
+
+def _load_e8_rows(bundle_root: Path, relative_path: str) -> tuple[E8ScenarioRow, ...]:
+    payload = _safe_read_json(_resolve_relative(bundle_root, relative_path), root=bundle_root)
+    rows_payload = payload.get("rows", payload)
+    if not isinstance(rows_payload, list) or not rows_payload:
+        raise BundleVerificationError("E8 rows input must contain a non-empty rows list")
+    try:
+        return tuple(E8ScenarioRow.model_validate(row) for row in rows_payload)
+    except ValidationError as error:
+        raise BundleVerificationError(str(error)) from error
+
+
+def _revalidate_e8(bundle: LoadedBundle) -> tuple[str, ...]:
+    rows_relative_path = bundle.manifest.authoritative_inputs.e8_rows_relative_path
+    contract_relative_path = bundle.manifest.authoritative_inputs.e8_contract_relative_path
+    e8_outputs_present = any(
+        item.artifact_id in {"T13", "F11"} for item in (bundle.publication_manifest_model.outputs if bundle.publication_manifest_model else ())
+    )
+    if rows_relative_path is None or contract_relative_path is None:
+        if e8_outputs_present or bundle.manifest.experiments["E8"].present_artifacts:
+            return ("E8 publication replay requires authoritative_inputs.e8_rows_relative_path and e8_contract_relative_path",)
+        return ()
+    bundle_root = Path(bundle.root)
+    rows = _load_e8_rows(bundle_root, rows_relative_path)
+    try:
+        contract = load_e8_confirmatory_contract(_resolve_relative(bundle_root, contract_relative_path))
+        summary = summarize_e8_rows(rows, contract=contract)
+    except (ValueError, ValidationError) as error:
+        raise BundleVerificationError(str(error)) from error
+    reasons: list[str] = []
+    if bundle.claim_matrix.claims[-1].disposition != summary.claim_disposition:
+        reasons.append("C8 disposition does not match the E8 authoritative replay summary")
+    return tuple(dict.fromkeys(reasons))
+
+
+def verify_bundle(
+    bundle_root: Path,
+    *,
+    manual_review_allowed_signers: Path | None = None,
+    manual_review_signature: Path | None = None,
+    enforce_stored_report: bool = True,
+) -> VerificationSummary:
+    bundle = _load_bundle(bundle_root, allow_test_only=False)
+    reasons: list[str] = list(_structural_reasons(bundle))
+    manual_review_reasons, manual_review_authenticated = _validate_manual_review(
+        bundle,
+        allowed_signers_path=manual_review_allowed_signers,
+        signature_path=manual_review_signature,
+    )
+    reasons.extend(manual_review_reasons)
+    reasons.extend(_revalidate_e7(bundle))
+    reasons.extend(_revalidate_e8(bundle))
+    sentinel_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    completeness = "COMPLETE" if not reasons and bundle.manifest.completeness == "COMPLETE" else "INCOMPLETE"
+    if completeness != "COMPLETE" and sentinel_present:
+        reasons.append("sentinel present before verification completed")
+        completeness = "INCOMPLETE"
+    summary = VerificationSummary(
+        run_id=bundle.manifest.run_id,
+        completeness=completeness,
+        blockers=tuple(dict.fromkeys(reasons)),
+        claims=_claims_map(bundle),
+        sentinel_present=sentinel_present,
+        manual_review_authenticated=manual_review_authenticated,
+    )
+    if enforce_stored_report and bundle.stored_report.model_dump(mode="json") != summary.model_dump(mode="json"):
+        summary = summary.model_copy(
+            update={
+                "completeness": "INCOMPLETE",
+                "blockers": tuple(
+                    dict.fromkeys((*summary.blockers, "verification report does not match the recomputed authoritative summary"))
+                ),
+            }
+        )
+    return summary
 
 
 def _copy_bundle(source_root: Path, target_root: Path) -> None:
     shutil.copytree(source_root, target_root)
 
 
-def promote_bundle(bundle_root: Path, frozen_root: Path, *, simulate_failure: bool = False) -> Path:
-    summary = verify_bundle(bundle_root)
+def _sentinel_payload(bundle_root: Path, summary: VerificationSummary) -> bytes:
+    payload = {
+        "run_id": summary.run_id,
+        "manifest_sha256": _digest_for_relative_path(bundle_root, "manifest.json"),
+        "verification_report_sha256": _digest_for_relative_path(bundle_root, "verification_report.json"),
+    }
+    return (json.dumps(payload, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
+def promote_bundle(
+    bundle_root: Path,
+    frozen_root: Path,
+    *,
+    manual_review_allowed_signers: Path | None = None,
+    manual_review_signature: Path | None = None,
+    simulate_failure: bool = False,
+) -> Path:
+    source_root = _safe_root(bundle_root)
+    summary = verify_bundle(
+        source_root,
+        manual_review_allowed_signers=manual_review_allowed_signers,
+        manual_review_signature=manual_review_signature,
+    )
     if summary.completeness != "COMPLETE":
         raise BundleVerificationError(summary.blockers)
-
+    frozen_root = frozen_root.resolve()
     frozen_root.mkdir(parents=True, exist_ok=True)
     target_root = frozen_root / summary.run_id
     if target_root.exists():
         raise BundleVerificationError(f"frozen target already exists: {target_root}")
-
     staging_parent = Path(tempfile.mkdtemp(prefix=f".{summary.run_id}.", dir=str(frozen_root)))
     staging_root = staging_parent / summary.run_id
+    replaced_target = False
     try:
-        _copy_bundle(bundle_root, staging_root)
-        sentinel_path = staging_root / _SENTINEL
-        if sentinel_path.exists():
-            sentinel_path.unlink()
+        _copy_bundle(source_root, staging_root)
+        copied_summary = verify_bundle(
+            staging_root,
+            manual_review_allowed_signers=manual_review_allowed_signers,
+            manual_review_signature=manual_review_signature,
+        )
+        if copied_summary.completeness != "COMPLETE":
+            raise BundleVerificationError(copied_summary.blockers)
         if simulate_failure:
             raise BundleVerificationError("simulated promotion failure")
         os.replace(staging_root, target_root)
-        sentinel_path = target_root / _SENTINEL
-        sentinel_path.write_text(f"{summary.run_id}\n", encoding="utf-8")
+        replaced_target = True
+        destination_summary = verify_bundle(
+            target_root,
+            manual_review_allowed_signers=manual_review_allowed_signers,
+            manual_review_signature=manual_review_signature,
+        )
+        if destination_summary.completeness != "COMPLETE":
+            raise BundleVerificationError(destination_summary.blockers)
+        _atomic_write_bytes(target_root / SENTINEL, _sentinel_payload(target_root, destination_summary))
+        _fsync_directory(target_root)
         return target_root
     except Exception:
-        shutil.rmtree(staging_parent, ignore_errors=True)
+        if replaced_target and target_root.exists():
+            shutil.rmtree(target_root, ignore_errors=True)
         raise
     finally:
         if staging_parent.exists():
@@ -296,18 +864,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--promote-to-frozen", action="store_true")
     parser.add_argument("--frozen-root")
     parser.add_argument("--simulate-promotion-failure", action="store_true")
+    parser.add_argument("--manual-review-allowed-signers")
+    parser.add_argument("--manual-review-signature")
     args = parser.parse_args(argv)
-
     try:
-        bundle_root = Path(args.bundle_root).resolve()
-        summary = verify_bundle(bundle_root)
+        bundle_root = Path(args.bundle_root)
+        allowed_signers = Path(args.manual_review_allowed_signers) if args.manual_review_allowed_signers else None
+        signature = Path(args.manual_review_signature) if args.manual_review_signature else None
+        summary = verify_bundle(
+            bundle_root,
+            manual_review_allowed_signers=allowed_signers,
+            manual_review_signature=signature,
+        )
         payload: dict[str, object] = summary.model_dump(mode="json")
         if args.promote_to_frozen:
             if not args.frozen_root:
                 raise BundleVerificationError("--frozen-root is required when promoting")
             target_root = promote_bundle(
                 bundle_root,
-                Path(args.frozen_root).resolve(),
+                Path(args.frozen_root),
+                manual_review_allowed_signers=allowed_signers,
+                manual_review_signature=signature,
                 simulate_failure=args.simulate_promotion_failure,
             )
             payload["frozen_root"] = str(target_root)
@@ -317,6 +894,7 @@ def main(argv: list[str] | None = None) -> int:
         reasons = error.reasons if isinstance(error, BundleVerificationError) else (str(error),)
         _print_json(
             {
+                "schema_version": VERIFY_REPORT_SCHEMA,
                 "completeness": "INCOMPLETE",
                 "blockers": list(reasons),
             }

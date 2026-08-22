@@ -24,6 +24,7 @@
 
 - [ ] accountable rendered/scientific review record exists
 - [ ] reviewer identity, review basis, review date, and reviewed artifact hashes are recorded
+- [ ] detached reviewer signature and trusted allowed-signers registry are supplied from outside the bundle
 - [ ] denominator, interval, negative-result, simulation-label, editability, accessibility, and claim-language checks are explicitly marked
 - [ ] AI output, self-review, or user approval is not mislabeled as independent review
 

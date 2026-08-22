@@ -28,49 +28,46 @@ The Task 22 freeze surface was absent at the start of the task.
 
 ## Delivered behavior
 
-- `make reproduce` now stages a typed candidate bundle under `results/candidates/<run_id>/`.
+- `make reproduce` now stages a typed candidate bundle under `results/tmp/candidates/<run_id>/`.
 - The candidate bundle records:
   - typed freeze manifest
   - typed claim-support matrix
   - typed manual-review placeholder
   - verification report
   - publication report closure under `publication/`
+  - authoritative-input pointers for report spec, Task 21 blocker chain, and any available E7/E8 replay inputs
   - Task 21 blocker-chain record under `task21/task21_blockers.json`
 - The current Saturday, August 22, 2026 replay is intentionally fail-closed:
   - exits nonzero
   - records `INCOMPLETE`
   - does not create `results/frozen/<run_id>/`
   - does not create `MPP_ARTIFACT_COMPLETE`
-- `scripts/verify_bundle.py` revalidates bundle structure from filesystem contents and preserves negative or inconclusive claim dispositions.
+- `scripts/verify_bundle.py` now:
+  - rejects `TEST_ONLY_NON_EVIDENCE` fixtures in production verification/promotion
+  - enforces exact bundle-file closure and anchored no-follow/hardlink-safe reads
+  - re-runs Task 20 publication-manifest validation instead of trusting status strings
+  - replays the live E7 authority boundary and compares the stored raw bundle/hash/closure
+  - requires manual-review signature verification from an external allowed-signers file plus detached signature
+  - preserves negative or inconclusive claim dispositions without upgrading completeness
 - Promotion to `results/frozen/<run_id>/` is implemented but gated on:
   - no completeness blockers
-  - complete manual review record
-  - no synthetic substitution
+  - complete externally authenticated manual review record
+  - no synthetic/test-only substitution
   - no preexisting frozen target
-  - successful atomic promotion path
+  - successful atomic promotion path with reverified staging snapshot and sentinel written last
 
 ## Current candidate result
 
-- Candidate root: `results/candidates/task22-4906a347c25fc3b9`
-- Verification report SHA-256: `a4b18f30fb01edd561caeb81e9e869f8eb6be63c4ab286e2c9050af631888911`
-- `scripts/verify_bundle.py --bundle-root results/candidates/task22-4906a347c25fc3b9`
-  - completeness: `INCOMPLETE`
-  - sentinel present: `false`
-  - claims:
-    - `C1`: `INCONCLUSIVE`
-    - `C2`: `INCONCLUSIVE`
-    - `C3`: `INCONCLUSIVE`
-    - `C4`: `INCONCLUSIVE`
-    - `C5`: `INCONCLUSIVE`
-    - `C6`: `INCONCLUSIVE`
-    - `C7`: `SUPPORTED`
-    - `C8`: `INCONCLUSIVE`
-- Recorded blockers:
-  - `WAITING_LOCAL_MODEL_ARTIFACT`
-  - `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
-  - missing accountable manual scientific review
-  - `UNVERSIONED_BLOCKED` code revision / dirty evidence
-  - missing authorized publication evidence for `E1`, `E2`, `E3`, `E4`, `E5`, `E6`, `E8`
+The final clean Saturday, August 22, 2026 candidate root and verification-report digest are recorded in the return contract for this task. The hardened replay remains intentionally `INCOMPLETE` with:
+
+- `WAITING_LOCAL_MODEL_ARTIFACT`
+- `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
+- missing accountable manual scientific review
+- missing external review signature / trusted signers
+- missing authorized publication evidence for `E1`-`E6`
+- `NEEDS_CONTEXT` for a production-owned canonical E8 rows artifact/runner
+
+`C7` remains `SUPPORTED`; `C8` remains `INCONCLUSIVE`; no frozen sentinel is created.
 
 ## Verification
 
@@ -80,26 +77,14 @@ Targeted post-implementation:
 $ ./.venv/bin/python -m pytest tests/reproducibility/test_clean_replay.py -q
 PASS
 
-$ ./.venv/bin/python -m pytest tests/reproducibility -q
-PASS
-
 $ ./.venv/bin/python -m compileall -q scripts tests/reproducibility
 PASS
-
-$ ./.venv/bin/python scripts/verify_bundle.py --bundle-root results/candidates/task22-4906a347c25fc3b9
-INCOMPLETE, expected blockers recorded, no sentinel
 ```
 
-Broader verification before the final Task 22 script-only blocker-chain adjustment:
+Broader verification after the hardening pass:
 
 ```text
-$ make test-all
-PASS
-
 $ ./.venv/bin/python -m pytest -q
-PASS
-
-$ cd contracts && forge test -q
 PASS
 
 $ ./.venv/bin/python -m compileall -q src tests experiments scripts
@@ -109,7 +94,7 @@ $ git diff --check
 PASS
 ```
 
-Live current-workspace replay after the final Task 22 blocker-chain adjustment:
+Live current-workspace replay after the hardening pass:
 
 ```text
 $ make reproduce
@@ -126,6 +111,6 @@ INCOMPLETE by design; candidate written, no frozen bundle, no sentinel
 
 ## Residual concerns
 
-- The final script-only blocker-chain adjustment was revalidated with the full Task 22 targeted suite and live replay, but the entire repository-wide Python/Foundry wave was not rerun after that last narrow adjustment.
-- `results/candidates/` is intentionally left untracked as runtime evidence for the current incomplete replay.
-- E8 remains a documented canonical simulation surface, but the clean Task 22 candidate still records `E8` as missing publication evidence because no authoritative clean-workspace E8 artifact bundle is checked in here today.
+- `results/tmp/candidates/` is intentionally ignored runtime evidence for the current incomplete replay and no longer poisons the Task 22 run id by itself.
+- E8 remains a documented canonical simulation surface, but the clean Task 22 candidate still records `NEEDS_CONTEXT` because no production-owned canonical rows artifact/runner is available outside test helpers today.
+- A future complete freeze still requires an externally authenticated manual scientific review record; AI output, self-review, or user approval cannot satisfy that gate.

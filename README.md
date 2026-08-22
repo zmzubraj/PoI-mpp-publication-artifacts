@@ -73,7 +73,7 @@ make reproduce
 
 Current expected outcome on Saturday, August 22, 2026:
 
-- `scripts/reproduce.py` writes a typed candidate bundle under `results/candidates/<run_id>/`
+- `scripts/reproduce.py` writes a typed candidate bundle under `results/tmp/candidates/<run_id>/`
 - the command exits nonzero with `INCOMPLETE`
 - no `results/frozen/<run_id>/` directory is created
 - no `MPP_ARTIFACT_COMPLETE` sentinel is created
@@ -81,9 +81,12 @@ Current expected outcome on Saturday, August 22, 2026:
 Current expected blockers:
 
 - `E1`-`E6` do not have authorized executed publication artifacts in this workspace
+- `E8` still lacks a production-owned canonical scenario artifact/runner for clean Task 22 replay, so the bundle records `NEEDS_CONTEXT` instead of fabricating rows from tests
 - Task 21 real replay remains blocked at `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
 - accountable manual scientific/rendered review is absent
-- dirty or unversioned evidence cannot freeze
+- no trusted external reviewer signature is present for manual scientific review
+
+Tracked or non-runtime unversioned changes still block freezing when they exist, but ignored runtime outputs under `results/` no longer poison the Task 22 run id by themselves.
 
 The current candidate path is intentionally evidence-closure only. It may preserve `SUPPORTED`, `NOT_SUPPORTED`, or `INCONCLUSIVE` claim dispositions when the underlying evidence exists, but it does not certify publication completeness until every gate passes.
 
