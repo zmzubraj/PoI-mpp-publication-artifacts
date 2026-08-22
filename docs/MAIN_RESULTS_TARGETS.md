@@ -2,6 +2,14 @@
 
 These are **targets, not achieved results**.
 
+Current status on Saturday, August 22, 2026:
+
+- Task 22 candidate replay is expected to end `INCOMPLETE`
+- no `results/frozen/<run_id>/MPP_ARTIFACT_COMPLETE` sentinel should exist
+- `E1`-`E6` still lack authorized executed publication artifacts in this workspace
+- Task 21 real replay remains blocked by `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
+- any language stronger than the current evidence disposition must stay out of the paper map and candidate bundle
+
 ## Primary claims to support
 
 ### C1 — Single-pass cost advantage
@@ -55,3 +63,5 @@ Evidence target:
 ## Publication rule
 
 If a claim has no generated artifact ID, it should be described as a design claim rather than an experimentally validated result.
+
+If a claim has generated artifacts but the disposition is `NOT_SUPPORTED` or `INCONCLUSIVE`, the paper language must preserve that disposition rather than upgrading it to success, readiness, or production viability.

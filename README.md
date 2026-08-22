@@ -63,6 +63,30 @@ Every reported number must be traceable to:
 
 Do not place manually typed numbers into the paper. The publication tables and figures should be generated from `results/raw/` by scripts.
 
+## Task 22 candidate replay
+
+Run:
+
+```bash
+make reproduce
+```
+
+Current expected outcome on Saturday, August 22, 2026:
+
+- `scripts/reproduce.py` writes a typed candidate bundle under `results/candidates/<run_id>/`
+- the command exits nonzero with `INCOMPLETE`
+- no `results/frozen/<run_id>/` directory is created
+- no `MPP_ARTIFACT_COMPLETE` sentinel is created
+
+Current expected blockers:
+
+- `E1`-`E6` do not have authorized executed publication artifacts in this workspace
+- Task 21 real replay remains blocked at `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
+- accountable manual scientific/rendered review is absent
+- dirty or unversioned evidence cannot freeze
+
+The current candidate path is intentionally evidence-closure only. It may preserve `SUPPORTED`, `NOT_SUPPORTED`, or `INCONCLUSIVE` claim dispositions when the underlying evidence exists, but it does not certify publication completeness until every gate passes.
+
 ## First commands
 
 ```bash
