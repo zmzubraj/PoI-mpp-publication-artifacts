@@ -5,14 +5,19 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from decimal import Decimal, ROUND_HALF_UP
 from enum import StrEnum
+import hashlib
+import json
 import math
+import os
 from pathlib import Path
+import tempfile
 
 import yaml
+from yaml.tokens import AliasToken, AnchorToken
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence.config import RunConfig, config_hash
+from poi_mpp.evidence.config import RunConfig, config_hash, load_run_config
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.protocol.committee import sample_committee
 from poi_mpp.protocol.credit import allocate_credit, derive_active_weight
@@ -406,15 +411,292 @@ class E8ConfirmatoryContract(_FrozenModel):
         return self
 
 
-def load_e8_confirmatory_contract(path: str | Path) -> E8ConfirmatoryContract:
-    contract_path = Path(path)
+_PLACEHOLDER_DIGESTS = frozenset(character * 64 for character in "0123456789abcdef")
+_E8_PUBLICATION_PLAN_SCHEMA_VERSION = "POI_MPP_E8_PUBLICATION_PLAN_V1"
+_E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION = "POI_MPP_E8_PUBLICATION_ARTIFACT_V1"
+
+
+class _StrictYAMLLoader(yaml.SafeLoader):
+    pass
+
+
+def _construct_mapping_without_duplicates(
+    loader: _StrictYAMLLoader,
+    node: yaml.nodes.MappingNode,
+    *,
+    deep: bool = False,
+) -> dict[object, object]:
+    mapping: dict[object, object] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError(
+                "while constructing a mapping",
+                node.start_mark,
+                f"found duplicate key {key!r}",
+                key_node.start_mark,
+            )
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_StrictYAMLLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_mapping_without_duplicates,
+)
+
+
+def _sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _is_placeholder_digest(value: str) -> bool:
+    return value in _PLACEHOLDER_DIGESTS
+
+
+def _reject_yaml_aliases(text: str, *, label: str) -> None:
     try:
-        raw = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as error:
-        raise ValueError(f"unable to load E8 confirmatory contract: {contract_path}") from error
-    if not isinstance(raw, Mapping):
-        raise ValueError("E8 confirmatory contract must be a mapping")
-    return E8ConfirmatoryContract.model_validate(dict(raw))
+        for token in yaml.scan(text):
+            if isinstance(token, (AliasToken, AnchorToken)):
+                raise ValueError(f"{label} cannot contain YAML anchors or aliases")
+    except yaml.YAMLError as error:
+        raise ValueError(f"unable to parse {label}") from error
+
+
+def _load_strict_yaml_mapping(path: Path, *, label: str) -> tuple[dict[str, object], bytes]:
+    try:
+        contents = path.read_bytes()
+    except OSError as error:
+        raise ValueError(f"unable to load {label}: {path}") from error
+    text = contents.decode("utf-8")
+    _reject_yaml_aliases(text, label=label)
+    try:
+        loaded = yaml.load(text, Loader=_StrictYAMLLoader)
+    except yaml.YAMLError as error:
+        raise ValueError(f"unable to load {label}: {path}") from error
+    if not isinstance(loaded, Mapping):
+        raise ValueError(f"{label} must be a mapping")
+    return dict(loaded), contents
+
+
+def _resolve_existing_plain_file(path: str | Path, *, label: str) -> Path:
+    candidate = Path(path)
+    current = candidate
+    while True:
+        if current.exists() and os.path.islink(current):
+            raise ValueError(f"{label} cannot be symlinked: {candidate}")
+        if current == current.parent:
+            break
+        current = current.parent
+    try:
+        resolved = candidate.resolve(strict=True)
+    except FileNotFoundError as error:
+        raise ValueError(f"{label} is missing: {candidate}") from error
+    if not resolved.is_file():
+        raise ValueError(f"{label} must be a regular file: {candidate}")
+    if os.path.islink(resolved):
+        raise ValueError(f"{label} cannot be symlinked: {candidate}")
+    if os.stat(resolved).st_nlink != 1:
+        raise ValueError(f"{label} cannot be hardlinked: {candidate}")
+    return resolved
+
+
+def _resolve_contained_relative_file(base_dir: Path, relative_path: str, *, label: str) -> Path:
+    if not relative_path.strip():
+        raise ValueError(f"{label} must not be blank")
+    candidate = base_dir / relative_path
+    resolved = _resolve_existing_plain_file(candidate, label=label)
+    try:
+        resolved.relative_to(base_dir.resolve(strict=True))
+    except ValueError as error:
+        raise ValueError(f"{label} must stay inside {base_dir}") from error
+    return resolved
+
+
+def _validate_output_target(path: Path) -> Path:
+    candidate = path if path.is_absolute() else Path.cwd() / path
+    if candidate.exists():
+        if not candidate.is_file():
+            raise ValueError(f"E8 publication output must be a regular file: {path}")
+        if os.path.islink(candidate):
+            raise ValueError(f"E8 publication output cannot be symlinked: {path}")
+        if os.stat(candidate).st_nlink != 1:
+            raise ValueError(f"E8 publication output cannot be hardlinked: {path}")
+    return candidate
+
+
+def _atomic_write_json(path: Path, payload: Mapping[str, object]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    contents = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    descriptor, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(contents)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+        parent_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(parent_fd)
+        finally:
+            os.close(parent_fd)
+        if path.read_bytes() != contents:
+            raise ValueError(f"atomic E8 publication write verification failed for {path}")
+        if os.stat(path).st_nlink != 1:
+            raise ValueError(f"E8 publication output cannot be hardlinked: {path}")
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+    return _sha256_bytes(contents)
+
+
+def _path_sha256(path: Path) -> str:
+    return _sha256_bytes(path.read_bytes())
+
+
+def _e8_publication_source_closure_hash() -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    relative_paths = (
+        Path("src/poi_mpp/experiments/e8_consensus.py"),
+        Path("src/poi_mpp/reporting/e8.py"),
+        Path("experiments/e8_consensus_weight_sim.py"),
+    )
+    return digest(
+        "E8_PUBLICATION_SOURCE_CLOSURE",
+        {str(item): _path_sha256(repo_root / item) for item in relative_paths},
+    )
+
+
+def load_e8_confirmatory_contract(path: str | Path) -> E8ConfirmatoryContract:
+    contract_path = _resolve_existing_plain_file(path, label="E8 confirmatory contract")
+    raw, _ = _load_strict_yaml_mapping(contract_path, label="E8 confirmatory contract")
+    return E8ConfirmatoryContract.model_validate(raw)
+
+
+class E8PublicationScenario(_FrozenModel):
+    seed: int = Field(ge=0)
+    scenario: CommitteeScenario
+
+
+class E8PublicationPlan(_FrozenModel):
+    schema_version: str = _E8_PUBLICATION_PLAN_SCHEMA_VERSION
+    contract_path: str
+    run_config: RunConfig
+    simulations: int = Field(ge=MIN_SUPPORTED_SIMULATIONS, le=MAX_REPLAY_SIMULATIONS)
+    publication_scope: str
+    required_model_version: str
+    required_algorithm_version: str
+    scenarios: tuple[E8PublicationScenario, ...]
+    notes: tuple[str, ...] = ()
+
+    @field_validator("contract_path", "publication_scope", "required_model_version", "required_algorithm_version")
+    @classmethod
+    def require_nonblank_text(cls, value: str, info: ValidationInfo) -> str:
+        if not value.strip():
+            raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @model_validator(mode="after")
+    def validate_plan(self) -> "E8PublicationPlan":
+        if self.schema_version != _E8_PUBLICATION_PLAN_SCHEMA_VERSION:
+            raise ValueError(f"schema_version must equal {_E8_PUBLICATION_PLAN_SCHEMA_VERSION}")
+        if self.publication_scope != E8_CONFIRMATORY_SCOPE:
+            raise ValueError(f"publication_scope must equal {E8_CONFIRMATORY_SCOPE}")
+        if self.required_model_version != E8_SIMULATION_MODEL_VERSION:
+            raise ValueError(f"required_model_version must equal {E8_SIMULATION_MODEL_VERSION}")
+        if self.required_algorithm_version != COMMITTEE_ALGORITHM_VERSION:
+            raise ValueError(f"required_algorithm_version must equal {COMMITTEE_ALGORITHM_VERSION}")
+        if self.run_config.experiment_id != "E8":
+            raise ValueError("run_config.experiment_id must equal E8")
+        if self.run_config.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
+            raise ValueError("run_config.origin must equal REPRODUCIBLE_SIMULATION")
+        if self.run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
+            raise ValueError(
+                f"run_config.authorization_scope must equal {PUBLICATION_EVIDENCE_AUTHORIZED}"
+            )
+        if _is_placeholder_digest(self.run_config.model_hash) or _is_placeholder_digest(self.run_config.dataset_hash):
+            raise ValueError("run_config model_hash and dataset_hash cannot use placeholder or sentinel digests")
+        if tuple(item.scenario.scenario_id for item in self.scenarios) != _REQUIRED_PUBLICATION_SCENARIO_IDS:
+            raise ValueError("scenarios must exactly match the frozen E8 publication scenario closure")
+        if len({item.scenario.scenario_id for item in self.scenarios}) != len(self.scenarios):
+            raise ValueError("scenarios must use unique scenario_id values")
+        return self
+
+
+class E8ResolvedPublicationPlan(_FrozenModel):
+    schema_version: str = _E8_PUBLICATION_PLAN_SCHEMA_VERSION
+    plan_path: str
+    plan_hash: str
+    contract_path: str
+    contract_hash: str
+    source_closure_hash: str
+    contract: E8ConfirmatoryContract
+    run_config: RunConfig
+    simulations: int
+    publication_scope: str
+    scenarios: tuple[E8PublicationScenario, ...]
+    notes: tuple[str, ...] = ()
+
+
+class E8PublicationArtifact(_FrozenModel):
+    schema_version: str = _E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION
+    plan_path: str
+    plan_hash: str
+    contract_path: str
+    contract_hash: str
+    source_closure_hash: str
+    run_id: str
+    run_config_hash: str
+    publication_scope: str
+    origin: EvidenceOrigin
+    claim_disposition: str
+    limitations: tuple[str, ...]
+    rows: tuple[E8ScenarioRow, ...]
+
+    @field_validator(
+        "plan_path",
+        "plan_hash",
+        "contract_path",
+        "contract_hash",
+        "source_closure_hash",
+        "run_id",
+        "run_config_hash",
+        "publication_scope",
+        "claim_disposition",
+    )
+    @classmethod
+    def require_nonblank_text(cls, value: str, info: ValidationInfo) -> str:
+        if not value.strip():
+            raise ValueError(f"{info.field_name} must not be blank")
+        return value
+
+    @field_validator("plan_hash", "contract_hash", "source_closure_hash", "run_config_hash")
+    @classmethod
+    def require_hash_shape(cls, value: str) -> str:
+        if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+            raise ValueError("publication artifact hashes must be lowercase SHA-256 hex digests")
+        return value
+
+    @model_validator(mode="after")
+    def validate_artifact(self) -> "E8PublicationArtifact":
+        if self.schema_version != _E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION:
+            raise ValueError(f"schema_version must equal {_E8_PUBLICATION_ARTIFACT_SCHEMA_VERSION}")
+        if self.publication_scope != E8_CONFIRMATORY_SCOPE:
+            raise ValueError(f"publication_scope must equal {E8_CONFIRMATORY_SCOPE}")
+        if self.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION:
+            raise ValueError("origin must equal REPRODUCIBLE_SIMULATION")
+        if not self.rows:
+            raise ValueError("rows must not be empty")
+        if any(row.origin is not EvidenceOrigin.REPRODUCIBLE_SIMULATION for row in self.rows):
+            raise ValueError("rows must remain REPRODUCIBLE_SIMULATION evidence")
+        if any(row.run_id != self.run_id for row in self.rows):
+            raise ValueError("rows must bind the artifact run_id")
+        if any(row.run_config_hash != self.run_config_hash for row in self.rows):
+            raise ValueError("rows must bind the artifact run_config_hash")
+        if any(row.publication_scope != self.publication_scope for row in self.rows):
+            raise ValueError("rows must bind the artifact publication_scope")
+        return self
 
 
 class E8SimulationConfig(_FrozenModel):
@@ -1024,6 +1306,161 @@ def replay_row(row: E8ScenarioRow) -> E8ScenarioRow:
         scenario=scenario_from_row(row),
         config=simulation_config_from_row(row),
     )
+
+
+def default_e8_publication_plan_path() -> Path:
+    return Path(__file__).resolve().parents[3] / "configs" / "confirmatory" / "e8.publication.yaml"
+
+
+def _summary_and_limits(rows: Sequence[E8ScenarioRow], contract: E8ConfirmatoryContract) -> tuple[str, tuple[str, ...]]:
+    from poi_mpp.reporting.e8 import summarize_e8_rows
+
+    summary = summarize_e8_rows(tuple(rows), contract=contract)
+    limits = (
+        "REPRODUCIBLE_SIMULATION only; not live consensus evidence.",
+        "Non-real-world limits: fixed scenario closure, fixed seeds, bounded committee sampling, and replay-authoritative publication checks.",
+        *contract.notes,
+    )
+    return summary.claim_disposition, tuple(dict.fromkeys(limits))
+
+
+def load_e8_publication_plan(path: str | Path) -> E8ResolvedPublicationPlan:
+    plan_path = _resolve_existing_plain_file(path, label="E8 publication plan")
+    raw, plan_bytes = _load_strict_yaml_mapping(plan_path, label="E8 publication plan")
+    plan = E8PublicationPlan.model_validate(raw)
+    contract_path = _resolve_contained_relative_file(
+        plan_path.parent,
+        plan.contract_path,
+        label="E8 publication contract",
+    )
+    contract = load_e8_confirmatory_contract(contract_path)
+    if plan.publication_scope != contract.publication_scope:
+        raise ValueError("publication_scope must exactly match the confirmatory contract")
+    if plan.simulations != contract.required_simulations:
+        raise ValueError("simulations must exactly match the confirmatory contract")
+    if plan.required_model_version != contract.required_model_version:
+        raise ValueError("required_model_version must exactly match the confirmatory contract")
+    if plan.required_algorithm_version != contract.required_algorithm_version:
+        raise ValueError("required_algorithm_version must exactly match the confirmatory contract")
+    if plan.run_config.origin is not contract.required_run_origin:
+        raise ValueError("run_config.origin must exactly match the confirmatory contract")
+    if plan.run_config.authorization_scope != contract.required_run_authorization_scope:
+        raise ValueError("run_config.authorization_scope must exactly match the confirmatory contract")
+
+    allowed_by_id = {item.scenario_id: item for item in contract.allowed_scenarios}
+    plan_by_id = {item.scenario.scenario_id: item for item in plan.scenarios}
+    if set(plan_by_id) != set(allowed_by_id):
+        raise ValueError("scenarios must exactly close against the confirmatory contract")
+
+    for scenario_id in _REQUIRED_PUBLICATION_SCENARIO_IDS:
+        published = plan_by_id[scenario_id]
+        allowed = allowed_by_id[scenario_id]
+        scenario = published.scenario
+        if scenario.role is not allowed.required_role:
+            raise ValueError(f"role mismatch for {scenario_id}")
+        if scenario.ablation is not allowed.required_ablation:
+            raise ValueError(f"ablation mismatch for {scenario_id}")
+        if published.seed != allowed.required_seed:
+            raise ValueError(f"seed mismatch for {scenario_id}")
+        if scenario.committee_size != contract.required_committee_size:
+            raise ValueError(f"committee_size mismatch for {scenario_id}")
+        epoch_deltas = {scenario.target_epoch - batch.task.epoch for batch in scenario.task_batches}
+        if epoch_deltas != {contract.required_target_epoch_delta}:
+            raise ValueError(f"target_epoch delta mismatch for {scenario_id}")
+        if scenario_contract_hash(scenario) != allowed.scenario_contract_hash:
+            raise ValueError(f"scenario_contract_hash mismatch for {scenario_id}")
+
+    for allowed in contract.allowed_scenarios:
+        if allowed.required_role is not CommitteeScenarioRole.NEGATIVE_CONTROL:
+            continue
+        assert allowed.negative_assertions is not None
+        negative_scenario = plan_by_id[allowed.scenario_id].scenario
+        support_scenario = plan_by_id[allowed.negative_assertions.paired_support_scenario_id].scenario
+        expected_hash = allowed.negative_assertions.required_pair_exogenous_hash
+        if pair_exogenous_hash(support_scenario) != expected_hash:
+            raise ValueError(f"paired support exogenous hash mismatch for {allowed.scenario_id}")
+        if pair_exogenous_hash(negative_scenario) != expected_hash:
+            raise ValueError(f"negative exogenous hash mismatch for {allowed.scenario_id}")
+
+    return E8ResolvedPublicationPlan(
+        plan_path=str(plan_path),
+        plan_hash=_sha256_bytes(plan_bytes),
+        contract_path=str(contract_path),
+        contract_hash=_path_sha256(contract_path),
+        source_closure_hash=_e8_publication_source_closure_hash(),
+        contract=contract,
+        run_config=plan.run_config,
+        simulations=plan.simulations,
+        publication_scope=plan.publication_scope,
+        scenarios=plan.scenarios,
+        notes=plan.notes,
+    )
+
+
+def run_e8_publication_plan(plan: E8ResolvedPublicationPlan) -> E8PublicationArtifact:
+    rows = tuple(
+        run_committee_scenario(
+            run_id=plan.run_config.run_id,
+            experiment_id=plan.run_config.experiment_id,
+            run_config=plan.run_config,
+            scenario=item.scenario,
+            config=E8SimulationConfig(
+                simulations=plan.simulations,
+                seed=item.seed,
+                origin=plan.run_config.origin,
+                publication_scope=plan.publication_scope,
+            ),
+        )
+        for item in plan.scenarios
+    )
+    claim_disposition, limits = _summary_and_limits(rows, plan.contract)
+    return E8PublicationArtifact(
+        plan_path=plan.plan_path,
+        plan_hash=plan.plan_hash,
+        contract_path=plan.contract_path,
+        contract_hash=plan.contract_hash,
+        source_closure_hash=plan.source_closure_hash,
+        run_id=plan.run_config.run_id,
+        run_config_hash=config_hash(plan.run_config),
+        publication_scope=plan.publication_scope,
+        origin=plan.run_config.origin,
+        claim_disposition=claim_disposition,
+        limitations=limits,
+        rows=rows,
+    )
+
+
+def load_and_run_e8_publication(
+    plan_path: str | Path,
+    *,
+    output_path: str | Path | None = None,
+) -> E8PublicationArtifact:
+    plan = load_e8_publication_plan(plan_path)
+    artifact = run_e8_publication_plan(plan)
+    if output_path is not None:
+        target = _validate_output_target(Path(output_path))
+        _atomic_write_json(target, artifact.model_dump(mode="json"))
+    return artifact
+
+
+def load_e8_publication_artifact(path: str | Path) -> E8PublicationArtifact:
+    artifact_path = _resolve_existing_plain_file(path, label="E8 publication artifact")
+    try:
+        payload = json.loads(
+            artifact_path.read_text(encoding="utf-8"),
+            object_pairs_hook=lambda pairs: (
+                (_ for _ in ()).throw(ValueError("duplicate JSON keys are forbidden"))
+                if len({key for key, _ in pairs}) != len(pairs)
+                else dict(pairs)
+            ),
+        )
+    except Exception as error:
+        raise ValueError(f"unable to load E8 publication artifact: {artifact_path}") from error
+    artifact = E8PublicationArtifact.model_validate(payload)
+    rerun = load_and_run_e8_publication(artifact.plan_path)
+    if artifact.model_dump(mode="json") != rerun.model_dump(mode="json"):
+        raise ValueError("E8 publication artifact does not match deterministic plan replay")
+    return artifact
 
 
 def assert_cli_authority_boundary(run_config: RunConfig, contract: E8ConfirmatoryContract) -> None:

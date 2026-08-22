@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import subprocess
+import tempfile
 
 import pytest
 
@@ -177,394 +179,36 @@ def _scenario(**overrides):
     return CommitteeScenario.model_validate(payload)
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _publication_contract_path() -> Path:
+    return _repo_root() / "configs/confirmatory/e8.yaml"
+
+
+def _publication_plan_path() -> Path:
+    return _repo_root() / "configs/confirmatory/e8.publication.yaml"
+
+
+def _publication_artifact(tmp_path: Path, *, output_name: str = "e8_rows.json"):
+    from poi_mpp.experiments.e8_consensus import load_and_run_e8_publication
+
+    return load_and_run_e8_publication(_publication_plan_path(), output_path=tmp_path / output_name)
+
+
+def _publication_rows(tmp_path: Path | None = None):
+    if tmp_path is None:
+        tmp_path = Path(tempfile.mkdtemp(prefix="poi-mpp-e8-publication-"))
+    return _publication_artifact(tmp_path).rows
+
+
 def _write_contract(tmp_path: Path, rows):
-    from poi_mpp.experiments.e8_consensus import (
-        COMMITTEE_ALGORITHM_VERSION,
-        E8_SIMULATION_MODEL_VERSION,
-        load_e8_confirmatory_contract,
-        pair_exogenous_hash,
-        scenario_from_row,
-    )
+    from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
 
-    row_by_id = {row.scenario_id: row for row in rows}
-    support_policy = {
-        "max_attacker_active_weight_share": 0.45,
-        "max_attacker_weight_probability_ge_one_third": 0.80,
-        "max_attacker_weight_probability_ge_one_third_upper_bound": 0.85,
-        "max_attacker_weight_probability_ge_two_thirds": 0.10,
-        "max_attacker_weight_probability_ge_two_thirds_upper_bound": 0.15,
-        "max_attacker_seat_probability_ge_one_third": 0.80,
-        "max_attacker_seat_probability_ge_one_third_upper_bound": 0.85,
-        "max_attacker_seat_probability_ge_two_thirds": 0.10,
-        "max_attacker_seat_probability_ge_two_thirds_upper_bound": 0.15,
-    }
-    ordered_ids = (
-        "support-honest-baseline",
-        "support-high-compute-capped",
-        "support-sybil-split",
-        "support-subsidized-compute",
-        "support-collusion-bounded",
-        "support-receipt-churn",
-        "negative-cap-removed",
-        "boundary-zero-credit-rich",
-        "boundary-pending-only",
-        "boundary-zero-total-weight",
-    )
-    assert set(row_by_id) == set(ordered_ids)
-    support_pair = row_by_id["support-high-compute-capped"]
-    pair_hash = pair_exogenous_hash(scenario_from_row(support_pair))
-
-    lines = [
-        "schema_version: POI_MPP_E8_CONFIRMATORY_CONTRACT_V1",
-        "publication_scope: E8_CONFIRMATORY_PUBLICATION_V1",
-        "required_run_origin: REPRODUCIBLE_SIMULATION",
-        "required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED",
-        f"required_simulations: {rows[0].simulations}",
-        "maximum_replay_simulations: 2048",
-        f"required_model_version: {E8_SIMULATION_MODEL_VERSION}",
-        f"required_committee_size: {rows[0].committee_size}",
-        f"required_algorithm_version: {COMMITTEE_ALGORITHM_VERSION}",
-        "required_target_epoch_delta: 1",
-        "minimum_scenario_breadth: 10",
-        "minimum_negative_controls: 1",
-        "minimum_boundary_rows: 3",
-        "seed_policy: FIXED_PER_SCENARIO",
-        "allowed_scenarios:",
-    ]
-    for scenario_id in ordered_ids:
-        row = row_by_id[scenario_id]
-        lines.extend(
-            [
-                f"  - scenario_id: {row.scenario_id}",
-                f"    scenario_contract_hash: \"{row.scenario_contract_hash}\"",
-                f"    required_role: {row.role.value}",
-                f"    required_ablation: {row.ablation.value}",
-                f"    required_seed: {row.seed}",
-            ]
-        )
-        if row.role.value == "SUPPORT":
-            lines.extend(
-                [
-                    "    support_assertions:",
-                    f"      max_attacker_active_weight_share: {support_policy['max_attacker_active_weight_share']}",
-                    f"      max_attacker_weight_probability_ge_one_third: {support_policy['max_attacker_weight_probability_ge_one_third']}",
-                    f"      max_attacker_weight_probability_ge_one_third_upper_bound: {support_policy['max_attacker_weight_probability_ge_one_third_upper_bound']}",
-                    f"      max_attacker_weight_probability_ge_two_thirds: {support_policy['max_attacker_weight_probability_ge_two_thirds']}",
-                    f"      max_attacker_weight_probability_ge_two_thirds_upper_bound: {support_policy['max_attacker_weight_probability_ge_two_thirds_upper_bound']}",
-                    f"      max_attacker_seat_probability_ge_one_third: {support_policy['max_attacker_seat_probability_ge_one_third']}",
-                    f"      max_attacker_seat_probability_ge_one_third_upper_bound: {support_policy['max_attacker_seat_probability_ge_one_third_upper_bound']}",
-                    f"      max_attacker_seat_probability_ge_two_thirds: {support_policy['max_attacker_seat_probability_ge_two_thirds']}",
-                    f"      max_attacker_seat_probability_ge_two_thirds_upper_bound: {support_policy['max_attacker_seat_probability_ge_two_thirds_upper_bound']}",
-                ]
-            )
-        elif row.role.value == "BOUNDARY":
-            lines.extend(
-                [
-                    "    boundary_assertions:",
-                    f"      required_sampling_disposition: {row.sampling_disposition.value}",
-                    f"      required_total_active_weight_micros: {row.total_active_weight_micros}",
-                    f"      required_attacker_active_weight_micros: {row.attacker_active_weight_micros}",
-                    "      require_zero_credit_implies_zero_weight: true",
-                ]
-            )
-        else:
-            lines.extend(
-                [
-                    "    negative_assertions:",
-                    "      pair_id: cap-removal-vs-capped",
-                    f"      paired_support_scenario_id: {support_pair.scenario_id}",
-                    f"      paired_support_scenario_hash: \"{support_pair.scenario_contract_hash}\"",
-                    f"      required_pair_exogenous_hash: \"{pair_hash}\"",
-                    "      min_attacker_active_weight_share_delta: 0.2",
-                    "      min_attacker_weight_probability_ge_one_third_lower_advantage: 0.05",
-                    "      min_attacker_weight_probability_ge_two_thirds_lower_advantage: 0.50",
-                    "      min_attacker_seat_probability_ge_one_third_lower_advantage: 0.05",
-                    "      min_attacker_seat_probability_ge_two_thirds_lower_advantage: null",
-                ]
-            )
-    lines.extend(["notes:", "  - test contract"])
-    path = tmp_path / "e8.contract.yaml"
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return load_e8_confirmatory_contract(path)
-
-
-def _publication_rows():
-    attacker_worker = "0x0000000000000000000000000000000000003101"
-    honest_worker_one = "0x0000000000000000000000000000000000004101"
-    honest_worker_two = "0x0000000000000000000000000000000000004201"
-    base = _scenario()
-    high_collateral_profiles = (
-        base.operator_profiles[0].model_copy(update={"collateral_micros": 9_000_000}),
-        *base.operator_profiles[1:],
-    )
-    collusion_profiles = (
-        base.operator_profiles[0],
-        base.operator_profiles[1],
-        base.operator_profiles[2],
-        base.operator_profiles[0].model_copy(
-            update={
-                "operator_id": "attacker-2",
-                "compute_cost_micros": 650_000,
-                "collateral_micros": 1_100_000,
-            }
-        ),
-    )
-    collusion_bindings = (
-        *base.worker_bindings,
-        base.worker_bindings[0].model_copy(
-            update={"worker_id": "0x0000000000000000000000000000000000003103", "operator_id": "attacker-2"}
-        ),
-    )
-    rows = [
-        _run_row(scenario=base, seed=17),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="support-high-compute-capped",
-                ablation="HIGH_COMPUTE",
-                operator_profiles=high_collateral_profiles,
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={
-                            "task": _task(task_id=1, worker_id=attacker_worker, credit_budget=300),
-                        }
-                    ),
-                    *base.task_batches[1:],
-                ),
-            ),
-            seed=19,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="support-sybil-split",
-                ablation="SYBIL_SPLIT",
-                worker_bindings=(
-                    *base.worker_bindings,
-                    base.worker_bindings[0].model_copy(
-                        update={"worker_id": "0x0000000000000000000000000000000000003102"}
-                    ),
-                ),
-                task_batches=(
-                    base.task_batches[0],
-                    base.task_batches[0].model_copy(
-                        update={
-                            "task": _task(
-                                task_id=4,
-                                worker_id="0x0000000000000000000000000000000000003102",
-                                credit_budget=90,
-                            ),
-                            "receipts": (
-                                _receipt(
-                                    receipt_id=4,
-                                    task_id=4,
-                                    worker_id="0x0000000000000000000000000000000000003102",
-                                ),
-                            ),
-                        }
-                    ),
-                    *base.task_batches[1:],
-                ),
-            ),
-            seed=23,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="support-subsidized-compute",
-                ablation="SUBSIDIZED_COMPUTE",
-                operator_profiles=(
-                    base.operator_profiles[0].model_copy(update={"compute_subsidy_micros": 500_000}),
-                    *base.operator_profiles[1:],
-                ),
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={"task": _task(task_id=1, worker_id=attacker_worker, credit_budget=180)}
-                    ),
-                    *base.task_batches[1:],
-                ),
-            ),
-            seed=29,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="support-collusion-bounded",
-                ablation="COLLUSION",
-                attacker_operator_ids=("attacker-1", "attacker-2"),
-                operator_profiles=collusion_profiles,
-                worker_bindings=collusion_bindings,
-                task_batches=(
-                    base.task_batches[0],
-                    base.task_batches[0].model_copy(
-                        update={
-                            "task": _task(
-                                task_id=5,
-                                worker_id="0x0000000000000000000000000000000000003103",
-                                credit_budget=90,
-                            ),
-                            "receipts": (
-                                _receipt(
-                                    receipt_id=5,
-                                    task_id=5,
-                                    worker_id="0x0000000000000000000000000000000000003103",
-                                ),
-                            ),
-                        }
-                    ),
-                    *base.task_batches[1:],
-                ),
-            ),
-            seed=31,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="support-receipt-churn",
-                ablation="CHURN",
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={
-                            "receipts": (
-                                _receipt(receipt_id=1, task_id=1, worker_id=attacker_worker),
-                                _receipt(
-                                    receipt_id=6,
-                                    task_id=1,
-                                    worker_id=attacker_worker,
-                                    state=ReceiptState.PENDING,
-                                    activated_epoch=None,
-                                    audit_decision=None,
-                                    audit_accepted=False,
-                                    da_decision=None,
-                                    data_availability_passed=False,
-                                ),
-                            )
-                        }
-                    ),
-                    base.task_batches[1].model_copy(
-                        update={
-                            "receipts": (
-                                _receipt(receipt_id=2, task_id=2, worker_id=honest_worker_one),
-                                _receipt(
-                                    receipt_id=7,
-                                    task_id=2,
-                                    worker_id=honest_worker_one,
-                                    state=ReceiptState.REJECTED,
-                                    activated_epoch=None,
-                                    audit_decision=AuditDecision.REJECT,
-                                    audit_accepted=False,
-                                    da_decision=None,
-                                    data_availability_passed=False,
-                                ),
-                            )
-                        }
-                    ),
-                    base.task_batches[2],
-                ),
-            ),
-            seed=37,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="negative-cap-removed",
-                role="NEGATIVE_CONTROL",
-                ablation="CONCENTRATION_CAP_REMOVED",
-                concentration_cap_micros=10_000,
-                operator_profiles=high_collateral_profiles,
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={
-                            "task": _task(task_id=1, worker_id=attacker_worker, credit_budget=300),
-                        }
-                    ),
-                    *base.task_batches[1:],
-                ),
-            ),
-            seed=19,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="boundary-zero-credit-rich",
-                role="BOUNDARY",
-                ablation="COLLATERAL_RICH_ZERO_CREDIT",
-                operator_profiles=(
-                    base.operator_profiles[0].model_copy(update={"collateral_micros": 9_000_000_000}),
-                    *base.operator_profiles[1:],
-                ),
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={
-                            "receipts": (
-                                _receipt(
-                                    receipt_id=51,
-                                    task_id=1,
-                                    worker_id=attacker_worker,
-                                    state=ReceiptState.PENDING,
-                                    activated_epoch=None,
-                                    audit_decision=None,
-                                    audit_accepted=False,
-                                    da_decision=None,
-                                    data_availability_passed=False,
-                                ),
-                            )
-                        }
-                    ),
-                    *base.task_batches[1:],
-                ),
-            ),
-            seed=43,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="boundary-pending-only",
-                role="BOUNDARY",
-                ablation="MISSING_RECEIPTS",
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={
-                            "receipts": (
-                                _receipt(
-                                    receipt_id=41,
-                                    task_id=1,
-                                    worker_id=attacker_worker,
-                                    state=ReceiptState.PENDING,
-                                    activated_epoch=None,
-                                    audit_decision=None,
-                                    audit_accepted=False,
-                                    da_decision=None,
-                                    data_availability_passed=False,
-                                ),
-                            )
-                        }
-                    ),
-                ),
-            ),
-            seed=47,
-        ),
-        _run_row(
-            scenario=_scenario(
-                scenario_id="boundary-zero-total-weight",
-                role="BOUNDARY",
-                ablation="MISSING_RECEIPTS",
-                task_batches=(
-                    base.task_batches[0].model_copy(
-                        update={
-                            "receipts": (
-                                _receipt(
-                                    receipt_id=61,
-                                    task_id=1,
-                                    worker_id=attacker_worker,
-                                    state=ReceiptState.PENDING,
-                                    activated_epoch=None,
-                                    audit_decision=None,
-                                    audit_accepted=False,
-                                    da_decision=None,
-                                    data_availability_passed=False,
-                                ),
-                            )
-                        }
-                    ),
-                ),
-            ),
-            seed=53,
-        ),
-    ]
-    return rows
+    contract_path = tmp_path / "e8.contract.yaml"
+    contract_path.write_text(_publication_contract_path().read_text(encoding="utf-8"), encoding="utf-8")
+    return load_e8_confirmatory_contract(contract_path)
 
 
 def _run_row(*, scenario, seed: int = 17, simulations: int = 256, run_config: RunConfig | None = None):
@@ -791,20 +435,22 @@ def test_zero_total_weight_yields_typed_nonterminal_disposition():
 
 
 def test_publication_support_requires_confirmatory_contract_and_replay_authority(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
     from poi_mpp.reporting.e8 import publication_precheck_reasons, summarize_e8_rows
 
-    rows = _publication_rows()
+    rows = _publication_rows(tmp_path)
 
     assert "confirmatory contract" in publication_precheck_reasons(rows)[0].lower()
-    contract = _write_contract(tmp_path, rows)
+    contract = load_e8_confirmatory_contract(_publication_contract_path())
     assert summarize_e8_rows(rows, contract=contract).claim_disposition == "INCONCLUSIVE"
 
 
 def test_forged_output_is_rejected_by_publication_replay(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
     from poi_mpp.reporting.e8 import summarize_e8_rows
 
-    rows = _publication_rows()
-    contract = _write_contract(tmp_path, rows)
+    rows = _publication_rows(tmp_path)
+    contract = load_e8_confirmatory_contract(_publication_contract_path())
     negative = next(row for row in rows if row.scenario_id == "negative-cap-removed")
     forged = negative.model_copy(
         update={
@@ -820,10 +466,10 @@ def test_forged_output_is_rejected_by_publication_replay(tmp_path: Path):
         )
 
 
-def test_duplicate_scenarios_do_not_inflate_confirmatory_breadth():
+def test_duplicate_scenarios_do_not_inflate_confirmatory_breadth(tmp_path: Path):
     from poi_mpp.reporting.e8 import summarize_e8_rows
 
-    baseline = _publication_rows()[0]
+    baseline = _publication_rows(tmp_path)[0]
     duplicate = baseline.model_copy()
 
     with pytest.raises(ValueError, match="unique scenario_id"):
@@ -831,9 +477,10 @@ def test_duplicate_scenarios_do_not_inflate_confirmatory_breadth():
 
 
 def test_attacker_dominant_support_row_cannot_mint_supported(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
     from poi_mpp.reporting.e8 import summarize_e8_rows
 
-    rows = _publication_rows()
+    rows = _publication_rows(tmp_path)
     dominant = _run_row(
         scenario=_scenario(
             scenario_id="support-honest-baseline",
@@ -857,7 +504,7 @@ def test_attacker_dominant_support_row_cannot_mint_supported(tmp_path: Path):
         ),
         seed=17,
     )
-    contract = _write_contract(tmp_path, [dominant if row.scenario_id == "support-honest-baseline" else row for row in rows])
+    contract = load_e8_confirmatory_contract(_publication_contract_path())
     summary = summarize_e8_rows(
         [dominant if row.scenario_id == "support-honest-baseline" else row for row in rows],
         contract=contract,
@@ -869,9 +516,10 @@ def test_attacker_dominant_support_row_cannot_mint_supported(tmp_path: Path):
 
 
 def test_negative_control_requires_paired_support_exogenous_closure(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
     from poi_mpp.reporting.e8 import summarize_e8_rows
 
-    rows = _publication_rows()
+    rows = _publication_rows(tmp_path)
     drifted_negative = _run_row(
         scenario=_scenario(
             scenario_id="negative-cap-removed",
@@ -891,7 +539,7 @@ def test_negative_control_requires_paired_support_exogenous_closure(tmp_path: Pa
         ),
         seed=19,
     )
-    contract = _write_contract(tmp_path, rows)
+    contract = load_e8_confirmatory_contract(_publication_contract_path())
     summary = summarize_e8_rows(
         [drifted_negative if row.scenario_id == "negative-cap-removed" else row for row in rows],
         contract=contract,
@@ -995,54 +643,150 @@ def test_negative_assertions_reject_vacuous_deltas():
         )
 
 
-def test_checked_in_confirmatory_contract_is_nonvacuous_and_current_rows_are_inconclusive():
+def test_checked_in_confirmatory_contract_is_nonvacuous_and_current_rows_are_inconclusive(tmp_path: Path):
     from poi_mpp.experiments.e8_consensus import load_e8_confirmatory_contract
     from poi_mpp.reporting.e8 import summarize_e8_rows
 
-    contract = load_e8_confirmatory_contract(Path(__file__).resolve().parents[2] / "configs/confirmatory/e8.yaml")
-    summary = summarize_e8_rows(_publication_rows(), contract=contract)
+    contract = load_e8_confirmatory_contract(_publication_contract_path())
+    summary = summarize_e8_rows(_publication_rows(tmp_path), contract=contract)
 
     assert summary.claim_disposition == "INCONCLUSIVE"
 
 
-def test_cli_stops_at_publication_authority_boundary(tmp_path: Path):
-    run_config_path = tmp_path / "run.yaml"
-    run_config_path.write_text(
-        "\n".join(
-            [
-                "schema_version: POI_MPP_RUN_CONFIG_V1",
-                f"schema_hash: \"{approved_schema_hash()}\"",
-                "run_id: run-e8-cli",
-                "experiment_id: E8",
-                "origin: REPRODUCIBLE_SIMULATION",
-                "authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED",
-                f"model_hash: \"{'7' * 64}\"",
-                f"dataset_hash: \"{'8' * 64}\"",
-                "parent_hashes: []",
-                "data_availability:",
-                "  total_shards: 16",
-                "  samples: 8",
-                "  replacement: false",
-            ]
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+def test_cli_writes_publication_artifact_via_plan_only(tmp_path: Path):
+    output_path = tmp_path / "e8_rows.json"
 
     result = subprocess.run(
         [
             "./.venv/bin/python",
             "experiments/e8_consensus_weight_sim.py",
-            "--run-config",
-            str(run_config_path),
-            "--confirmatory-contract",
-            "configs/confirmatory/e8.yaml",
+            "--plan",
+            "configs/confirmatory/e8.publication.yaml",
+            "--output",
+            str(output_path),
         ],
-        cwd=Path(__file__).resolve().parents[2],
+        cwd=_repo_root(),
         capture_output=True,
         text=True,
         check=False,
     )
 
-    assert result.returncode != 0
-    assert "publication" in result.stderr.lower()
+    assert result.returncode == 0
+    assert output_path.is_file()
+
+
+def test_plan_loader_rejects_scenario_hash_tamper(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
+
+    contract_copy = tmp_path / "e8.yaml"
+    plan_copy = tmp_path / "e8.publication.yaml"
+    contract_copy.write_text(_publication_contract_path().read_text(encoding="utf-8"), encoding="utf-8")
+    payload = _publication_plan_path().read_text(encoding="utf-8").replace(
+        "credit_budget: 300",
+        "credit_budget: 301",
+        1,
+    )
+    plan_copy.write_text(payload, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="scenario_contract_hash mismatch"):
+        load_e8_publication_plan(plan_copy)
+
+
+def test_plan_loader_rejects_incomplete_family_closure(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
+
+    contract_copy = tmp_path / "e8.yaml"
+    plan_copy = tmp_path / "e8.publication.yaml"
+    contract_copy.write_text(_publication_contract_path().read_text(encoding="utf-8"), encoding="utf-8")
+    lines = _publication_plan_path().read_text(encoding="utf-8").splitlines()
+    trimmed = "\n".join(line for line in lines if "boundary-zero-total-weight" not in line) + "\n"
+    plan_copy.write_text(trimmed, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="publication scenario closure|close against|Field required"):
+        load_e8_publication_plan(plan_copy)
+
+
+def test_plan_loader_rejects_duplicate_scenario_ids(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
+
+    contract_copy = tmp_path / "e8.yaml"
+    plan_copy = tmp_path / "e8.publication.yaml"
+    contract_copy.write_text(_publication_contract_path().read_text(encoding="utf-8"), encoding="utf-8")
+    payload = _publication_plan_path().read_text(encoding="utf-8").replace(
+        "scenario_id: support-sybil-split",
+        "scenario_id: support-high-compute-capped",
+        1,
+    )
+    plan_copy.write_text(payload, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unique scenario_id|publication scenario closure"):
+        load_e8_publication_plan(plan_copy)
+
+
+def test_publication_artifact_loader_replays_instead_of_trusting_status(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_artifact
+
+    output_path = tmp_path / "e8_rows.json"
+    artifact = _publication_artifact(tmp_path, output_name=output_path.name)
+    payload = artifact.model_dump(mode="json")
+    payload["claim_disposition"] = "SUPPORTED"
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="deterministic plan replay"):
+        load_e8_publication_artifact(output_path)
+
+
+def test_publication_artifact_loader_rejects_forged_rows(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_artifact
+
+    output_path = tmp_path / "e8_rows.json"
+    artifact = _publication_artifact(tmp_path, output_name=output_path.name)
+    payload = artifact.model_dump(mode="json")
+    payload["rows"][0]["attacker_active_weight_share"] = 0.99
+    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="deterministic plan replay|canonical E8 scenario row|result_contract_hash"):
+        load_e8_publication_artifact(output_path)
+
+
+def test_publication_artifact_loader_replays_current_rows(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_artifact
+
+    output_path = tmp_path / "e8_rows.json"
+    written = _publication_artifact(tmp_path, output_name=output_path.name)
+    loaded = load_e8_publication_artifact(output_path)
+
+    assert loaded.claim_disposition == "INCONCLUSIVE"
+    assert loaded.model_dump(mode="json") == written.model_dump(mode="json")
+
+
+def test_publication_runner_is_byte_identical_across_two_runs(tmp_path: Path):
+    first_path = tmp_path / "first.json"
+    second_path = tmp_path / "second.json"
+
+    _publication_artifact(tmp_path, output_name=first_path.name)
+    _publication_artifact(tmp_path, output_name=second_path.name)
+
+    assert first_path.read_bytes() == second_path.read_bytes()
+
+
+def test_publication_plan_loader_rejects_symlinked_plan(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_e8_publication_plan
+
+    symlink_path = tmp_path / "linked-plan.yaml"
+    symlink_path.symlink_to(_publication_plan_path())
+
+    with pytest.raises(ValueError, match="cannot be symlinked"):
+        load_e8_publication_plan(symlink_path)
+
+
+def test_publication_runner_rejects_symlinked_output(tmp_path: Path):
+    from poi_mpp.experiments.e8_consensus import load_and_run_e8_publication
+
+    real_output = tmp_path / "real.json"
+    real_output.write_text("{}", encoding="utf-8")
+    symlink_path = tmp_path / "linked-output.json"
+    symlink_path.symlink_to(real_output)
+
+    with pytest.raises(ValueError, match="cannot be symlinked"):
+        load_and_run_e8_publication(_publication_plan_path(), output_path=symlink_path)

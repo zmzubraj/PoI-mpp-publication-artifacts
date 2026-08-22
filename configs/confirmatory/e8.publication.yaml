@@ -1,0 +1,1285 @@
+schema_version: POI_MPP_E8_PUBLICATION_PLAN_V1
+contract_path: e8.yaml
+run_config:
+  schema_version: POI_MPP_RUN_CONFIG_V1
+  schema_hash: ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08
+  run_id: run-e8-publication-v1
+  experiment_id: E8
+  origin: REPRODUCIBLE_SIMULATION
+  authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+  model_hash: 37e1bca8ec9d19c70ed02b67eab85fef817a47805b1060184e69d6854232218d
+  dataset_hash: 5dee4826a63b0c60a3a9d1563cd70b661459ae317004ae2c3fc8f6ec1cfbacb1
+  parent_hashes: []
+  data_availability:
+    total_shards: 16
+    samples: 8
+    replacement: false
+simulations: 256
+publication_scope: E8_CONFIRMATORY_PUBLICATION_V1
+required_model_version: POI_MPP_E8_SIMULATOR_V1
+required_algorithm_version: POI_MPP_COMMITTEE_SAMPLER_SHA256_NO_REPLACEMENT_V1
+scenarios:
+- seed: 17
+  scenario:
+    scenario_id: support-honest-baseline
+    role: SUPPORT
+    ablation: NONE
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 19
+  scenario:
+    scenario_id: support-high-compute-capped
+    role: SUPPORT
+    ablation: HIGH_COMPUTE
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 9000000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 300
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 23
+  scenario:
+    scenario_id: support-sybil-split
+    role: SUPPORT
+    ablation: SYBIL_SPLIT
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    - worker_id: '0x0000000000000000000000000000000000003102'
+      operator_id: attacker-1
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 4
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000004'
+        worker_id: '0x0000000000000000000000000000000000003102'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 4
+        task_id: 4
+        worker_id: '0x0000000000000000000000000000000000003102'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002714'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e24'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007534'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 29
+  scenario:
+    scenario_id: support-subsidized-compute
+    role: SUPPORT
+    ablation: SUBSIDIZED_COMPUTE
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 500000
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 180
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 31
+  scenario:
+    scenario_id: support-collusion-bounded
+    role: SUPPORT
+    ablation: COLLUSION
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    - attacker-2
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: attacker-2
+      operator_class: ATTACKER
+      collateral_micros: 1100000
+      compute_cost_micros: 650000
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    - worker_id: '0x0000000000000000000000000000000000003103'
+      operator_id: attacker-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 5
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000005'
+        worker_id: '0x0000000000000000000000000000000000003103'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 5
+        task_id: 5
+        worker_id: '0x0000000000000000000000000000000000003103'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002715'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e25'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007535'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 37
+  scenario:
+    scenario_id: support-receipt-churn
+    role: SUPPORT
+    ablation: CHURN
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+      - receipt_id: 6
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002716'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e26'
+        state: 1
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007536'
+        audit_decision: null
+        audit_accepted: false
+        da_decision: null
+        data_availability_passed: false
+        activated_epoch: null
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+      - receipt_id: 7
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002717'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e27'
+        state: 7
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007537'
+        audit_decision: 2
+        audit_accepted: false
+        da_decision: null
+        data_availability_passed: false
+        activated_epoch: null
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 19
+  scenario:
+    scenario_id: negative-cap-removed
+    role: NEGATIVE_CONTROL
+    ablation: CONCENTRATION_CAP_REMOVED
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 10000
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 9000000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 300
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 1
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002711'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e21'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007531'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 43
+  scenario:
+    scenario_id: boundary-zero-credit-rich
+    role: BOUNDARY
+    ablation: COLLATERAL_RICH_ZERO_CREDIT
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 9000000000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 51
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002743'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e53'
+        state: 1
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007563'
+        audit_decision: null
+        audit_accepted: false
+        da_decision: null
+        data_availability_passed: false
+        activated_epoch: null
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 2
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000002'
+        worker_id: '0x0000000000000000000000000000000000004101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 2
+        task_id: 2
+        worker_id: '0x0000000000000000000000000000000000004101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002712'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e22'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007532'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+    - task:
+        task_id: 3
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000003'
+        worker_id: '0x0000000000000000000000000000000000004201'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 3
+        task_id: 3
+        worker_id: '0x0000000000000000000000000000000000004201'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002713'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e23'
+        state: 2
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007533'
+        audit_decision: 1
+        audit_accepted: true
+        da_decision: true
+        data_availability_passed: true
+        activated_epoch: 8
+        challenge_reason: null
+        slash_reason: null
+- seed: 47
+  scenario:
+    scenario_id: boundary-pending-only
+    role: BOUNDARY
+    ablation: MISSING_RECEIPTS
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 41
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x0000000000000000000000000000000000000000000000000000000000002739'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e49'
+        state: 1
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x0000000000000000000000000000000000000000000000000000000000007559'
+        audit_decision: null
+        audit_accepted: false
+        da_decision: null
+        data_availability_passed: false
+        activated_epoch: null
+        challenge_reason: null
+        slash_reason: null
+- seed: 53
+  scenario:
+    scenario_id: boundary-zero-total-weight
+    role: BOUNDARY
+    ablation: MISSING_RECEIPTS
+    committee_size: 2
+    target_epoch: 8
+    beta_micros: 10000
+    concentration_cap_micros: 120
+    attacker_operator_ids:
+    - attacker-1
+    operator_profiles:
+    - operator_id: attacker-1
+      operator_class: ATTACKER
+      collateral_micros: 1200000
+      compute_cost_micros: 700000
+      compute_subsidy_micros: 0
+    - operator_id: honest-1
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    - operator_id: honest-2
+      operator_class: HONEST
+      collateral_micros: 3000000
+      compute_cost_micros: 0
+      compute_subsidy_micros: 0
+    worker_bindings:
+    - worker_id: '0x0000000000000000000000000000000000003101'
+      operator_id: attacker-1
+    - worker_id: '0x0000000000000000000000000000000000004101'
+      operator_id: honest-1
+    - worker_id: '0x0000000000000000000000000000000000004201'
+      operator_id: honest-2
+    task_batches:
+    - task:
+        task_id: 1
+        task_root: '0x0000000000000000000000000000000000000000000000000000000000000001'
+        worker_id: '0x0000000000000000000000000000000000003101'
+        task_class: 1
+        active: true
+        registered: true
+        credit_budget: 90
+        epoch: 7
+        deadline: 500
+        commitment_height: 120
+        commitment_finality_depth: 5
+        challenge_window_blocks: 9
+        audit_domain_size: 16
+      receipts:
+      - receipt_id: 61
+        task_id: 1
+        worker_id: '0x0000000000000000000000000000000000003101'
+        commitment_hash: '0x000000000000000000000000000000000000000000000000000000000000274d'
+        audit_id: '0x0000000000000000000000000000000000000000000000000000000000004e5d'
+        state: 1
+        epoch_issued: 7
+        challenge_deadline: 640
+        nullifier: '0x000000000000000000000000000000000000000000000000000000000000756d'
+        audit_decision: null
+        audit_accepted: false
+        da_decision: null
+        data_availability_passed: false
+        activated_epoch: null
+        challenge_reason: null
+        slash_reason: null
+notes:
+- E8 publication plan is frozen to reproducible simulation only.
+- Scenario definitions moved from test helpers into production-owned configuration
+  on 2026-08-22.

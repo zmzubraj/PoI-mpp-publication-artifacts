@@ -9,31 +9,26 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from poi_mpp.evidence.config import load_run_config
 from poi_mpp.experiments.e8_consensus import (
-    AuthorityBoundaryError,
-    assert_cli_authority_boundary,
-    load_e8_confirmatory_contract,
+    load_and_run_e8_publication,
 )
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Validate authority for manual E8 next-epoch committee publication routing."
+        description="Run the frozen E8 publication replay plan and write its canonical rows artifact."
     )
-    parser.add_argument("--run-config", required=True, help="Path to a frozen E8 run configuration.")
     parser.add_argument(
-        "--confirmatory-contract",
+        "--plan",
         required=True,
-        help="Path to the frozen E8 confirmatory contract.",
+        help="Path to the frozen E8 publication plan.",
     )
+    parser.add_argument("--output", required=True, help="Path for the canonical E8 rows artifact.")
     args = parser.parse_args(argv)
 
     try:
-        run_config = load_run_config(Path(args.run_config))
-        contract = load_e8_confirmatory_contract(Path(args.confirmatory_contract))
-        assert_cli_authority_boundary(run_config, contract)
-    except (AuthorityBoundaryError, ValueError) as error:
+        load_and_run_e8_publication(Path(args.plan), output_path=Path(args.output))
+    except ValueError as error:
         print(str(error), file=sys.stderr)
         return 2
     return 0
