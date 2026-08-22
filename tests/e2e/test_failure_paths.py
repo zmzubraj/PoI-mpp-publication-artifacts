@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from poi_mpp.protocol.types import ReceiptState
+from poi_mpp.orchestration import run_mpp as orchestration
 from poi_mpp.orchestration.run_mpp import LocalMPPConfig, RealPathBlocker, load_local_mpp_config, run_local_mpp
 
 
@@ -26,8 +28,8 @@ def _hash_file(path: Path) -> str:
 def _config_with_local_artifacts(tmp_path: Path) -> LocalMPPConfig:
     model_root = tmp_path / "model"
     tokenizer_root = tmp_path / "tokenizer"
-    model_root.mkdir()
-    tokenizer_root.mkdir()
+    model_root.mkdir(exist_ok=True)
+    tokenizer_root.mkdir(exist_ok=True)
 
     model_file = model_root / "model.safetensors"
     tokenizer_file = tokenizer_root / "tokenizer.json"
@@ -184,3 +186,82 @@ def test_loader_rejects_unknown_fields(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="unknown configuration fields"):
         load_local_mpp_config(config_path)
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    (
+        "/tmp/escape.json",
+        "./synthetic/happy/execution_bundle.json",
+        "synthetic/../escape.json",
+        r"synthetic\happy\execution_bundle.json",
+    ),
+)
+def test_relative_path_validator_rejects_noncanonical_or_host_paths(candidate: str) -> None:
+    with pytest.raises(ValueError):
+        orchestration._validate_relative_path(candidate)
+
+
+def test_safe_env_forces_offline_mode_and_drops_proxy_inheritance(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HTTP_PROXY", "http://proxy.example.invalid:8080")
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example.invalid:8443")
+    monkeypatch.setenv("ALL_PROXY", "socks5://proxy.example.invalid:1080")
+
+    env = orchestration._safe_env()
+
+    assert env["HF_HUB_OFFLINE"] == "1"
+    assert env["TRANSFORMERS_OFFLINE"] == "1"
+    assert env["HF_DATASETS_OFFLINE"] == "1"
+    assert env["NO_PROXY"] == "127.0.0.1,localhost"
+    assert "HTTP_PROXY" not in env
+    assert "HTTPS_PROXY" not in env
+    assert "ALL_PROXY" not in env
+
+
+def test_config_rejects_non_loopback_hosts_and_model_uris(tmp_path: Path) -> None:
+    bad_host = _config_with_local_artifacts(tmp_path).model_dump(mode="python")
+    bad_host["chain"] = {
+        "host": "10.0.0.8",
+        "port": _free_port(),
+        "chain_id": 31337,
+        "startup_timeout_seconds": 20,
+        "command_timeout_seconds": 120,
+    }
+    with pytest.raises(ValueError, match="loopback"):
+        LocalMPPConfig.model_validate(bad_host)
+
+    payload = _config_with_local_artifacts(tmp_path).model_dump(mode="python")
+    payload["model"]["model_root"] = "https://example.invalid/model"
+    with pytest.raises(ValueError, match="local filesystem path"):
+        LocalMPPConfig.model_validate(payload)
+
+
+def test_monkeypatched_expected_epoch_cannot_change_authoritative_readback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(orchestration, "_expected_happy_credit_epoch", lambda task_epoch: task_epoch + 99)
+
+    with pytest.raises(RuntimeError, match="authoritative receipt"):
+        run_local_mpp(_config_with_local_artifacts(tmp_path))
+
+
+def test_mismatching_authoritative_chain_readback_fails_closed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    original = orchestration._read_authoritative_receipt
+
+    def _tampered(*args, **kwargs):
+        receipt = original(*args, **kwargs)
+        return receipt.model_copy(update={"state": ReceiptState.PENDING})
+
+    monkeypatch.setattr(orchestration, "_read_authoritative_receipt", _tampered)
+
+    with pytest.raises(RuntimeError, match="authoritative receipt"):
+        run_local_mpp(_config_with_local_artifacts(tmp_path))
+
+
+def test_run_all_script_pins_offline_localhost_only_execution() -> None:
+    script = (ROOT / "scripts" / "run_all.sh").read_text(encoding="utf-8")
+
+    assert "HF_HUB_OFFLINE=1" in script
+    assert "TRANSFORMERS_OFFLINE=1" in script
+    assert "HF_DATASETS_OFFLINE=1" in script
+    assert "NO_PROXY=127.0.0.1,localhost" in script
+    assert "unset HTTP_PROXY HTTPS_PROXY ALL_PROXY" in script
+    assert "localhost Anvil exception" in script

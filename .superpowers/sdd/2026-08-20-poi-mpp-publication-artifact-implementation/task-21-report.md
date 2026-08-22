@@ -128,3 +128,80 @@ PASS
 - The real publication-bearing path is still externally blocked and intentionally not claimed complete.
 - `shellcheck` is not installed on this machine, so shell lint evidence is limited to `bash -n`.
 - The full Python suite is slow because it now includes multiple Anvil/Foundry-backed e2e mechanics checks; it eventually completed cleanly but is materially heavier than the earlier task waves.
+
+## Spec fix round 1 — 2026-08-22
+
+### RED evidence
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_happy_path.py tests/e2e/test_failure_paths.py -q
+8 failed, 5 passed in 61.74s
+
+Representative failures:
+- module had no `_resolve_output_relative_path`
+- serialized artifact/result path assertions exposed absolute host paths
+- `./` path inputs were still accepted
+- `_safe_env()` did not force offline variables
+- non-loopback host / model URI rejection was absent
+- authoritative receipt helpers were absent, so monkeypatch mismatch checks could not fail closed
+- `scripts/run_all.sh` did not declare offline localhost-only posture
+```
+
+### Additional hardening delivered
+
+- Artifact/result path containment:
+  - `MechanicsArtifact.relative_path` and serialized happy-path artifact references are now canonical output-root-relative POSIX paths only.
+  - Safe reads now resolve relative paths against the configured output root through a validating no-symlink resolver.
+  - Serialized real-path blocker reasons were stripped of absolute host-path leakage.
+  - E2E reload now verifies canonical path serialization plus parent/hash closure from disk.
+- Authoritative receipt/epoch sourcing:
+  - Happy-path `receipt_state` and `credit_epoch` now come from `ReceiptManager.getReceipt(...)` readback, not synthesized local values.
+  - The readback is cross-checked against `AuditManager.getAudit(...)` plus expected task/worker/commitment/audit/nullifier fields before any kernel `Receipt` is built.
+  - Monkeypatched expected epoch/readback mismatches now fail closed with an authoritative-readback error instead of mutating the returned summary.
+- Process/offline hardening:
+  - Anvil stdout is now drained through a bounded in-memory capture with `_ANVIL_LOG_LIMIT`, final capped file write, truncation flag, and full/captured SHA-256 metadata in the serialized deployment summary.
+  - Subprocess environment now forces offline Hugging Face / Transformers / dataset posture, disables pip index fallback, and drops inherited proxy variables.
+  - Chain host validation is now loopback-only, and configured model/tokenizer roots reject URI-style remote locations.
+  - `scripts/run_all.sh` now exports the same offline posture and documents the localhost-only Anvil exception.
+
+### GREEN verification after spec fix
+
+Focused e2e:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e/test_happy_path.py tests/e2e/test_failure_paths.py -q
+13 passed in 103.65s (0:01:43)
+```
+
+Relevant regression surfaces:
+
+```text
+$ ./.venv/bin/python -m pytest -o addopts='' tests/e2e tests/integration/test_python_solidity_parity.py tests/protocol tests/worker tests/auditor tests/semantic tests/experiments/test_e4_da.py -q
+124 passed in 102.64s (0:01:42)
+```
+
+Full Python:
+
+```text
+$ ./.venv/bin/python -m pytest -q
+[100%] full suite PASS
+```
+
+Foundry / hygiene:
+
+```text
+$ cd contracts && forge test -q
+PASS
+
+$ ./.venv/bin/python -m compileall -q src tests scripts
+PASS
+
+$ bash -n scripts/run_all.sh
+PASS
+
+$ git diff --check
+PASS
+
+$ shellcheck scripts/run_all.sh
+shellcheck not installed
+```

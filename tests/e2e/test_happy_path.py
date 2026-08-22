@@ -1,14 +1,11 @@
 from __future__ import annotations
 
+import json
 import socket
 from pathlib import Path
 
-from poi_mpp.orchestration.run_mpp import (
-    LocalMPPConfig,
-    RealPathBlocker,
-    SyntheticDisposition,
-    run_local_mpp,
-)
+from poi_mpp.orchestration import run_mpp as orchestration
+from poi_mpp.orchestration.run_mpp import LocalMPPConfig, RealPathBlocker, SyntheticDisposition, run_local_mpp
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -102,9 +99,59 @@ def test_real_path_blocks_without_local_model_and_synthetic_happy_path_completes
     assert result.synthetic.failure_paths.service_task_credit_total == 0
     assert result.synthetic.failure_paths.replay_rejection_error_code == "REPLAY_REJECTED"
     assert result.synthetic.summary_disposition is SyntheticDisposition.NON_PUBLICATION_MECHANICS
-    assert result.synthetic.happy_path.execution_bundle_path.is_file()
-    assert result.synthetic.happy_path.committee_artifact_path.is_file()
+    assert orchestration._resolve_output_relative_path(
+        config.output_root,
+        result.synthetic.happy_path.execution_bundle_path,
+    ).is_file()
+    assert orchestration._resolve_output_relative_path(
+        config.output_root,
+        result.synthetic.happy_path.committee_artifact_path,
+    ).is_file()
     assert all(
         artifact.summary_disposition is SyntheticDisposition.NON_PUBLICATION_MECHANICS
         for artifact in result.synthetic.artifacts
     )
+
+
+def test_serialized_result_uses_output_relative_posix_paths_and_hash_closure_survives_reload(tmp_path: Path) -> None:
+    config = _base_config(tmp_path)
+
+    result = run_local_mpp(config)
+    result_path = config.output_root / "run_mpp_result.json"
+    raw = result_path.read_bytes()
+    payload = orchestration._decode_canonical_json(raw, "TASK21_JSON")
+    reloaded = orchestration.LocalMPPResult.model_validate(payload)
+
+    decoded = raw.decode("utf-8")
+    assert str(config.output_root.resolve()) not in decoded
+    assert str(tmp_path.resolve()) not in decoded
+    assert payload["synthetic"]["happy_path"]["execution_bundle_path"] == "synthetic/happy/execution_bundle.json"
+    assert payload["synthetic"]["happy_path"]["committee_artifact_path"] == "synthetic/happy/committee.json"
+    assert reloaded.contracts.anvil_log is not None
+    assert reloaded.contracts.anvil_log.captured_bytes <= orchestration._ANVIL_LOG_LIMIT
+    assert orchestration._resolve_output_relative_path(
+        config.output_root,
+        reloaded.contracts.anvil_log.relative_path,
+    ).stat().st_size <= orchestration._ANVIL_LOG_LIMIT
+
+    artifact_by_hash = {artifact.content_hash: artifact for artifact in reloaded.synthetic.artifacts}
+    for artifact in reloaded.synthetic.artifacts:
+        assert artifact.relative_path == artifact.relative_path.replace("\\", "/")
+        assert not artifact.relative_path.startswith("/")
+        assert str(artifact.relative_path) == Path(artifact.relative_path).as_posix()
+        resolved = orchestration._resolve_output_relative_path(config.output_root, artifact.relative_path)
+        assert resolved.is_file()
+        assert orchestration._hash_file(resolved) == artifact.content_hash
+        artifact_payload = orchestration._decode_canonical_json(resolved.read_bytes(), "TASK21_JSON")
+        assert artifact_payload["parent_hashes"] == list(artifact.parent_hashes)
+        for parent_hash in artifact.parent_hashes:
+            assert parent_hash in artifact_by_hash
+
+    assert orchestration._resolve_output_relative_path(
+        config.output_root,
+        reloaded.synthetic.happy_path.execution_bundle_path,
+    ) == orchestration._resolve_output_relative_path(config.output_root, "synthetic/happy/execution_bundle.json")
+    assert orchestration._resolve_output_relative_path(
+        config.output_root,
+        reloaded.synthetic.happy_path.committee_artifact_path,
+    ) == orchestration._resolve_output_relative_path(config.output_root, "synthetic/happy/committee.json")

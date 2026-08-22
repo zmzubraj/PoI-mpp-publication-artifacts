@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 import hashlib
+import ipaddress
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -14,6 +15,7 @@ import shutil
 import socket
 import stat
 import subprocess
+import threading
 import time
 from typing import Any
 
@@ -67,6 +69,27 @@ _CREDIT_BUDGET = 90
 _TASK_DEADLINE = 500
 _AUDIT_DOMAIN_SIZE = 16
 _ANVIL_LOG_LIMIT = 4096
+_CANONICAL_PREFIX = "POI_MPP_V1"
+_OFFLINE_ENV = {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "HF_DATASETS_OFFLINE": "1",
+    "HF_HUB_DISABLE_TELEMETRY": "1",
+    "PIP_NO_INDEX": "1",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "NO_PROXY": "127.0.0.1,localhost",
+    "no_proxy": "127.0.0.1,localhost",
+}
+_PROXY_ENV_KEYS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "FTP_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+    "ftp_proxy",
+)
 _CONTRACT_ARTIFACTS = (
     ("PolicyRegistry", "src/PolicyRegistry.sol", "out/PolicyRegistry.sol/PolicyRegistry.json"),
     ("ModelRegistry", "src/ModelRegistry.sol", "out/ModelRegistry.sol/ModelRegistry.json"),
@@ -113,7 +136,10 @@ class LocalModelSpec(_StrictFrozenModel):
     def _require_path(cls, value: object) -> Path:
         if not isinstance(value, str | Path):
             raise ValueError("model/tokenizer roots must be paths")
-        return Path(value)
+        candidate = str(value)
+        if "://" in candidate:
+            raise ValueError("model/tokenizer roots must be local filesystem paths, not model URIs")
+        return Path(candidate)
 
 
 class ChainConfig(_StrictFrozenModel):
@@ -128,7 +154,16 @@ class ChainConfig(_StrictFrozenModel):
     def _require_host(cls, value: str) -> str:
         if not isinstance(value, str) or not value.strip():
             raise ValueError("host must not be blank")
-        return value
+        candidate = value.strip()
+        if candidate == "localhost":
+            return candidate
+        try:
+            parsed = ipaddress.ip_address(candidate)
+        except ValueError as error:
+            raise ValueError("host must be a loopback address or localhost") from error
+        if not parsed.is_loopback:
+            raise ValueError("host must be a loopback address or localhost")
+        return candidate
 
 
 class SemanticConfig(_StrictFrozenModel):
@@ -220,7 +255,28 @@ class DeploymentSummary(_StrictFrozenModel):
     receipt_manager_address: str
     credit_engine_address: str
     anvil_version: str
+    anvil_log: "AnvilLogSummary | None" = None
     contract_hashes: tuple[ContractHashRecord, ...]
+
+
+class AnvilLogSummary(_StrictFrozenModel):
+    relative_path: str
+    captured_bytes: int = Field(ge=0, le=_ANVIL_LOG_LIMIT)
+    truncated: bool
+    captured_sha256: str
+    full_sha256: str
+
+    @field_validator("relative_path")
+    @classmethod
+    def _require_relative_path(cls, value: str) -> str:
+        return _validated_relative_posix_path(value)
+
+    @field_validator("captured_sha256", "full_sha256")
+    @classmethod
+    def _require_hash(cls, value: str) -> str:
+        if not isinstance(value, str) or len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("anvil log hashes must be lowercase sha256 hex")
+        return value
 
 
 class MechanicsArtifact(_StrictFrozenModel):
@@ -237,6 +293,8 @@ class MechanicsArtifact(_StrictFrozenModel):
     def _require_nonblank(cls, value: str, info) -> str:
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"{info.field_name} must not be blank")
+        if info.field_name == "relative_path":
+            return _validated_relative_posix_path(value)
         return value
 
     @model_validator(mode="after")
@@ -248,8 +306,8 @@ class MechanicsArtifact(_StrictFrozenModel):
         return self
 
     @property
-    def path(self) -> Path:
-        return Path(self.relative_path)
+    def path(self) -> PurePosixPath:
+        return PurePosixPath(self.relative_path)
 
 
 class HappyPathSummary(_StrictFrozenModel):
@@ -257,15 +315,15 @@ class HappyPathSummary(_StrictFrozenModel):
     receipt_state: str
     credit_epoch: int
     committee_members: tuple[str, ...]
-    execution_bundle_path: Path
-    committee_artifact_path: Path
+    execution_bundle_path: PurePosixPath
+    committee_artifact_path: PurePosixPath
 
     @field_validator("execution_bundle_path", "committee_artifact_path", mode="before")
     @classmethod
-    def _require_paths(cls, value: object) -> Path:
-        if not isinstance(value, str | Path):
+    def _require_paths(cls, value: object) -> PurePosixPath:
+        if not isinstance(value, str | Path | PurePosixPath):
             raise ValueError("artifact paths must be paths")
-        return Path(value)
+        return _validate_relative_path(_path_text(value))
 
 
 class FailurePathSummary(_StrictFrozenModel):
@@ -305,29 +363,67 @@ class _CommandResult:
 
 
 @dataclass
+class _BoundedLogCapture:
+    path: Path
+    limit: int
+    captured: bytearray
+    full_hasher: "hashlib._Hash"
+    truncated: bool = False
+
+    def consume(self, stream) -> None:
+        try:
+            while True:
+                chunk = stream.read(1024)
+                if not chunk:
+                    break
+                self.full_hasher.update(chunk)
+                remaining = self.limit - len(self.captured)
+                if remaining > 0:
+                    self.captured.extend(chunk[:remaining])
+                if len(chunk) > remaining:
+                    self.truncated = True
+        finally:
+            stream.close()
+            self.path.write_bytes(bytes(self.captured))
+
+    def summary(self, *, output_root: Path) -> AnvilLogSummary:
+        return AnvilLogSummary(
+            relative_path=_relative_output_path(output_root, self.path),
+            captured_bytes=len(self.captured),
+            truncated=self.truncated,
+            captured_sha256=_hash_bytes(bytes(self.captured)),
+            full_sha256=self.full_hasher.hexdigest(),
+        )
+
+
+@dataclass
 class _AnvilProcess:
-    process: subprocess.Popen[str]
+    process: subprocess.Popen[bytes]
     rpc_url: str
     host: str
     port: int
     log_path: Path
     version: str
+    log_capture: _BoundedLogCapture
+    log_thread: threading.Thread
 
     def close(self) -> None:
-        if self.process.poll() is not None:
-            return
-        try:
-            os.killpg(os.getpgid(self.process.pid), 15)
-        except ProcessLookupError:
-            return
-        deadline = time.time() + 10.0
-        while time.time() < deadline:
-            if self.process.poll() is not None:
-                break
-            time.sleep(0.1)
         if self.process.poll() is None:
-            os.killpg(os.getpgid(self.process.pid), 9)
+            try:
+                os.killpg(os.getpgid(self.process.pid), 15)
+            except ProcessLookupError:
+                pass
+            deadline = time.time() + 10.0
+            while time.time() < deadline:
+                if self.process.poll() is not None:
+                    break
+                time.sleep(0.1)
+            if self.process.poll() is None:
+                os.killpg(os.getpgid(self.process.pid), 9)
         self.process.wait(timeout=5)
+        self.log_thread.join(timeout=5)
+        if self.log_thread.is_alive():
+            raise RuntimeError("Anvil log drain did not finish before cleanup timeout")
 
 
 def _hash_bytes(data: bytes) -> str:
@@ -344,7 +440,16 @@ def _safe_env() -> dict[str, str]:
         value = os.environ.get(key)
         if value is not None:
             result[key] = value
+    result.update(_OFFLINE_ENV)
     return result
+
+
+def _path_text(value: str | Path | PurePosixPath) -> str:
+    if isinstance(value, PurePosixPath):
+        return value.as_posix()
+    if isinstance(value, Path):
+        return value.as_posix()
+    return value
 
 
 def _run(
@@ -548,7 +653,6 @@ def _start_anvil(config: ChainConfig, output_root: Path) -> _AnvilProcess:
     _ensure_directory(output_root, PurePosixPath("logs"))
     log_path = log_dir / "anvil.log"
     version = _run(("anvil", "--version"), cwd=_ROOT, timeout=config.command_timeout_seconds).stdout
-    handle = log_path.open("w", encoding="utf-8")
     process = subprocess.Popen(
         (
             "anvil",
@@ -563,11 +667,25 @@ def _start_anvil(config: ChainConfig, output_root: Path) -> _AnvilProcess:
         cwd=_ROOT,
         env=_safe_env(),
         stdin=subprocess.DEVNULL,
-        stdout=handle,
+        stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True,
         preexec_fn=os.setsid,
     )
+    if process.stdout is None:  # pragma: no cover - subprocess invariant
+        raise RuntimeError("Anvil stdout pipe was not created")
+    log_capture = _BoundedLogCapture(
+        path=log_path,
+        limit=_ANVIL_LOG_LIMIT,
+        captured=bytearray(),
+        full_hasher=hashlib.sha256(),
+    )
+    log_thread = threading.Thread(
+        target=log_capture.consume,
+        args=(process.stdout,),
+        name="task21-anvil-log-drain",
+        daemon=True,
+    )
+    log_thread.start()
     rpc_url = f"http://{config.host}:{config.port}"
     deadline = time.time() + config.startup_timeout_seconds
     last_error: Exception | None = None
@@ -584,6 +702,8 @@ def _start_anvil(config: ChainConfig, output_root: Path) -> _AnvilProcess:
                     port=config.port,
                     log_path=log_path,
                     version=version,
+                    log_capture=log_capture,
+                    log_thread=log_thread,
                 )
         except Exception as error:  # pragma: no cover - exercised only on startup races
             last_error = error
@@ -617,12 +737,49 @@ def _ensure_directory(root: Path, relative: PurePosixPath) -> Path:
 
 
 def _validate_relative_path(value: str) -> PurePosixPath:
-    relative = PurePosixPath(value)
-    if relative.is_absolute() or ".." in relative.parts or "\\" in value or value.startswith("/"):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("artifact path must not be blank")
+    if "\\" in value or value.startswith("/") or value.startswith("./") or value.endswith("/.") or "/./" in value:
         raise ValueError(f"artifact path escapes output root: {value}")
-    if any(part in {"", "."} for part in relative.parts):
+    raw_parts = value.split("/")
+    if any(part in {"", ".", ".."} for part in raw_parts):
         raise ValueError(f"artifact path contains invalid components: {value}")
+    relative = PurePosixPath(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(f"artifact path escapes output root: {value}")
     return relative
+
+
+def _validated_relative_posix_path(value: str | Path | PurePosixPath) -> str:
+    return _validate_relative_path(_path_text(value)).as_posix()
+
+
+def _resolve_output_relative_path(root: Path, value: str | Path | PurePosixPath) -> Path:
+    relative = _validate_relative_path(_path_text(value))
+    current = root.resolve(strict=False)
+    for part in relative.parts:
+        candidate = current / part
+        if candidate.exists():
+            status = os.lstat(candidate)
+            if stat.S_ISLNK(status.st_mode):
+                raise ValueError(f"symlinked output path is forbidden: {candidate}")
+        current = candidate
+    return current
+
+
+def _relative_output_path(root: Path, target: Path) -> str:
+    relative = target.resolve(strict=False).relative_to(root.resolve(strict=False))
+    return _validated_relative_posix_path(PurePosixPath(relative.as_posix()))
+
+
+def _decode_canonical_json(raw: bytes, domain: str) -> dict[str, Any]:
+    prefix = f"{_CANONICAL_PREFIX}|{domain}|".encode("ascii")
+    if not raw.startswith(prefix):
+        raise ValueError(f"canonical payload missing expected {domain} prefix")
+    payload = json.loads(raw[len(prefix) :].decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("canonical payload must decode to an object")
+    return payload
 
 
 def _write_json_atomic(root: Path, relative_path: str, payload: Mapping[str, Any]) -> tuple[Path, str]:
@@ -679,6 +836,7 @@ def _write_mechanics_artifact(
     payload: Mapping[str, Any],
     provenance: Mapping[str, Any],
 ) -> MechanicsArtifact:
+    canonical_relative_path = _validated_relative_posix_path(relative_path)
     envelope = _mechanics_payload(
         artifact_id=artifact_id,
         origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
@@ -686,10 +844,10 @@ def _write_mechanics_artifact(
         payload=payload,
         provenance=provenance,
     )
-    target, content_hash = _write_json_atomic(output_root, relative_path, envelope)
+    target, content_hash = _write_json_atomic(output_root, canonical_relative_path, envelope)
     return MechanicsArtifact(
         artifact_id=artifact_id,
-        relative_path=str(target),
+        relative_path=canonical_relative_path,
         content_hash=content_hash,
         parent_hashes=tuple(parent_hashes),
         origin=EvidenceOrigin.SYNTHETIC_NON_EVIDENCE,
@@ -743,15 +901,15 @@ def _verify_local_model_artifact(config: LocalMPPConfig) -> tuple[RealPathBlocke
         ("tokenizer", config.model.tokenizer_root, config.model.manifest.tokenizer_file_hashes),
     ):
         if not root.is_dir():
-            reasons.append(f"{label} root missing: {root}")
+            reasons.append(f"{label} root missing at configured local path")
             continue
         for filename, expected_hash in file_hashes.items():
             candidate = root / filename
             if not candidate.is_file():
-                reasons.append(f"missing local artifact file: {candidate}")
+                reasons.append(f"missing local artifact file under configured {label} root: {filename}")
                 continue
             if _hash_file(candidate) != expected_hash:
-                reasons.append(f"hash mismatch for local artifact file: {candidate}")
+                reasons.append(f"hash mismatch for local artifact file under configured {label} root: {filename}")
     if reasons:
         return (RealPathBlocker.WAITING_LOCAL_MODEL_ARTIFACT, tuple(reasons))
     load_e3_confirmatory_schema(config.semantic.confirmatory_schema_path)
@@ -870,6 +1028,169 @@ def _task_id_before_create(task_manager_address: str, rpc_url: str, *, timeout: 
 
 def _receipt_id_before_mint(receipt_manager_address: str, rpc_url: str, *, timeout: int) -> int:
     return _call_uint(rpc_url, receipt_manager_address, "nextReceiptId()(uint256)", timeout=timeout)
+
+
+def _expected_happy_credit_epoch(task_epoch: int) -> int:
+    return task_epoch + 1
+
+
+def _read_authoritative_audit_round(
+    rpc_url: str,
+    audit_manager_address: str,
+    task_id: int,
+    *,
+    timeout: int,
+) -> dict[str, Any]:
+    payload = _json_command(
+        (
+            "cast",
+            "call",
+            "--json",
+            "--rpc-url",
+            rpc_url,
+            audit_manager_address,
+            "getAudit(uint256)((bytes32,bytes32,bytes32,bytes32,uint32,uint64,uint64,uint8,bool,bool,bool,bool,bool))",
+            str(task_id),
+        ),
+        cwd=_ROOT,
+        timeout=timeout,
+    )
+    if not isinstance(payload, list) or len(payload) != 1 or not isinstance(payload[0], list) or len(payload[0]) != 13:
+        raise RuntimeError("unexpected AuditManager.getAudit payload shape")
+    row = payload[0]
+    return {
+        "audit_id": row[0],
+        "commitment_hash": row[1],
+        "seed_hash": row[2],
+        "policy_hash": row[3],
+        "round_index": int(row[4]),
+        "opened_block": int(row[5]),
+        "challenge_deadline": int(row[6]),
+        "decision": int(row[7]),
+        "da_passed": bool(row[8]),
+        "da_recorded": bool(row[9]),
+        "challenged": bool(row[10]),
+        "slashed": bool(row[11]),
+        "exists": bool(row[12]),
+    }
+
+
+def _read_authoritative_receipt(
+    rpc_url: str,
+    receipt_manager_address: str,
+    receipt_id: int,
+    *,
+    timeout: int,
+) -> Receipt:
+    payload = _json_command(
+        (
+            "cast",
+            "call",
+            "--json",
+            "--rpc-url",
+            rpc_url,
+            receipt_manager_address,
+            "getReceipt(uint256)((uint256,address,bytes32,bytes32,bytes32,uint8,uint64,uint64,uint64))",
+            str(receipt_id),
+        ),
+        cwd=_ROOT,
+        timeout=timeout,
+    )
+    if not isinstance(payload, list) or len(payload) != 1 or not isinstance(payload[0], list) or len(payload[0]) != 9:
+        raise RuntimeError("unexpected ReceiptManager.getReceipt payload shape")
+    row = payload[0]
+    try:
+        state = tuple(ReceiptState)[int(row[5])]
+    except (IndexError, TypeError, ValueError) as error:
+        raise RuntimeError(f"unexpected receipt state ordinal from chain: {row[5]}") from error
+    return Receipt.model_validate(
+        {
+            "receipt_id": receipt_id,
+            "task_id": int(row[0]),
+            "worker_id": row[1],
+            "commitment_hash": row[2],
+            "audit_id": row[3],
+            "nullifier": row[4],
+            "state": state,
+            "epoch_issued": int(row[6]),
+            "challenge_deadline": int(row[7]),
+            "activated_epoch": None if int(row[8]) == 0 else int(row[8]),
+            "audit_decision": None,
+            "audit_accepted": False,
+            "da_decision": None,
+            "data_availability_passed": False,
+            "challenge_reason": None,
+            "slash_reason": None,
+        }
+    )
+
+
+def _validated_happy_authoritative_receipt(
+    *,
+    rpc_url: str,
+    deployment: DeploymentSummary,
+    receipt_id: int,
+    task: TaskSpec,
+    expected_worker: str,
+    expected_commitment_hash: str,
+    expected_audit_id: str,
+    expected_nullifier: str,
+    timeout: int,
+) -> Receipt:
+    receipt = _read_authoritative_receipt(
+        rpc_url,
+        deployment.receipt_manager_address,
+        receipt_id,
+        timeout=timeout,
+    )
+    audit_round = _read_authoritative_audit_round(
+        rpc_url,
+        deployment.audit_manager_address,
+        task.task_id,
+        timeout=timeout,
+    )
+    expected_epoch = _expected_happy_credit_epoch(task.epoch)
+    mismatches: list[str] = []
+    expected_fields = {
+        "task_id": task.task_id,
+        "worker_id": expected_worker,
+        "commitment_hash": expected_commitment_hash,
+        "audit_id": expected_audit_id,
+        "nullifier": expected_nullifier,
+        "state": ReceiptState.ACTIVE,
+        "epoch_issued": task.epoch,
+        "activated_epoch": expected_epoch,
+    }
+    for key, expected in expected_fields.items():
+        observed = getattr(receipt, key)
+        if observed != expected:
+            mismatches.append(f"{key}: expected {expected!r}, observed {observed!r}")
+    if audit_round["audit_id"] != expected_audit_id:
+        mismatches.append(f"audit_round.audit_id: expected {expected_audit_id!r}, observed {audit_round['audit_id']!r}")
+    if audit_round["commitment_hash"] != expected_commitment_hash:
+        mismatches.append(
+            f"audit_round.commitment_hash: expected {expected_commitment_hash!r}, observed {audit_round['commitment_hash']!r}"
+        )
+    if receipt.challenge_deadline != audit_round["challenge_deadline"]:
+        mismatches.append(
+            f"challenge_deadline: expected {audit_round['challenge_deadline']!r}, observed {receipt.challenge_deadline!r}"
+        )
+    if audit_round["decision"] != int(AuditDecision.ACCEPT):
+        mismatches.append(f"audit_round.decision: expected {int(AuditDecision.ACCEPT)!r}, observed {audit_round['decision']!r}")
+    if not audit_round["da_passed"] or not audit_round["da_recorded"] or not audit_round["exists"]:
+        mismatches.append(
+            "audit_round flags: expected da_passed=True, da_recorded=True, exists=True"
+        )
+    if mismatches:
+        raise RuntimeError("authoritative receipt readback mismatch: " + "; ".join(mismatches))
+    return receipt.model_copy(
+        update={
+            "audit_decision": AuditDecision.ACCEPT,
+            "audit_accepted": True,
+            "da_decision": True,
+            "data_availability_passed": True,
+        }
+    )
 
 
 def _register_model_and_worker(
@@ -1304,31 +1625,24 @@ def _run_synthetic_mechanics(
     else:  # pragma: no cover - defensive failure path
         raise RuntimeError("replay credit allocation unexpectedly succeeded")
 
-    credit_epoch = consensus_task.epoch + 1
+    consensus_nullifier = bytes32_word("TASK21_NULLIFIER", {"task_id": consensus_task_id})
+    authoritative_receipt = _validated_happy_authoritative_receipt(
+        rpc_url=rpc_url,
+        deployment=deployment,
+        receipt_id=consensus_receipt_id,
+        task=consensus_task,
+        expected_worker=deployment.worker_address,
+        expected_commitment_hash=consensus_commitment.commitment_hash,
+        expected_audit_id=consensus_audit.audit_id,
+        expected_nullifier=consensus_nullifier,
+        timeout=timeout,
+    )
+    if authoritative_receipt.activated_epoch is None:
+        raise RuntimeError("authoritative receipt readback did not return an activated epoch")
+    credit_epoch = authoritative_receipt.activated_epoch
     happy_credit = allocate_credit(
         consensus_task,
-        (
-            Receipt.model_validate(
-                {
-                    "receipt_id": consensus_receipt_id,
-                    "task_id": consensus_task.task_id,
-                    "worker_id": deployment.worker_address,
-                    "commitment_hash": consensus_commitment.commitment_hash,
-                    "audit_id": consensus_audit.audit_id,
-                    "state": ReceiptState.ACTIVE,
-                    "epoch_issued": consensus_task.epoch,
-                    "challenge_deadline": consensus_task.commitment_height + consensus_task.challenge_window_blocks,
-                    "nullifier": bytes32_word("TASK21_NULLIFIER", {"task_id": consensus_task_id}),
-                    "audit_decision": AuditDecision.ACCEPT,
-                    "audit_accepted": True,
-                    "da_decision": True,
-                    "data_availability_passed": True,
-                    "activated_epoch": credit_epoch,
-                    "challenge_reason": None,
-                    "slash_reason": None,
-                }
-            ),
-        ),
+        (authoritative_receipt,),
     )
     weight = derive_active_weight(happy_credit.total_credit, 900, _BETA, _CONCENTRATION_CAP)
     committee = sample_committee(
@@ -1457,11 +1771,11 @@ def _run_synthetic_mechanics(
         artifacts=tuple(artifacts),
         happy_path=HappyPathSummary(
             task_epoch=consensus_task.epoch,
-            receipt_state="ACTIVE",
-            credit_epoch=credit_epoch,
+            receipt_state=authoritative_receipt.state.name,
+            credit_epoch=authoritative_receipt.activated_epoch,
             committee_members=committee,
-            execution_bundle_path=Path(execution_artifact.relative_path),
-            committee_artifact_path=Path(committee_artifact.relative_path),
+            execution_bundle_path=execution_artifact.path,
+            committee_artifact_path=committee_artifact.path,
         ),
         failure_paths=failure_paths,
     )
@@ -1481,6 +1795,10 @@ def run_local_mpp(config: LocalMPPConfig) -> LocalMPPResult:
         protocol_witness_hash=parity_result.protocol_witness_hash,
     )
     anvil = _start_anvil(config.chain, output_root)
+    deployment: DeploymentSummary | None = None
+    blocker: RealPathBlocker | None = None
+    reasons: tuple[str, ...] | None = None
+    synthetic: SyntheticJourneySummary | None = None
     try:
         deployment = _deploy_stack(config, anvil)
         blocker, reasons = _verify_local_model_artifact(config)
@@ -1492,21 +1810,23 @@ def run_local_mpp(config: LocalMPPConfig) -> LocalMPPResult:
             config_hash_value=config_hash(config.run_config),
             parity=parity,
         )
-        result = LocalMPPResult(
-            config_hash=config_hash(config.run_config),
-            parity=parity,
-            contracts=deployment,
-            real_path=RealPathSummary(blocker=blocker, reasons=reasons),
-            synthetic=synthetic,
-        )
-        _write_json_atomic(
-            output_root,
-            "run_mpp_result.json",
-            result.model_dump(mode="json"),
-        )
-        return result
     finally:
         anvil.close()
+    if deployment is None or blocker is None or reasons is None or synthetic is None:  # pragma: no cover - defensive
+        raise RuntimeError("local MPP run did not produce a complete result")
+    result = LocalMPPResult(
+        config_hash=config_hash(config.run_config),
+        parity=parity,
+        contracts=deployment.model_copy(update={"anvil_log": anvil.log_capture.summary(output_root=output_root)}),
+        real_path=RealPathSummary(blocker=blocker, reasons=reasons),
+        synthetic=synthetic,
+    )
+    _write_json_atomic(
+        output_root,
+        "run_mpp_result.json",
+        result.model_dump(mode="json"),
+    )
+    return result
 
 
 def main(argv: Sequence[str] | None = None) -> int:
