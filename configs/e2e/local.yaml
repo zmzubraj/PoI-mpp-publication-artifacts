@@ -1,0 +1,53 @@
+schema_version: POI_MPP_LOCAL_MPP_CONFIG_V1
+run_config:
+  schema_version: POI_MPP_RUN_CONFIG_V1
+  run_id: task21-local-real-run
+  experiment_id: E3
+  origin: REAL_MODEL_EXECUTION
+  authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+  model_hash: 1111111111111111111111111111111111111111111111111111111111111111
+  dataset_hash: 2222222222222222222222222222222222222222222222222222222222222222
+  parent_hashes: []
+  data_availability:
+    total_shards: 8
+    samples: 4
+    replacement: false
+model:
+  model_root: /Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/local-models/qwen2.5-1.5b
+  tokenizer_root: /Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/local-models/qwen2.5-1.5b
+  manifest:
+    model_id: local-qwen-1.5b
+    repository: Qwen/Qwen2.5-1.5B-Instruct
+    revision: 1111111111111111111111111111111111111111
+    tokenizer_id: Qwen/Qwen2.5-1.5B-Instruct
+    tokenizer_revision: 2222222222222222222222222222222222222222
+    license_id: apache-2.0
+    parameter_scale: 1.5B
+    precision: int4
+    quantization: q4_k_m
+    runtime_name: transformers
+    runtime_version: 4.44.0
+    model_file_hashes:
+      model.safetensors: 3333333333333333333333333333333333333333333333333333333333333333
+    tokenizer_file_hashes:
+      tokenizer.json: 4444444444444444444444444444444444444444444444444444444444444444
+  decode_policy:
+    seed: 7
+    max_new_tokens: 24
+    do_sample: false
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 0
+    repetition_penalty: 1.0
+    stop_sequences: []
+chain:
+  host: 127.0.0.1
+  port: 18545
+  chain_id: 31337
+  startup_timeout_seconds: 20
+  command_timeout_seconds: 120
+semantic:
+  confirmatory_schema_path: configs/confirmatory/e3.schema.yaml
+  evaluator_registry_reference: authority://external-evaluator-registry/task21
+output_root: results/e2e/local
+committee_size: 1
