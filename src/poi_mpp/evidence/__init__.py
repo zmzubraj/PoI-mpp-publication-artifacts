@@ -17,6 +17,7 @@ from poi_mpp.evidence.provenance import (
     freeze_run,
 )
 from poi_mpp.evidence.publication_gate import GateDecision, evaluate_publication_gate
+from poi_mpp.evidence.publication_paths import publication_path_ref
 from poi_mpp.evidence.registry import ArtifactRegistry
 from poi_mpp.evidence.validation import (
     ARTIFACT_RECORD_SCHEMA_VERSION,
@@ -54,5 +55,6 @@ __all__ = [
     "freeze_run",
     "load_run_config",
     "provenance_bundle_from_json",
+    "publication_path_ref",
     "validate_artifact",
 ]

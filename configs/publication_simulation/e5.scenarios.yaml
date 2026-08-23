@@ -1,0 +1,54 @@
+schema_version: POI_MPP_E5_PUBLICATION_PLAN_V1
+contract_path: ../confirmatory/e5.yaml
+publication_scope: E5_CONFIRMATORY_PUBLICATION_V1
+simulations: 4096
+required_model_version: POI_MPP_E5_SIMULATOR_V1
+entries:
+  - required_seed: 17
+    scenario:
+      scenario_id: publication-independent-baseline
+      family: INDEPENDENT
+      assumption_label: INDEPENDENT_WATCHERS_DECLARED
+      correlation_model: INDEPENDENT
+      watcher_count: 4
+      fraud_value_micros: 2000000
+      watch_cost_micros: 10000
+      challenge_bond_micros: 100000
+      challenge_reward_micros: 250000
+      challenge_subsidy_micros: 0
+      attacker_bribe_micros: 0
+      per_watcher_online_probability: 1.0
+      per_watcher_discovery_probability: 0.5
+      per_watcher_challenge_probability: 0.5
+      challenge_success_probability: 0.8
+      shared_outage_probability: 0.0
+      shared_infrastructure_failure_probability: 0.0
+      colluding_watchers: 0
+      bonded_auditor_detection_probability: 0.0
+      bonded_auditor_success_probability: 0.0
+      bonded_auditor_cost_micros: 0
+      bonded_auditor_reward_micros: 0
+  - required_seed: 19
+    scenario:
+      scenario_id: publication-shared-backstop
+      family: BONDED_AUDITOR
+      assumption_label: BONDED_AUDITOR_BACKSTOP_DECLARED
+      correlation_model: SHARED_INFRASTRUCTURE
+      watcher_count: 4
+      fraud_value_micros: 2000000
+      watch_cost_micros: 10000
+      challenge_bond_micros: 100000
+      challenge_reward_micros: 250000
+      challenge_subsidy_micros: 0
+      attacker_bribe_micros: 0
+      per_watcher_online_probability: 1.0
+      per_watcher_discovery_probability: 0.5
+      per_watcher_challenge_probability: 0.5
+      challenge_success_probability: 0.8
+      shared_outage_probability: 0.0
+      shared_infrastructure_failure_probability: 0.4
+      colluding_watchers: 0
+      bonded_auditor_detection_probability: 0.9
+      bonded_auditor_success_probability: 1.0
+      bonded_auditor_cost_micros: 25000
+      bonded_auditor_reward_micros: 150000

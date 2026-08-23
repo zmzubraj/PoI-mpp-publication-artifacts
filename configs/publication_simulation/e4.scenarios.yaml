@@ -1,0 +1,37 @@
+schema_version: POI_MPP_E4_PUBLICATION_PLAN_V1
+contract_path: ../confirmatory/e4.publication.yaml
+publication_scope: E4_CONFIRMATORY_PUBLICATION_V1
+required_model_version: POI_MPP_E4_DECLARED_SIMULATION_V1
+entries:
+  - scenario:
+      scenario_id: static-withheld-wo-replacement
+      observation_key: obs-static-withheld-wo-replacement
+      certificate_observation_key: cert-static-withheld-wo-replacement
+      seed_observation_key: seed-static-withheld-wo-replacement
+      mode: STATIC_WITHOUT_REPLACEMENT
+      assumption_label: STATIC_WITHOUT_REPLACEMENT_HYPERGEOMETRIC
+      claim_target: ATTACK_DETECTION
+      expected_outcome: WITHHELD
+      total_shards: 16
+      reconstruction_threshold: 8
+      unavailable_shards: 4
+      samples: 8
+      replacement: false
+    reconstruction_status: WITHHELD
+  - scenario:
+      scenario_id: correlated-loss-corrupt
+      observation_key: obs-correlated-loss-corrupt
+      certificate_observation_key: cert-correlated-loss-corrupt
+      seed_observation_key: seed-correlated-loss-corrupt
+      mode: CORRELATED_LOSS
+      assumption_label: CORRELATED_LOSS_DECLARED
+      claim_target: ATTACK_DETECTION
+      expected_outcome: CORRUPT
+      total_shards: 16
+      reconstruction_threshold: 8
+      unavailable_shards: 4
+      samples: 8
+      replacement: false
+      observed_misses: 7
+      observed_trials: 20
+    reconstruction_status: CORRUPT

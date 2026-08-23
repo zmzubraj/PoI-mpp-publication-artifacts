@@ -1,0 +1,13 @@
+schema_version: POI_MPP_RUN_CONFIG_V1
+schema_hash: "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08"
+run_id: publication-e4-simulation-v1
+experiment_id: E4
+origin: REPRODUCIBLE_SIMULATION
+authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+model_hash: "14978d8542b3cde53f737298e2a916147747be945daec5eafb2309ae28fd4c58"
+dataset_hash: "b89fb5c5421a649a30e47ecbacb46c4fdebbefeb2ef95aaf0b41d3ec2311b790"
+parent_hashes: []
+data_availability:
+  total_shards: 16
+  samples: 8
+  replacement: false

@@ -1,0 +1,12 @@
+flowchart TB
+  Policy["Policy layer C_P"] --> Task["Task layer C_T"]
+  Task --> Model["Model/runtime layer C_M"]
+  Model --> Execution["Execution layer: one native inference"]
+  Execution --> Intelligence["Intelligence layer: IEC root R_E"]
+  Execution --> Trace["Execution layer: trace root R_X"]
+  Intelligence --> Audit["Audit layer: post-commit S_X and S_S"]
+  Trace --> Audit
+  Audit --> Dispute["Dispute layer: optimistic challenge path"]
+  Dispute --> Receipt["Receipt / DA layer: retention then ACTIVE"]
+  Receipt --> Resource["Resource layer: bounded credit Q_i and weight W_i"]
+  Resource --> Consensus["Consensus layer: validator or sequencer selection"]

@@ -8,10 +8,10 @@ required_model_version: POI_MPP_E5_SIMULATOR_V1
 seed_policy: FIXED_PER_SCENARIO
 allowed_scenarios:
   - scenario_id: publication-independent-baseline
-    scenario_contract_hash: "1111111111111111111111111111111111111111111111111111111111111111"
+    scenario_contract_hash: "0fd99cb0127cd11d0fc5a9b689e94a7c7a61d914dd1d3ba893d3726824e076c3"
     required_seed: 17
   - scenario_id: publication-shared-backstop
-    scenario_contract_hash: "2222222222222222222222222222222222222222222222222222222222222222"
+    scenario_contract_hash: "f28f044180bf583cd353bcfa9a3ede400c0525ec4d401a5620693a0781636c36"
     required_seed: 19
 notes:
   - E5 publication evidence is limited to reproducible simulation under the frozen MPP authority boundary.

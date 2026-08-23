@@ -1,0 +1,156 @@
+schema_version: POI_MPP_E6_PUBLICATION_PLAN_V1
+contract_path: ../confirmatory/e6.yaml
+publication_scope: E6_CONFIRMATORY_PUBLICATION_V1
+simulations: 1024
+required_model_version: POI_MPP_E6_SIMULATOR_V1
+entries:
+  - required_seed: 17
+    scenario:
+      scenario_id: support-capacity-committed-1
+      group_id: support-capacity-committed
+      role: SUPPORT
+      assumption_label: CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED
+      capacity_model: CAPACITY_COMMITTED
+      attacker_identity_count: 1
+      attacker_total_capacity_units: 12
+      attacker_success_probability: 0.65
+      attacker_collateral_micros: 3000000
+      attacker_identity_fixed_cost_micros: 20000
+      honest_operator_count: 5
+      honest_capacity_units: 12
+      honest_success_probability: 0.65
+      honest_collateral_micros: 3000000
+      task_count: 48
+      task_credit_budget: 90
+      beta_micros: 10000
+      concentration_cap_micros: 2000000
+      capacity_cost_micros_per_unit: 25000
+      collateral_cost_multiplier_microx: 1000000
+      capacity_subsidy_micros: 0
+      target_weight_numerator: 1
+      target_weight_denominator: 3
+  - required_seed: 17
+    scenario:
+      scenario_id: support-capacity-committed-64
+      group_id: support-capacity-committed
+      role: SUPPORT
+      assumption_label: CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED
+      capacity_model: CAPACITY_COMMITTED
+      attacker_identity_count: 64
+      attacker_total_capacity_units: 12
+      attacker_success_probability: 0.65
+      attacker_collateral_micros: 3000000
+      attacker_identity_fixed_cost_micros: 20000
+      honest_operator_count: 5
+      honest_capacity_units: 12
+      honest_success_probability: 0.65
+      honest_collateral_micros: 3000000
+      task_count: 48
+      task_credit_budget: 90
+      beta_micros: 10000
+      concentration_cap_micros: 2000000
+      capacity_cost_micros_per_unit: 25000
+      collateral_cost_multiplier_microx: 1000000
+      capacity_subsidy_micros: 0
+      target_weight_numerator: 1
+      target_weight_denominator: 3
+  - required_seed: 17
+    scenario:
+      scenario_id: support-operator-slot-1
+      group_id: support-operator-slot
+      role: SUPPORT
+      assumption_label: CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED
+      capacity_model: OPERATOR_SLOT
+      attacker_identity_count: 1
+      attacker_total_capacity_units: 12
+      attacker_success_probability: 0.65
+      attacker_collateral_micros: 3000000
+      attacker_identity_fixed_cost_micros: 20000
+      honest_operator_count: 5
+      honest_capacity_units: 12
+      honest_success_probability: 0.65
+      honest_collateral_micros: 3000000
+      task_count: 48
+      task_credit_budget: 90
+      beta_micros: 10000
+      concentration_cap_micros: 2000000
+      capacity_cost_micros_per_unit: 25000
+      collateral_cost_multiplier_microx: 1000000
+      capacity_subsidy_micros: 0
+      target_weight_numerator: 1
+      target_weight_denominator: 3
+  - required_seed: 17
+    scenario:
+      scenario_id: support-operator-slot-64
+      group_id: support-operator-slot
+      role: SUPPORT
+      assumption_label: CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED
+      capacity_model: OPERATOR_SLOT
+      attacker_identity_count: 64
+      attacker_total_capacity_units: 12
+      attacker_success_probability: 0.65
+      attacker_collateral_micros: 3000000
+      attacker_identity_fixed_cost_micros: 20000
+      honest_operator_count: 5
+      honest_capacity_units: 12
+      honest_success_probability: 0.65
+      honest_collateral_micros: 3000000
+      task_count: 48
+      task_credit_budget: 90
+      beta_micros: 10000
+      concentration_cap_micros: 2000000
+      capacity_cost_micros_per_unit: 25000
+      collateral_cost_multiplier_microx: 1000000
+      capacity_subsidy_micros: 0
+      target_weight_numerator: 1
+      target_weight_denominator: 3
+  - required_seed: 17
+    scenario:
+      scenario_id: negative-identity-uniform-1
+      group_id: negative-identity-uniform
+      role: NEGATIVE_CONTROL
+      assumption_label: IDENTITY_PROPORTIONAL_SCHEDULER_DECLARED
+      capacity_model: IDENTITY_UNIFORM
+      attacker_identity_count: 1
+      attacker_total_capacity_units: 12
+      attacker_success_probability: 0.65
+      attacker_collateral_micros: 3000000
+      attacker_identity_fixed_cost_micros: 20000
+      honest_operator_count: 5
+      honest_capacity_units: 12
+      honest_success_probability: 0.65
+      honest_collateral_micros: 3000000
+      task_count: 48
+      task_credit_budget: 90
+      beta_micros: 10000
+      concentration_cap_micros: 2000000
+      capacity_cost_micros_per_unit: 25000
+      collateral_cost_multiplier_microx: 1000000
+      capacity_subsidy_micros: 0
+      target_weight_numerator: 1
+      target_weight_denominator: 3
+  - required_seed: 17
+    scenario:
+      scenario_id: negative-identity-uniform-64
+      group_id: negative-identity-uniform
+      role: NEGATIVE_CONTROL
+      assumption_label: IDENTITY_PROPORTIONAL_SCHEDULER_DECLARED
+      capacity_model: IDENTITY_UNIFORM
+      attacker_identity_count: 64
+      attacker_total_capacity_units: 12
+      attacker_success_probability: 0.65
+      attacker_collateral_micros: 3000000
+      attacker_identity_fixed_cost_micros: 20000
+      honest_operator_count: 5
+      honest_capacity_units: 12
+      honest_success_probability: 0.65
+      honest_collateral_micros: 3000000
+      task_count: 48
+      task_credit_budget: 90
+      beta_micros: 10000
+      concentration_cap_micros: 2000000
+      capacity_cost_micros_per_unit: 25000
+      collateral_cost_multiplier_microx: 1000000
+      capacity_subsidy_micros: 0
+      target_weight_numerator: 1
+      target_weight_denominator: 3

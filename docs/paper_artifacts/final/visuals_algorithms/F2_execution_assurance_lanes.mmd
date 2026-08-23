@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph OpenLane["Open-weight lane"]
+    direction TB
+    O1["Model / runtime<br/>manifest C_M"] --> O2["Committed<br/>trace roots"]
+    O2 --> O3["Sampled tensor audits<br/>for linear layers"]
+    O3 --> O4["Exact or bounded checks<br/>for nonlinear steps"]
+    O4 --> O5["Permissionless<br/>challenge surface"]
+  end
+
+  subgraph ConfidentialLane["Confidential / proprietary lane"]
+    direction TB
+    C1["Approved confidential<br/>guest + policy"] --> C2["Fresh-nonce CPU/GPU<br/>attestation"]
+    C2 --> C3["Policy-gated<br/>model key release"]
+    C3 --> C4["Execution<br/>provenance proof"]
+    C4 --> C5["Optional supplemental<br/>audit commitments"]
+  end
+
+  O5 --> A["Explicit<br/>assurance object"]
+  C5 --> A
+  A --> Tier["Receipt records<br/>assurance tier + limits"]
+  Tier --> Receipt["Shared candidate<br/>receipt interface"]

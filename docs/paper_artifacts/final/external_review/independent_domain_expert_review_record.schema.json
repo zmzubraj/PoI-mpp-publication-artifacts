@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "poi-mpp/independent-domain-expert-review-record.schema.json",
+  "title": "POI MPP Independent Domain Expert Review Record",
+  "description": "Schema for a future externally completed independent review record. This schema is not a populated review and contains no default reviewer identity, date, verdict, or signature values.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "reviewer_identity",
+    "review_basis",
+    "review_date",
+    "expertise_scope",
+    "independence_basis",
+    "reviewed_run_id",
+    "reviewed_artifact_hashes",
+    "checks",
+    "conflicts_of_interest"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "POI_MPP_MANUAL_REVIEW_V1"
+    },
+    "status": {
+      "type": "string",
+      "const": "COMPLETE"
+    },
+    "reviewer_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_basis": {
+      "type": "string",
+      "const": "INDEPENDENT_DOMAIN_EXPERT_REVIEW"
+    },
+    "review_date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "expertise_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "independence_basis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewed_run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewed_artifact_hashes": {
+      "type": "object",
+      "required": [
+        "manifest.json",
+        "claim_support_matrix.json",
+        "publication/artifact_manifest.json",
+        "verification_report.json"
+      ],
+      "properties": {
+        "manifest.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "claim_support_matrix.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "publication/artifact_manifest.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "verification_report.json": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "checks": {
+      "type": "object",
+      "required": [
+        "denominator",
+        "interval",
+        "negative_results",
+        "simulation_labeling",
+        "editability",
+        "accessibility",
+        "claim_language"
+      ],
+      "properties": {
+        "denominator": {
+          "type": "boolean"
+        },
+        "interval": {
+          "type": "boolean"
+        },
+        "negative_results": {
+          "type": "boolean"
+        },
+        "simulation_labeling": {
+          "type": "boolean"
+        },
+        "editability": {
+          "type": "boolean"
+        },
+        "accessibility": {
+          "type": "boolean"
+        },
+        "claim_language": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "conflicts_of_interest": {
+      "type": "object",
+      "required": [
+        "has_conflict",
+        "conflict_details"
+      ],
+      "properties": {
+        "has_conflict": {
+          "type": "boolean"
+        },
+        "conflict_details": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "required_questions_answered": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "verdict_summary": {
+      "type": "string",
+      "description": "Narrative verdict text supplied by the real external reviewer."
+    },
+    "signature_reference": {
+      "type": "string",
+      "description": "Path or identifier for the detached external signature, stored outside the bundle."
+    },
+    "allowed_signers_reference": {
+      "type": "string",
+      "description": "Path or identifier for the trusted allowed-signers registry, stored outside the bundle."
+    }
+  },
+  "additionalProperties": false
+}

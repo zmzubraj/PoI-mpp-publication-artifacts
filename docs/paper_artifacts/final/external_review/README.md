@@ -1,0 +1,70 @@
+# External review closure package
+
+These files are unsigned request and validation templates only.
+
+They do not satisfy any publication, authority, or freeze gate by themselves.
+
+In particular, these files do **not** provide:
+
+- an external evaluator authority token for E3;
+- an independent human review outcome;
+- a detached signature;
+- a trusted allowed-signers registry;
+- a populated manual review record;
+- a publication-complete verdict.
+
+## Current claim boundary
+
+Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current manuscript source of truth.
+
+Current evidence boundary:
+
+- `C1`-`C6`: incomplete / inconclusive
+- `C7`: supported by local Foundry measurement
+- `C8`: reproducible simulation / inconclusive
+
+No canonical machine-readable review bundle is currently attached. The eventual handoff must generate and hash-bind:
+
+- `verification_report.json`
+- `claim_support_matrix.json`
+- `../../../MAIN_RESULTS_TARGETS.md`
+
+## Files in this folder
+
+- `E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md`
+  - unsigned checklist for obtaining accountable external evaluator authority for E3 confirmatory execution
+- `INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md`
+  - unsigned review packet for accountable external manual review
+- `semantic_evaluator_authority_record.schema.json`
+  - machine-validation schema for a future externally completed E3 authority record
+- `independent_domain_expert_review_record.schema.json`
+  - machine-validation schema for a future externally completed independent review record
+
+## Gate conditions these templates are designed to support
+
+### E3 external evaluator authority
+
+The current repository state explicitly retains `WAITING_EXTERNAL_EVALUATOR_AUTHORITY` for the real confirmation path. An actual external authority must be identified and verified outside the bundle, must review the bound artifact set, and must issue a real signed authorization outcome. Until that happens, E3 remains incomplete.
+
+### Independent manual review
+
+The production freeze gate requires all of the following, none of which are satisfied by this folder alone:
+
+- a populated manual review record for the reviewed run;
+- `review_basis=INDEPENDENT_DOMAIN_EXPERT_REVIEW`;
+- a strict ISO `review_date`;
+- reviewer identity and expertise scope;
+- explicit independence basis;
+- reviewed artifact hashes that match the reviewed bundle;
+- all required review checks marked true by the real reviewer;
+- a detached external signature;
+- a trusted allowed-signers file outside the bundle;
+- successful signature verification against the reviewed record.
+
+## Producer and verifier separation
+
+These templates preserve producer/verifier separation:
+
+- repository producers must not complete the authority or verdict fields on behalf of an external person;
+- AI output, user approval, or self-review must not be mislabeled as independent review;
+- a machine-readable schema does not constitute a real authority decision or a real review outcome.

@@ -1,0 +1,36 @@
+flowchart TB
+  subgraph OffChain["Off-chain AI / verification"]
+    direction TB
+    Worker["Worker /<br/>model runtime"]
+    Auditor["Auditors /<br/>watchers"]
+    DA["Artifact retention /<br/>DA layer"]
+  end
+
+  subgraph EVM["EVM settlement"]
+    direction TB
+    Registry["Model / policy<br/>registries"]
+    CommitHub["Commitment /<br/>task surface"]
+    DisputeVM["Bounded dispute<br/>arbitration"]
+    AuditMgr["Audit /<br/>receipt state"]
+    Credit["Credit /<br/>cap state"]
+  end
+
+  subgraph ConsensusClient["Consensus client"]
+    direction TB
+    Weight["Epoch-local<br/>active weight"]
+    Committee["Validator /<br/>sequencer selection"]
+    Finality["Weighted BFT /<br/>fork choice"]
+  end
+
+  Worker --> CommitHub
+  Worker --> DA
+  Auditor --> AuditMgr
+  Auditor --> DisputeVM
+  DA --> AuditMgr
+  Registry --> CommitHub
+  CommitHub --> AuditMgr
+  DisputeVM --> AuditMgr
+  AuditMgr --> Credit
+  Credit --> Weight
+  Weight --> Committee
+  Committee --> Finality

@@ -199,9 +199,12 @@ def test_run_config_samples_drive_exact_pair_ids_and_warmups_stay_raw_only(
     assert measured_pair_ids == {"pair-0000", "pair-0001"}
     assert len(result.measured_rows) == 6
     assert all(row.measurement_clock is MeasurementClock.FIXTURE_SYNTHETIC for row in result.measured_rows)
+    assert all(row.measurement_design.value == "FIXED_ORDER_PILOT" for row in result.measured_rows)
     table = pq.read_table(result.raw_rows_path)
     assert table.num_rows == 9
     assert result.summary.denominator == 2
+    assert result.summary.claim_disposition == "INCONCLUSIVE"
+    assert "FIXED_ORDER_PILOT" in result.summary.claim_disposition_reason
 
 
 def test_summary_groups_by_pair_id_and_fails_closed_for_one_pair():
@@ -237,6 +240,8 @@ def test_summary_groups_by_pair_id_and_fails_closed_for_one_pair():
             "measured_ms": 6.0,
         },
     ]
+    for row in rows:
+        row["measurement_design"] = "FIXED_ORDER_PILOT"
 
     summary = summarize_e1_rows(rows)
 
@@ -335,8 +340,64 @@ def test_summary_groups_by_pair_id_and_fails_closed_for_one_pair():
     ],
 )
 def test_summary_rejects_duplicate_missing_and_mismatched_rows(rows: list[dict[str, object]], message: str):
+    for row in rows:
+        row.setdefault("measurement_design", "FIXED_ORDER_PILOT")
     with pytest.raises(ValueError, match=message):
         summarize_e1_rows(rows)
+
+
+def test_summary_requires_explicit_measurement_design() -> None:
+    rows = [
+        {
+            "run_id": "run-e1",
+            "experiment_id": "E1",
+            "task_id": 11,
+            "pair_id": "pair-0000",
+            "variant": variant,
+            "is_warmup": False,
+            "origin": "REAL_MODEL_EXECUTION",
+            "measured_ms": measured_ms,
+        }
+        for variant, measured_ms in (
+            ("NATIVE_SINGLE", 5.0),
+            ("TWO_RUN_BASELINE", 10.0),
+            ("MPP_SINGLE_PASS", 6.0),
+        )
+    ]
+
+    with pytest.raises(ValueError, match="measurement_design"):
+        summarize_e1_rows(rows)
+
+
+def test_fixed_order_positive_two_pair_delta_is_pilot_only() -> None:
+    rows: list[dict[str, object]] = []
+    for pair_index in range(2):
+        pair_id = f"pair-{pair_index:04d}"
+        for variant, measured_ms in (
+            ("NATIVE_SINGLE", 5.0),
+            ("TWO_RUN_BASELINE", 20.0 + pair_index),
+            ("MPP_SINGLE_PASS", 5.0 + pair_index),
+        ):
+            rows.append(
+                {
+                    "run_id": "run-e1",
+                    "experiment_id": "E1",
+                    "task_id": 11,
+                    "pair_id": pair_id,
+                    "variant": variant,
+                    "is_warmup": False,
+                    "origin": "REAL_MODEL_EXECUTION",
+                    "measurement_design": "FIXED_ORDER_PILOT",
+                    "measured_ms": measured_ms,
+                }
+            )
+
+    summary = summarize_e1_rows(rows)
+
+    assert summary.delta_ci[0] > 0
+    assert summary.measurement_design.value == "FIXED_ORDER_PILOT"
+    assert summary.claim_disposition == "INCONCLUSIVE"
+    assert "counterbalanced" in summary.claim_disposition_reason.lower()
 
 
 def test_local_test_authority_stays_nonterminal_even_with_real_provenance(
@@ -423,6 +484,9 @@ def test_publication_record_complete_round_trip_requires_explicit_publication_au
     )
 
     assert result.publication_decision.completeness == "COMPLETE"
+    assert result.summary.claim_disposition == "INCONCLUSIVE"
+    assert result.publication_record["payload"]["measurement_design"] == "FIXED_ORDER_PILOT"
+    assert "counterbalanced" in result.publication_record["payload"]["claim_disposition_reason"].lower()
     assert result.publication_record["stage"] == "FROZEN"
     assert result.frozen_artifact_path is not None
     assert result.frozen_artifact_path.exists()

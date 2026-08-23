@@ -1,0 +1,25 @@
+flowchart LR
+  Response["Committed response y"] --> IEC["Intelligence Evidence Capsule"]
+  IEC --> Claims["Claim nodes"]
+  IEC --> Evidence["Evidence roots"]
+  IEC --> Deps["Dependency edges"]
+  IEC --> Uncertainty["Uncertainty tags"]
+  IEC --> Coverage["Coverage map"]
+
+  Claims --> Obj["Objective checks (O)"]
+  Claims --> Grounded["Grounded claim-evidence checks (G)"]
+  Claims --> OpenSem["Fixed small semantic verifier programs (S)"]
+  Evidence --> Grounded
+  Deps --> Grounded
+  Uncertainty --> OpenSem
+  Coverage --> Obj
+  Coverage --> Grounded
+  Coverage --> OpenSem
+
+  Obj --> Aggregate["Aggregate hard gates + verifier outputs"]
+  Grounded --> Aggregate
+  OpenSem --> Aggregate
+  Aggregate --> LCB["Lower confidence bound + disagreement control"]
+  LCB -->|passes| Accept["ACCEPT"]
+  LCB -->|uncertain or invalid calibration| Abstain["ABSTAIN"]
+  LCB -->|hard failure| Reject["REJECT"]

@@ -12,6 +12,7 @@ from poi_mpp.worker.inference import (
     execute_once,
 )
 from poi_mpp.worker.model_manifest import PinnedModelManifest
+from poi_mpp.worker.real_transformers import authorized_local_transformers_loader
 from poi_mpp.worker.trace_capture import TraceSidecar, build_trace_sidecar
 from poi_mpp.worker.trace_schema import TraceEvent
 from poi_mpp.worker.trace_tree import trace_leaf_hash, trace_root
@@ -29,6 +30,7 @@ __all__ = [
     "TraceEvent",
     "TraceSidecar",
     "TransformersCausalLMAdapter",
+    "authorized_local_transformers_loader",
     "build_iec",
     "build_trace_sidecar",
     "execute_once",

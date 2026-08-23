@@ -1,0 +1,13 @@
+task_id: 22
+task_root: "0xaa22222222222222222222222222222222222222222222222222222222222222"
+worker_id: "0x0000000000000000000000000000000000002022"
+task_class: 1
+active: true
+registered: true
+credit_budget: 90
+epoch: 7
+deadline: 500
+commitment_height: 120
+commitment_finality_depth: 5
+challenge_window_blocks: 9
+audit_domain_size: 16

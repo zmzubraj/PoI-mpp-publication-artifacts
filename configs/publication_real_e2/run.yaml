@@ -1,0 +1,13 @@
+schema_version: POI_MPP_RUN_CONFIG_V1
+schema_hash: "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08"
+run_id: run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24
+experiment_id: E2
+origin: REAL_MODEL_EXECUTION
+authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+model_hash: "f9ff3b28cce44e9cbbddf5211b98025f2511a51a0114c18983ec99b3d124ccf6"
+dataset_hash: "99d4a776f4f13a38a77495a6c9ff0d285fb71bd09eff60f1551866ad76663321"
+parent_hashes: []
+data_availability:
+  total_shards: 8
+  samples: 2
+  replacement: false

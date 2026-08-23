@@ -24,8 +24,13 @@ class E1Variant(StrEnum):
     MPP_SINGLE_PASS = "MPP_SINGLE_PASS"
 
 
+class E1MeasurementDesign(StrEnum):
+    FIXED_ORDER_PILOT = "FIXED_ORDER_PILOT"
+    COUNTERBALANCED_PAIRED = "COUNTERBALANCED_PAIRED"
+
+
 class E1Summary(_FrozenModel):
-    schema_version: str = "POI_MPP_E1_SUMMARY_V1"
+    schema_version: str = "POI_MPP_E1_SUMMARY_V2"
     claim_id: str
     denominator: int = Field(gt=0)
     paired_count: int = Field(gt=0)
@@ -34,9 +39,11 @@ class E1Summary(_FrozenModel):
     mean_mpp_ms: float = Field(ge=0.0)
     mean_delta_ms: float
     delta_ci: tuple[float, float]
+    measurement_design: E1MeasurementDesign
     claim_disposition: str
+    claim_disposition_reason: str
 
-    @field_validator("claim_id", "claim_disposition")
+    @field_validator("claim_id", "claim_disposition", "claim_disposition_reason")
     @classmethod
     def reject_blank_strings(cls, value: str) -> str:
         if not value.strip():
@@ -99,6 +106,7 @@ def summarize_e1_rows(
     expected_experiment_id: str | None = None
     expected_task_id: int | None = None
     expected_origin: str | None = None
+    expected_measurement_design: str | None = None
 
     for raw in rows:
         row = dict(raw)
@@ -109,6 +117,9 @@ def summarize_e1_rows(
         run_id = _require_str(row, "run_id")
         experiment_id = _require_str(row, "experiment_id")
         origin = _require_str(row, "origin")
+        measurement_design = _require_str(row, "measurement_design")
+        if measurement_design not in {item.value for item in E1MeasurementDesign}:
+            raise ValueError(f"unknown E1 measurement_design: {measurement_design}")
         task_id = _require_int(row, "task_id")
         if variant not in {item.value for item in E1Variant}:
             raise ValueError(f"unknown E1 variant: {variant}")
@@ -117,13 +128,17 @@ def summarize_e1_rows(
             expected_experiment_id = experiment_id
             expected_task_id = task_id
             expected_origin = origin
+            expected_measurement_design = measurement_design
         elif (
             run_id != expected_run_id
             or experiment_id != expected_experiment_id
             or task_id != expected_task_id
             or origin != expected_origin
+            or measurement_design != expected_measurement_design
         ):
-            raise ValueError("E1 measured rows must share one run_id, experiment_id, task_id, and origin")
+            raise ValueError(
+                "E1 measured rows must share one run_id, experiment_id, task_id, origin, and measurement_design"
+            )
         if variant in pair_rows[pair_id]:
             raise ValueError(f"duplicate variant for pair_id {pair_id}: {variant}")
         pair_rows[pair_id][variant] = row
@@ -146,11 +161,21 @@ def summarize_e1_rows(
 
     deltas = [baseline - candidate for baseline, candidate in zip(two_run, mpp, strict=True)]
     delta_ci = _bootstrap_interval(deltas)
-    disposition = (
-        "SUPPORTED"
-        if len(ordered_pair_ids) >= minimum_pairs_required and delta_ci[0] > 0
-        else "INCONCLUSIVE"
-    )
+    assert expected_measurement_design is not None
+    design = E1MeasurementDesign(expected_measurement_design)
+    statistically_positive = len(ordered_pair_ids) >= minimum_pairs_required and delta_ci[0] > 0
+    if design is E1MeasurementDesign.FIXED_ORDER_PILOT:
+        disposition = "INCONCLUSIVE"
+        disposition_reason = (
+            "FIXED_ORDER_PILOT is methodologically capped at INCONCLUSIVE; "
+            "counterbalanced paired execution is required for C1 support eligibility"
+        )
+    elif statistically_positive:
+        disposition = "SUPPORTED"
+        disposition_reason = "counterbalanced paired delta interval is strictly positive"
+    else:
+        disposition = "INCONCLUSIVE"
+        disposition_reason = "counterbalanced paired evidence does not establish a strictly positive delta"
     return E1Summary(
         claim_id=claim_id,
         denominator=len(ordered_pair_ids),
@@ -160,5 +185,7 @@ def summarize_e1_rows(
         mean_mpp_ms=fmean(mpp),
         mean_delta_ms=fmean(deltas),
         delta_ci=delta_ci,
+        measurement_design=design,
         claim_disposition=disposition,
+        claim_disposition_reason=disposition_reason,
     )

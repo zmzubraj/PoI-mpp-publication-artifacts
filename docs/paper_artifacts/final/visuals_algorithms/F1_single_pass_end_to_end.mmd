@@ -1,0 +1,33 @@
+flowchart TB
+  subgraph ServicePath["Off-chain service path"]
+    direction TB
+    Req["Eligible task submitted"] --> Exec["Frontier model executes once"]
+    Exec --> Resp["Response y"]
+    Exec --> Trace["Trace root R_X"]
+    Exec --> IEC["Evidence capsule root R_E"]
+    Resp --> Commit["Response commitment C_R"]
+    Trace --> Commit
+    IEC --> Commit
+  end
+
+  subgraph AuditPath["Post-commit audit path"]
+    direction TB
+    Finalize["Commit finalizes<br/>before seed reveal"] --> Beacon["Epoch beacon /<br/>threshold randomness"]
+    Beacon --> Compiler["Audit compiler"]
+    Compiler --> SX["Execution<br/>obligations S_X"]
+    Compiler --> SS["Semantic<br/>obligations S_S"]
+    SX --> Audit["Routine off-chain<br/>verification"]
+    SS --> Audit
+    Audit --> Dispute{"Valid<br/>challenge?"}
+  end
+
+  subgraph ReceiptPath["Receipt and weighting path"]
+    direction TB
+    Dispute -->|Yes| Challenge["Receipt rejected / slashed"]
+    Dispute -->|No| Pending["Candidate receipt<br/>retention"]
+    Pending --> Active["Receipt becomes ACTIVE"]
+    Active --> Credit["Bounded PoI<br/>credit (e+1)"]
+    Credit --> Weight["Next-epoch<br/>consensus weight"]
+  end
+
+  Commit --> Finalize

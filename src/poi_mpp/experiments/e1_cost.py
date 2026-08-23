@@ -40,7 +40,7 @@ from poi_mpp.protocol import (
     transition,
 )
 from poi_mpp.protocol.types import ModelManifest
-from poi_mpp.reporting.e1 import E1Summary, E1Variant, summarize_e1_rows
+from poi_mpp.reporting.e1 import E1MeasurementDesign, E1Summary, E1Variant, summarize_e1_rows
 
 
 MIN_E1_SUPPORTED_PAIRS = 2
@@ -79,7 +79,7 @@ class E1ExecutionSample(_FrozenModel):
 
 
 class E1MeasurementRow(_FrozenModel):
-    schema_version: str = "POI_MPP_E1_MEASUREMENT_ROW_V1"
+    schema_version: str = "POI_MPP_E1_MEASUREMENT_ROW_V2"
     run_id: str
     experiment_id: str
     task_id: int = Field(ge=0)
@@ -88,6 +88,7 @@ class E1MeasurementRow(_FrozenModel):
     is_warmup: bool
     origin: EvidenceOrigin
     measurement_clock: MeasurementClock
+    measurement_design: E1MeasurementDesign
     measured_ms: float = Field(ge=0.0)
     inference_ms: float = Field(ge=0.0)
     audit_ms: float = Field(ge=0.0)
@@ -245,6 +246,7 @@ def _row_from_sample(
         is_warmup=is_warmup,
         origin=sample.origin,
         measurement_clock=measurement_clock,
+        measurement_design=E1MeasurementDesign.FIXED_ORDER_PILOT,
         measured_ms=measured_ms,
         inference_ms=sample.inference_ms,
         audit_ms=sample.audit_ms,
@@ -451,6 +453,8 @@ def _publication_record(
         "mean_two_run_ms": summary.mean_two_run_ms,
         "mean_mpp_ms": summary.mean_mpp_ms,
         "mean_delta_ms": summary.mean_delta_ms,
+        "measurement_design": summary.measurement_design.value,
+        "claim_disposition_reason": summary.claim_disposition_reason,
     }
     record: dict[str, object] = {
         "schema_version": ARTIFACT_RECORD_SCHEMA_VERSION,

@@ -1,0 +1,7 @@
+schema_version: POI_MPP_E2_TENSOR_CAPTURE_SPEC_V1
+layer_path: model.layers.0.mlp.down_proj
+activation_token_index: 0
+input_width: 4
+output_width: 4
+fixed_point_scale: 1000
+field_modulus: 2147483647

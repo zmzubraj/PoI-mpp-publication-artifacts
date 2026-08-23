@@ -1,0 +1,16 @@
+schema_version: POI_MPP_E4_CONFIRMATORY_CONTRACT_V1
+publication_scope: E4_CONFIRMATORY_PUBLICATION_V1
+required_run_origin: REPRODUCIBLE_SIMULATION
+required_run_authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+required_claim_target: ATTACK_DETECTION
+required_model_version: POI_MPP_E4_DECLARED_SIMULATION_V1
+allowed_scenarios:
+  - scenario_id: static-withheld-wo-replacement
+    scenario_hash: "b90d9a12a499964e8f74eb4e57fd5c2a412f1811dda55c98bf7105f937756c2c"
+    required_reconstruction_status: WITHHELD
+  - scenario_id: correlated-loss-corrupt
+    scenario_hash: "123db629a9b1d7080a3995d4ba669bc2177cf8ba2de217ec90a394da5d300809"
+    required_reconstruction_status: CORRUPT
+notes:
+  - E4 publication evidence is limited to explicit reproducible simulation rows and exact declared formulas.
+  - Observed correlated-loss rows are declared simulation observations, not direct network measurements.

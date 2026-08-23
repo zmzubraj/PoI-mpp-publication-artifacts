@@ -1,0 +1,15 @@
+flowchart LR
+  subgraph TwoRun["Two-run verification baseline"]
+    B1["Frontier inference #1"] --> B2["Second frontier inference or equivalent replay"]
+    B2 --> B3["Additional proof / verification cost"]
+  end
+
+  subgraph SPAI["Single-Pass Auditable Intelligence common path"]
+    S1["Frontier inference #1"] --> S2["Trace + IEC overhead"]
+    S2 --> S3["Sampled routine audits"]
+    S3 --> S4["Rare dispute fallback only if needed"]
+  end
+
+  TwoRun --> Compare["Structural comparison"]
+  SPAI --> Compare
+  Compare --> Claim["Common path removes the mandatory second frontier-model run"]
