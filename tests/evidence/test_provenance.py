@@ -13,6 +13,7 @@ from poi_mpp.evidence.provenance import (
     _collect_gpu_model,
     collect_environment,
     freeze_run,
+    publication_build_environment_hash,
 )
 
 
@@ -59,6 +60,27 @@ def test_environment_manifest_is_frozen_and_explicit_about_absent_fields():
     assert environment.gpu_model is None
     with pytest.raises(ValidationError):
         environment.os_name = "changed"
+
+
+def test_publication_build_environment_hash_excludes_only_code_revision():
+    base = EnvironmentManifest(
+        python_implementation="CPython",
+        python_version="3.11.0",
+        os_name="Darwin",
+        os_release="test",
+        machine="arm64",
+        cpu_model=None,
+        gpu_model=None,
+        package_lock_hash="e" * 64,
+        compiler_version=None,
+        foundry_version=None,
+        code_revision="f" * 40,
+    )
+    next_revision = base.model_copy(update={"code_revision": "a" * 40})
+    changed_runtime = base.model_copy(update={"python_version": "3.12.0"})
+
+    assert publication_build_environment_hash(base) == publication_build_environment_hash(next_revision)
+    assert publication_build_environment_hash(base) != publication_build_environment_hash(changed_runtime)
 
 
 def test_freeze_run_binds_config_environment_and_provenance_deterministically():

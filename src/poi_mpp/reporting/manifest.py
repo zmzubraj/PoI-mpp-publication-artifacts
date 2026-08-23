@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from pydantic import ValidationError
 
 from poi_mpp.evidence.canonical import digest
-from poi_mpp.evidence import collect_environment, environment_hash
+from poi_mpp.evidence import collect_environment, publication_build_environment_hash
 from poi_mpp.reporting.figures import figure_artifacts
 from poi_mpp.reporting.load import (
     ARTIFACT_FILENAMES,
@@ -30,7 +30,7 @@ from poi_mpp.reporting.load import (
 from poi_mpp.reporting.tables import omission_rows, table_artifacts
 
 
-_MANIFEST_SCHEMA_VERSION = "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3"
+_MANIFEST_SCHEMA_VERSION = "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4"
 _NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
 
 
@@ -210,7 +210,7 @@ class PublicationReportManifestModel(_FrozenModel):
     schema_version: str = _MANIFEST_SCHEMA_VERSION
     artifact_root_relative_path: str
     generator_source_closure_hash: str
-    environment_hash: str
+    build_environment_hash: str
     inputs: tuple[ManifestInputRecord, ...]
     outputs: tuple[ManifestOutputRecord, ...]
     omissions: tuple[ManifestOmissionRecord, ...]
@@ -261,7 +261,7 @@ class PublicationManifest:
     outputs: tuple[ManifestEntry, ...]
     omissions: tuple[ManifestEntry, ...]
     generator_source_closure_hash: str
-    environment_hash: str
+    build_environment_hash: str
     manifest_sha256: str
 
 
@@ -271,10 +271,10 @@ def _current_generator_source_closure_hash() -> str:
     return _generator_source_closure_hash()
 
 
-def _current_environment_hash() -> str:
+def _current_build_environment_hash() -> str:
     repo_root = Path(__file__).resolve().parents[3]
     environment = collect_environment(repo_root=repo_root, lock_path=repo_root / "requirements.lock")
-    return environment_hash(environment)
+    return publication_build_environment_hash(environment)
 
 
 def _output_id(relative_path: str) -> str:
@@ -431,7 +431,7 @@ def _manifest_payload(bundle: LoadedBundle, artifact_hashes: dict[str, str]) -> 
         "schema_version": _MANIFEST_SCHEMA_VERSION,
         "artifact_root_relative_path": artifact_root_relative_path,
         "generator_source_closure_hash": bundle.generator_source_closure_hash,
-        "environment_hash": bundle.environment_hash,
+        "build_environment_hash": bundle.build_environment_hash,
         "inputs": [item.model_dump(mode="json") for item in _manifest_inputs(bundle)],
         "outputs": [item.model_dump(mode="json") for item in _manifest_outputs(bundle, artifact_hashes)],
         "omissions": [item.model_dump(mode="json") for item in _manifest_omissions(bundle)],
@@ -516,7 +516,7 @@ def build_publication_report(spec: ReportBuildSpec) -> PublicationManifest:
         outputs=outputs_index,
         omissions=omissions_index,
         generator_source_closure_hash=manifest_model.generator_source_closure_hash,
-        environment_hash=manifest_model.environment_hash,
+        build_environment_hash=manifest_model.build_environment_hash,
         manifest_sha256=manifest_sha256,
     )
 
@@ -537,8 +537,8 @@ def validate_existing_manifest(output_root: Path) -> PublicationManifest:
         raise PublicationEligibilityError(("manifest self-digest mismatch",))
     if manifest_model.generator_source_closure_hash != _current_generator_source_closure_hash():
         raise PublicationEligibilityError(("generator source closure drift detected",))
-    if manifest_model.environment_hash != _current_environment_hash():
-        raise PublicationEligibilityError(("environment hash drift detected",))
+    if manifest_model.build_environment_hash != _current_build_environment_hash():
+        raise PublicationEligibilityError(("build environment hash drift detected",))
     artifact_root = (output_root / manifest_model.artifact_root_relative_path).resolve()
     _assert_no_symlink_components(artifact_root, require_directory=True)
     seen_input_paths: set[str] = set()
@@ -588,7 +588,7 @@ def validate_existing_manifest(output_root: Path) -> PublicationManifest:
         outputs=outputs,
         omissions=omissions,
         generator_source_closure_hash=manifest_model.generator_source_closure_hash,
-        environment_hash=manifest_model.environment_hash,
+        build_environment_hash=manifest_model.build_environment_hash,
         manifest_sha256=_sha256_bytes(manifest_bytes),
     )
 

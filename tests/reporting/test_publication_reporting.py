@@ -252,6 +252,16 @@ def test_manifest_detects_input_and_generator_drift(tmp_path: Path, monkeypatch:
         validate_existing_manifest(Path(spec.output_root))
 
 
+def test_manifest_detects_build_environment_drift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    spec = _valid_e8_spec(tmp_path)
+    build_publication_report(spec)
+    import poi_mpp.reporting.manifest as reporting_manifest
+
+    monkeypatch.setattr(reporting_manifest, "_current_build_environment_hash", lambda: "0" * 64)
+    with pytest.raises(PublicationEligibilityError, match="build environment hash drift"):
+        validate_existing_manifest(Path(spec.output_root))
+
+
 def test_manifest_rejects_duplicate_outputs_and_unknown_keys(tmp_path: Path):
     spec = _valid_e8_spec(tmp_path)
     build_publication_report(spec)

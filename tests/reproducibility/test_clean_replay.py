@@ -115,10 +115,10 @@ def _make_publication_manifest(candidate_root: Path, output_paths: list[tuple[st
             }
         )
     payload = {
-        "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3",
+        "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4",
         "artifact_root_relative_path": "../inputs",
         "generator_source_closure_hash": reporting_manifest._current_generator_source_closure_hash(),
-        "environment_hash": reporting_manifest._current_environment_hash(),
+        "build_environment_hash": reporting_manifest._current_build_environment_hash(),
         "inputs": inputs,
         "outputs": outputs,
         "omissions": [],
@@ -539,7 +539,7 @@ def test_manual_review_real_signature_regressions(
 def test_production_verifier_rejects_task20_invalid_manifest(tmp_path: Path) -> None:
     candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
     publication_manifest_path = candidate_root / "publication" / "artifact_manifest.json"
-    _write_json(publication_manifest_path, {"schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3", "self_digest": "0" * 64})
+    _write_json(publication_manifest_path, {"schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4", "self_digest": "0" * 64})
     completed = _run_python(str(VERIFY_BUNDLE), "--bundle-root", str(candidate_root))
     assert completed.returncode != 0
     assert "artifact manifest" in completed.stdout.lower() or "schema_version" in completed.stdout.lower()

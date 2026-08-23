@@ -88,10 +88,48 @@ class EnvironmentManifest(BaseModel):
         raise ValueError("code_revision must be a git SHA-1 or UNVERSIONED_BLOCKED")
 
 
+class PublicationBuildEnvironment(BaseModel):
+    """Revision-independent runtime facts for a tracked publication bundle.
+
+    Exact experiment and collector revisions remain in their provenance records.
+    The publication manifest binds reporting code separately through its generator
+    source-closure hash, avoiding a self-reference when generated outputs are
+    committed after a clean build.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["POI_MPP_PUBLICATION_BUILD_ENVIRONMENT_V1"] = (
+        "POI_MPP_PUBLICATION_BUILD_ENVIRONMENT_V1"
+    )
+    python_implementation: str
+    python_version: str
+    os_name: str
+    os_release: str
+    machine: str
+    cpu_model: str | None
+    gpu_model: str | None
+    package_lock_hash: str | None
+    compiler_version: str | None
+    foundry_version: str | None
+
+
 def environment_hash(environment: EnvironmentManifest) -> str:
     """Return the canonical hash of an immutable environment manifest."""
 
     return digest("ENVIRONMENT_MANIFEST", environment)
+
+
+def publication_build_environment_hash(environment: EnvironmentManifest) -> str:
+    """Hash runtime facts while leaving exact code binding to source closure."""
+
+    projection = PublicationBuildEnvironment.model_validate(
+        {
+            **environment.model_dump(mode="python", exclude={"schema_version", "code_revision"}),
+            "schema_version": "POI_MPP_PUBLICATION_BUILD_ENVIRONMENT_V1",
+        }
+    )
+    return digest("PUBLICATION_BUILD_ENVIRONMENT", projection)
 
 
 def _default_repo_root() -> Path:

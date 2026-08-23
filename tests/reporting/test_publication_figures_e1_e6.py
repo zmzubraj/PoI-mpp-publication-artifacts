@@ -45,7 +45,7 @@ def _bundle(*experiments: LoadedExperiment) -> LoadedBundle:
         artifact_root=Path("/artifact-root"),
         output_root=Path("/output-root"),
         experiments=experiments,
-        environment_hash="c" * 64,
+        build_environment_hash="c" * 64,
         generator_source_closure_hash="d" * 64,
     )
 

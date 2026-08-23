@@ -14,7 +14,13 @@ import pyarrow.parquet as pq
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from poi_mpp.evidence import ArtifactValidationError, EvidenceOrigin, collect_environment, environment_hash, load_run_config
+from poi_mpp.evidence import (
+    ArtifactValidationError,
+    EvidenceOrigin,
+    collect_environment,
+    load_run_config,
+    publication_build_environment_hash,
+)
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.experiments.e1_cost import E1MeasurementRow
 from poi_mpp.experiments.e2_tamper import E2ReceiptRow
@@ -196,7 +202,7 @@ class LoadedBundle:
     artifact_root: Path
     output_root: Path
     experiments: tuple[LoadedExperiment, ...]
-    environment_hash: str
+    build_environment_hash: str
     generator_source_closure_hash: str
 
 
@@ -1100,7 +1106,7 @@ def load_publication_inputs(spec: ReportBuildSpec) -> LoadedBundle:
         artifact_root=artifact_root,
         output_root=output_root,
         experiments=tuple(experiments),
-        environment_hash=environment_hash(environment),
+        build_environment_hash=publication_build_environment_hash(environment),
         generator_source_closure_hash=_generator_source_closure_hash(),
     )
 

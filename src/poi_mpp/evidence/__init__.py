@@ -12,9 +12,11 @@ from poi_mpp.evidence.models import ArtifactRecord, ArtifactStage, EvidenceOrigi
 from poi_mpp.evidence.provenance import (
     UNVERSIONED_BLOCKED,
     EnvironmentManifest,
+    PublicationBuildEnvironment,
     collect_environment,
     environment_hash,
     freeze_run,
+    publication_build_environment_hash,
 )
 from poi_mpp.evidence.publication_gate import GateDecision, evaluate_publication_gate
 from poi_mpp.evidence.publication_paths import publication_path_ref
@@ -38,6 +40,7 @@ __all__ = [
     "DataAvailabilityConfig",
     "EvidenceOrigin",
     "EnvironmentManifest",
+    "PublicationBuildEnvironment",
     "RunManifest",
     "ProvenanceBundle",
     "GateDecision",
@@ -56,5 +59,6 @@ __all__ = [
     "load_run_config",
     "provenance_bundle_from_json",
     "publication_path_ref",
+    "publication_build_environment_hash",
     "validate_artifact",
 ]
