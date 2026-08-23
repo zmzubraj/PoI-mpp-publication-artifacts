@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -14,7 +15,9 @@ PYTHON = REPO_ROOT / ".venv" / "bin" / "python"
 REPRODUCE = REPO_ROOT / "scripts" / "reproduce.py"
 VERIFY_BUNDLE = REPO_ROOT / "scripts" / "verify_bundle.py"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "src"))
 import verify_bundle as verify_module  # noqa: E402
+from poi_mpp.reporting import manifest as reporting_manifest  # noqa: E402
 
 
 def _run_python(*argv: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -47,9 +50,220 @@ def _write_json(path: Path, payload: object) -> Path:
 
 
 def _digest(path: Path) -> str:
-    import hashlib
-
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_bytes(path: Path, data: bytes) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
+def _make_publication_manifest(candidate_root: Path, output_paths: list[tuple[str, str, str]]) -> None:
+    publication_root = candidate_root / "publication"
+    artifact_root = candidate_root / "inputs"
+    inputs = []
+    outputs = []
+    for relative_path, artifact_id, experiment_id in output_paths:
+        output_path = publication_root / relative_path
+        _write_bytes(output_path, f"{artifact_id}:{experiment_id}\n".encode("utf-8"))
+        outputs.append(
+            {
+                "output_id": relative_path.replace("/", ":"),
+                "artifact_id": artifact_id,
+                "relative_path": relative_path,
+                "sha256": _digest(output_path),
+                "kind": relative_path.split("/", 1)[0],
+                "experiment_id": experiment_id,
+                "origin": "REPRODUCIBLE_SIMULATION" if experiment_id == "E8" else "REAL_MODEL_EXECUTION",
+                "disposition": "SUPPORTED",
+                "derivation_edge": f"{experiment_id}->{artifact_id}:{relative_path.rsplit('.', 1)[-1]}",
+                "omission_reason": None,
+                "schema_version": None,
+                "run_id": None,
+                "config_hash": None,
+                "source_closure_hash": None,
+                "source_hashes": [],
+                "derived_from_input_paths": [],
+                "derives_to_artifact_ids": [],
+            }
+        )
+    payload = {
+        "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3",
+        "artifact_root_relative_path": "../inputs",
+        "generator_source_closure_hash": reporting_manifest._current_generator_source_closure_hash(),
+        "environment_hash": reporting_manifest._current_environment_hash(),
+        "inputs": inputs,
+        "outputs": outputs,
+        "omissions": [],
+        "self_digest": "",
+    }
+    payload["self_digest"] = reporting_manifest._manifest_self_digest(payload)
+    _write_json(publication_root / "artifact_manifest.json", payload)
+
+
+def _signature_paths(base: Path) -> tuple[Path, Path, Path]:
+    private_key = base / "reviewer_key"
+    public_key = base / "reviewer_key.pub"
+    allowed_signers = base / "allowed_signers"
+    return private_key, public_key, allowed_signers
+
+
+def _generate_signature_bundle(
+    candidate_root: Path,
+    *,
+    review_payload: dict[str, object],
+) -> tuple[Path, Path]:
+    sign_root = candidate_root.parent / "external-review"
+    sign_root.mkdir(parents=True, exist_ok=True)
+    private_key, public_key, allowed_signers = _signature_paths(sign_root)
+    subprocess.run(
+        ["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(private_key)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    pubkey = public_key.read_text(encoding="utf-8").strip()
+    reviewer_identity = str(review_payload["reviewer_identity"])
+    allowed_signers.write_text(f'{reviewer_identity} namespaces="file" {pubkey}\n', encoding="utf-8")
+    _write_json(candidate_root / "manual_review.json", review_payload)
+    subprocess.run(
+        [
+            "ssh-keygen",
+            "-Y",
+            "sign",
+            "-f",
+            str(private_key),
+            "-n",
+            "file",
+            str(candidate_root / "manual_review.json"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    generated_signature = candidate_root / "manual_review.json.sig"
+    signature_path = sign_root / "manual_review.json.sig"
+    shutil.move(str(generated_signature), str(signature_path))
+    return allowed_signers, signature_path
+
+
+def _signed_review_payload(
+    candidate_root: Path,
+    *,
+    review_basis: str = "INDEPENDENT_DOMAIN_EXPERT_REVIEW",
+    review_date: str = "2026-08-23",
+    expertise_scope: str | None = "consensus-protocols",
+    independence_basis: str | None = "separate-review-chain",
+) -> dict[str, object]:
+    report_path = candidate_root / "verification_report.json"
+    claim_matrix_path = candidate_root / "claim_support_matrix.json"
+    publication_manifest_path = candidate_root / "publication" / "artifact_manifest.json"
+    manifest = _read_json(candidate_root / "manifest.json")
+    return {
+        "schema_version": "POI_MPP_MANUAL_REVIEW_V1",
+        "status": "COMPLETE",
+        "reviewer_identity": "independent-reviewer@example.com",
+        "review_basis": review_basis,
+        "review_date": review_date,
+        "expertise_scope": expertise_scope,
+        "independence_basis": independence_basis,
+        "reviewed_run_id": manifest["run_id"],
+        "reviewed_artifact_hashes": {
+            "claim_support_matrix.json": _digest(claim_matrix_path),
+            "publication/artifact_manifest.json": _digest(publication_manifest_path),
+        },
+        "checks": {
+            "denominator": True,
+            "interval": True,
+            "negative_results": True,
+            "simulation_labeling": True,
+            "editability": True,
+            "accessibility": True,
+            "claim_language": True,
+        },
+    }
+
+
+def _build_production_like_complete_candidate(candidate_root: Path) -> tuple[Path, Path, Path]:
+    _write_json(candidate_root / "inputs" / "report_spec.json", {"schema_version": "POI_MPP_TEST_FIXTURE_INPUT_V1"})
+    _write_json(candidate_root / "inputs" / "task21_local_config.json", {"schema_version": "POI_MPP_TEST_FIXTURE_INPUT_V1"})
+    _write_json(candidate_root / "task21" / "task21_blockers.json", {"schema_version": "POI_MPP_TASK21_BLOCKER_CHAIN_V1", "blocker_chain": []})
+    _write_json(
+        candidate_root / "claim_support_matrix.json",
+        {
+            "schema_version": "POI_MPP_CLAIM_SUPPORT_MATRIX_V1",
+            "claims": _complete_structural_claims(),
+        },
+    )
+    output_paths = [
+        ("tables/T6_single_pass_cost.csv", "T6", "E1"),
+        ("figures/F5_single_pass_cost.svg", "F5", "E1"),
+        ("tables/T7_execution_audit_security.csv", "T7", "E2"),
+        ("figures/F6_audit_soundness.svg", "F6", "E2"),
+        ("tables/T4_dataset_composition.json", "T4", "E3"),
+        ("tables/T8_semantic_verification.csv", "T8", "E3"),
+        ("figures/F7_semantic_verification_quality.svg", "F7", "E3"),
+        ("tables/T9_data_availability.csv", "T9", "E4"),
+        ("figures/F8_da_withholding.svg", "F8", "E4"),
+        ("tables/T10_watcher_dispute_economics.csv", "T10", "E5"),
+        ("tables/T11_sybil_economics.csv", "T11", "E6"),
+        ("figures/F9_sybil_advantage.svg", "F9", "E6"),
+        ("figures/F10_economic_security.svg", "F10", "E6"),
+        ("tables/T12_evm_boundedness.csv", "T12", "E7"),
+        ("figures/F12_evm_gas_state_scaling.svg", "F12", "E7"),
+        ("tables/T13_consensus_safety.csv", "T13", "E8"),
+        ("figures/F11_consensus_dynamics.svg", "F11", "E8"),
+    ]
+    _make_publication_manifest(candidate_root, output_paths)
+    _write_json(
+        candidate_root / "manifest.json",
+        {
+            "schema_version": "POI_MPP_FREEZE_BUNDLE_V1",
+            "bundle_kind": "candidate",
+            "bundle_state": "CANDIDATE_VERIFIED",
+            "run_id": "fixture-run",
+            "repo_root": str(REPO_ROOT),
+            "report_relative_path": "verification_report.json",
+            "claim_matrix_relative_path": "claim_support_matrix.json",
+            "publication_report_relative_path": "publication/artifact_manifest.json",
+            "manual_review_relative_path": "manual_review.json",
+            "authoritative_inputs": {
+                "report_spec_relative_path": "inputs/report_spec.json",
+                "task21_config_relative_path": "inputs/task21_local_config.json",
+                "task21_blocker_relative_path": "task21/task21_blockers.json",
+            },
+            "completeness": "COMPLETE",
+            "claim_support_overall": "INCONCLUSIVE",
+            "blockers": [],
+            "required_experiments": [f"E{index}" for index in range(1, 9)],
+            "experiments": _complete_structural_experiments(),
+            "manual_review": {
+                "status": "COMPLETE",
+                "reviewer_identity": "independent-reviewer@example.com",
+                "review_date": "2026-08-23",
+            },
+            "sentinel_present": False,
+            "frozen_manifest_relative_path": None,
+            "tool_versions": {"python": sys.version.split()[0]},
+            "argv_contract": {
+                "report_all_build": [str(PYTHON), "scripts/report_all.py", "build", "--spec", "<SPEC>"],
+            },
+        },
+    )
+    complete_report = verify_module.VerificationSummary(
+        run_id="fixture-run",
+        completeness="COMPLETE",
+        blockers=(),
+        claims={row["claim_id"]: str(row["disposition"]) for row in _complete_structural_claims()},
+        sentinel_present=False,
+        manual_review_authenticated=True,
+        bundle_state="CANDIDATE_VERIFIED",
+    )
+    _write_json(candidate_root / "verification_report.json", complete_report.model_dump(mode="json"))
+    review_payload = _signed_review_payload(candidate_root)
+    allowed_signers, signature_path = _generate_signature_bundle(candidate_root, review_payload=review_payload)
+    return candidate_root, allowed_signers, signature_path
 
 
 def _complete_structural_experiments() -> dict[str, dict[str, object]]:
@@ -128,8 +342,11 @@ def _build_test_only_structural_candidate(
             "schema_version": "POI_MPP_MANUAL_REVIEW_V1",
             "status": "COMPLETE",
             "reviewer_identity": "independent-reviewer@example.com",
-            "review_basis": "external-human-review",
-            "review_date": "2026-08-22",
+            "review_basis": "INDEPENDENT_DOMAIN_EXPERT_REVIEW",
+            "review_date": "2026-08-23",
+            "expertise_scope": "consensus-protocols",
+            "independence_basis": "separate-review-chain",
+            "reviewed_run_id": "fixture-run",
             "reviewed_artifact_hashes": {},
             "checks": {
                 "denominator": True,
@@ -155,6 +372,7 @@ def _build_test_only_structural_candidate(
         {
             "schema_version": "POI_MPP_FREEZE_BUNDLE_V1",
             "bundle_kind": "candidate",
+            "bundle_state": "CANDIDATE_VERIFIED",
             "run_id": "fixture-run",
             "repo_root": str(REPO_ROOT),
             "report_relative_path": "verification_report.json",
@@ -174,7 +392,7 @@ def _build_test_only_structural_candidate(
             "manual_review": {
                 "status": "COMPLETE",
                 "reviewer_identity": "independent-reviewer@example.com",
-                "review_date": "2026-08-22",
+                "review_date": "2026-08-23",
             },
             "sentinel_present": False,
             "frozen_manifest_relative_path": None,
@@ -191,6 +409,7 @@ def _build_test_only_structural_candidate(
         claims={},
         sentinel_present=False,
         manual_review_authenticated=False,
+        bundle_state="CANDIDATE_VERIFIED",
     ).model_dump(mode="json"))
     _write_structural_report(candidate_root)
     if include_extra_file:
@@ -251,6 +470,44 @@ def test_production_verifier_rejects_unsigned_manual_review(tmp_path: Path) -> N
     )
     assert not authenticated
     assert "manual scientific review signature is absent" in "\n".join(reasons)
+
+
+@pytest.mark.parametrize(
+    ("review_basis", "review_date", "expertise_scope", "independence_basis", "expected_fragment"),
+    (
+        ("INDEPENDENT_DOMAIN_EXPERT_REVIEW", "2026/08/23", "consensus-protocols", "separate-review-chain", "strict ISO"),
+        ("INDEPENDENT_DOMAIN_EXPERT_REVIEW", "2026-08-24", "consensus-protocols", "separate-review-chain", "must not be in the future"),
+        ("self-review", "2026-08-23", "consensus-protocols", "separate-review-chain", "review_basis must be one of"),
+        ("AI_REVIEW", "2026-08-23", "consensus-protocols", "separate-review-chain", "review_basis must be one of"),
+        ("INDEPENDENT_DOMAIN_EXPERT_REVIEW", "2026-08-23", None, "separate-review-chain", "expertise_scope"),
+        ("INDEPENDENT_DOMAIN_EXPERT_REVIEW", "2026-08-23", "consensus-protocols", None, "independence_basis"),
+    ),
+)
+def test_manual_review_real_signature_regressions(
+    tmp_path: Path,
+    review_basis: str,
+    review_date: str,
+    expertise_scope: str | None,
+    independence_basis: str | None,
+    expected_fragment: str,
+) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    review_payload = _signed_review_payload(
+        candidate_root,
+        review_basis=review_basis,
+        review_date=review_date,
+        expertise_scope=expertise_scope,
+        independence_basis=independence_basis,
+    )
+    allowed_signers, signature_path = _generate_signature_bundle(candidate_root, review_payload=review_payload)
+    bundle = verify_module._load_bundle(candidate_root, allow_test_only=True)
+    reasons, authenticated = verify_module._validate_manual_review(
+        bundle,
+        allowed_signers_path=allowed_signers,
+        signature_path=signature_path,
+    )
+    assert not authenticated
+    assert expected_fragment in "\n".join(reasons)
 
 
 def test_production_verifier_rejects_task20_invalid_manifest(tmp_path: Path) -> None:
@@ -338,6 +595,69 @@ def test_production_verifier_rejects_missing_e8_authoritative_artifact() -> None
     assert not any((REPO_ROOT / "results" / "frozen").glob("*/MPP_ARTIFACT_COMPLETE"))
 
 
+def test_structural_checker_rejects_candidate_sentinel_and_state_contradiction(tmp_path: Path) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    (candidate_root / verify_module.SENTINEL).write_text("sentinel\n", encoding="utf-8")
+    summary = verify_module.verify_bundle_structure(candidate_root)
+    blockers = "\n".join(summary.blockers)
+    assert summary.completeness == "INCOMPLETE"
+    assert "unexpected files" in blockers or "sentinel" in blockers
+
+
+def test_structural_checker_rejects_frozen_state_without_sentinel(tmp_path: Path) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    manifest = _read_json(candidate_root / "manifest.json")
+    manifest["bundle_kind"] = "frozen"
+    manifest["bundle_state"] = "FROZEN_VERIFIED"
+    manifest["sentinel_present"] = True
+    _write_json(candidate_root / "manifest.json", manifest)
+    report = _read_json(candidate_root / "verification_report.json")
+    report["bundle_state"] = "FROZEN_VERIFIED"
+    report["sentinel_present"] = True
+    _write_json(candidate_root / "verification_report.json", report)
+    summary = verify_module.verify_bundle_structure(candidate_root)
+    assert summary.completeness == "INCOMPLETE"
+    assert "sentinel" in "\n".join(summary.blockers).lower()
+
+
+def test_promote_bundle_post_reverify_and_sentinel_tamper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    candidate_root, allowed_signers, signature_path = _build_production_like_complete_candidate(tmp_path / "candidate")
+    monkeypatch.setattr(verify_module, "_revalidate_e7", lambda bundle: ())
+    monkeypatch.setattr(verify_module, "_revalidate_e8", lambda bundle: ())
+    frozen_root = tmp_path / "frozen"
+    target_root = verify_module.promote_bundle(
+        candidate_root,
+        frozen_root,
+        manual_review_allowed_signers=allowed_signers,
+        manual_review_signature=signature_path,
+    )
+    summary = verify_module.verify_bundle(
+        target_root,
+        manual_review_allowed_signers=allowed_signers,
+        manual_review_signature=signature_path,
+    )
+    assert summary.completeness == "COMPLETE"
+    assert summary.sentinel_present is True
+    manifest = _read_json(target_root / "manifest.json")
+    report = _read_json(target_root / "verification_report.json")
+    assert manifest["bundle_state"] == "FROZEN_VERIFIED"
+    assert manifest["sentinel_present"] is True
+    assert report["bundle_state"] == "FROZEN_VERIFIED"
+    assert report["sentinel_present"] is True
+
+    sentinel_path = target_root / verify_module.SENTINEL
+    sentinel_payload = _read_json(sentinel_path)
+    sentinel_payload["manifest_sha256"] = "0" * 64
+    _write_json(sentinel_path, sentinel_payload)
+    tampered = verify_module.verify_bundle(
+        target_root,
+        manual_review_allowed_signers=allowed_signers,
+        manual_review_signature=signature_path,
+    )
+    assert tampered.completeness == "INCOMPLETE"
+    assert "sentinel" in "\n".join(tampered.blockers).lower()
+
+
 def test_promote_bundle_refuses_existing_target_and_cleans_up_simulated_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
     frozen_root = tmp_path / "frozen"
@@ -351,6 +671,7 @@ def test_promote_bundle_refuses_existing_target_and_cleans_up_simulated_failure(
         claims={"C1": "NOT_SUPPORTED"},
         sentinel_present=False,
         manual_review_authenticated=True,
+        bundle_state="CANDIDATE_VERIFIED",
     )
 
     monkeypatch.setattr(verify_module, "verify_bundle", lambda *args, **kwargs: complete_summary)

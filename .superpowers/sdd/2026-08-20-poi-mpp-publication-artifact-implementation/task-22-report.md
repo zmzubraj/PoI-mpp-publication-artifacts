@@ -1,6 +1,6 @@
 # Task 22 — Reproduce from a clean environment and freeze the publication bundle
 
-**Status:** DONE
+**Status:** DONE_WITH_CONCERNS
 
 ## Scope
 
@@ -26,6 +26,17 @@ Representative failures before implementation:
 
 The Task 22 freeze surface was absent at the start of the task.
 
+Additional RED captured for the code-quality hardening round on Sunday, August 23, 2026:
+
+```text
+$ ./.venv/bin/python -m pytest tests/reproducibility/test_clean_replay.py -k 'manual_review_real_signature_regressions or candidate_sentinel_and_state_contradiction or frozen_state_without_sentinel or post_reverify_and_sentinel_tamper' -q
+FFFFFFFFF
+```
+
+Representative failure before the hardening patch:
+
+- `VerificationSummary` rejected the new `bundle_state` field because the explicit `CANDIDATE_VERIFIED` / `FROZEN_VERIFIED` state machine did not exist yet
+
 ## Delivered behavior
 
 - `make reproduce` now stages a typed candidate bundle under `results/tmp/candidates/<run_id>/`.
@@ -37,7 +48,7 @@ The Task 22 freeze surface was absent at the start of the task.
   - publication report closure under `publication/`
   - authoritative-input pointers for report spec, Task 21 blocker chain, and any available E7/E8 replay inputs
   - Task 21 blocker-chain record under `task21/task21_blockers.json`
-- The current Saturday, August 22, 2026 replay is intentionally fail-closed:
+- The current Sunday, August 23, 2026 replay is intentionally fail-closed:
   - exits nonzero
   - records `INCOMPLETE`
   - does not create `results/frozen/<run_id>/`
@@ -56,21 +67,35 @@ The Task 22 freeze surface was absent at the start of the task.
   - no synthetic/test-only substitution
   - no preexisting frozen target
   - successful atomic promotion path with reverified staging snapshot and sentinel written last
+- Bundle-state and sentinel rules are now explicit:
+  - candidate bundles must be `CANDIDATE_VERIFIED` and must not contain `MPP_ARTIFACT_COMPLETE`
+  - frozen bundles must be `FROZEN_VERIFIED`, are reverified once before sentinel creation, and must contain a final sentinel whose payload binds the exact manifest/report digests
+- Manual scientific review now requires all of:
+  - strict `review_date` in ISO `YYYY-MM-DD`
+  - a date not later than Sunday, August 23, 2026 for the current run
+  - `review_basis=INDEPENDENT_DOMAIN_EXPERT_REVIEW`
+  - non-empty `expertise_scope`
+  - non-empty `independence_basis`
+  - `reviewed_run_id`
+  - detached signature verified against an external trusted allowed-signers file
+
+Non-independent, self, AI, or user-only review language is now rejected for production freeze completion.
 
 ## Current candidate result
 
-The final clean Saturday, August 22, 2026 candidate root and verification-report digest are recorded in the return contract for this task. The hardened replay remains intentionally `INCOMPLETE` with:
+The final clean Sunday, August 23, 2026 candidate root and verification-report digest are recorded in the return contract for this task. Before the clean committed-tree rerun, the pre-commit live replay also remained intentionally `INCOMPLETE` with:
 
 - `WAITING_LOCAL_MODEL_ARTIFACT`
 - `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
 - missing accountable manual scientific review
 - missing external review signature / trusted signers
 - missing authorized publication evidence for `E1`-`E6`
+- dirty tracked code before commit (`UNVERSIONED_BLOCKED`) in the pre-commit live run only
 - real-authority E7 replay is still required in full mode, and current E8 publication replay remains explicitly `REPRODUCIBLE_SIMULATION` with `C8=INCONCLUSIVE`
 
 `C7` remains tied to the live local Foundry boundary; `C8` remains `INCONCLUSIVE`; no frozen sentinel is created.
 
-Final committed-tree replay on Saturday, August 22, 2026:
+Final committed-tree replay on Sunday, August 23, 2026:
 
 - candidate root: `results/tmp/candidates/task22-741d9fb3f4e8d00f/`
 - verification report: `results/tmp/candidates/task22-741d9fb3f4e8d00f/verification_report.json`
@@ -135,6 +160,22 @@ $ forge test -q
 PASS
 ```
 
+Additional code-quality hardening verification on Sunday, August 23, 2026:
+
+```text
+$ ./.venv/bin/python -m pytest tests/reproducibility/test_clean_replay.py -k 'manual_review_real_signature_regressions or candidate_sentinel_and_state_contradiction or frozen_state_without_sentinel or post_reverify_and_sentinel_tamper' -q
+PASS
+```
+
+That wave specifically covered:
+
+- malformed/future review dates
+- self/AI/invalid review basis
+- missing expertise/independence fields
+- candidate bundles that carry a sentinel too early
+- frozen-state bundles with no sentinel
+- real promotion plus post-promotion reverify and sentinel tamper failure
+
 ## Design notes
 
 - The first implementation attempted to invoke the full Task 21 local deployment stack from Task 22. That surfaced unrelated local deployment failures and was removed from the Task 22 blocker source.
@@ -146,5 +187,6 @@ PASS
 ## Residual concerns
 
 - `results/tmp/candidates/` is intentionally ignored runtime evidence for the current incomplete replay and no longer poisons the Task 22 run id by itself.
+- During active tracked edits, `scripts/reproduce.py` still records `UNVERSIONED_BLOCKED` exactly as intended; the final handoff reruns reproduction from a clean committed tree so runtime outputs alone do not trigger that blocker.
 - E8 is now a production-owned canonical simulation surface for Task 22 replay, but it still cannot upgrade the bundle beyond `INCOMPLETE` because the remaining blockers are evidence-authority and independent-review gaps, not E8 mechanics.
 - A future complete freeze still requires an externally authenticated manual scientific review record; AI output, self-review, or user approval cannot satisfy that gate.

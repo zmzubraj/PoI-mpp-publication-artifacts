@@ -2,14 +2,16 @@
 
 These are **targets, not achieved results**.
 
-Current status on Saturday, August 22, 2026:
+Current status on Sunday, August 23, 2026:
 
 - Task 22 candidate replay is expected to end `INCOMPLETE`
+- the current candidate state is expected to be `CANDIDATE_VERIFIED`
 - no `results/frozen/<run_id>/MPP_ARTIFACT_COMPLETE` sentinel should exist
 - `E1`-`E6` still lack authorized executed publication artifacts in this workspace
 - `E8` is now rebuilt through the production publication replay and remains a canonical `REPRODUCIBLE_SIMULATION` surface with current `C8=INCONCLUSIVE`
 - Task 21 real replay remains blocked by `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
 - accountable manual review also remains incomplete until a trusted external reviewer signature and allowed-signers registry are supplied
+- even with a reviewer record, only `review_basis=INDEPENDENT_DOMAIN_EXPERT_REVIEW` plus a valid detached external signature can satisfy the freeze gate
 - any language stronger than the current evidence disposition must stay out of the paper map and candidate bundle
 
 ## Primary claims to support
@@ -67,3 +69,5 @@ Evidence target:
 If a claim has no generated artifact ID, it should be described as a design claim rather than an experimentally validated result.
 
 If a claim has generated artifacts but the disposition is `NOT_SUPPORTED` or `INCONCLUSIVE`, the paper language must preserve that disposition rather than upgrading it to success, readiness, or production viability.
+
+`MPP_ARTIFACT_COMPLETE` is only a future frozen-bundle marker. It is never valid for an August 23, 2026 `CANDIDATE_VERIFIED` run.

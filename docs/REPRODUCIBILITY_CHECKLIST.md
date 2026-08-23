@@ -9,6 +9,8 @@
 - [ ] every run config is frozen and hash-bound before replay
 - [ ] raw logs, raw tables, and generated paper artifacts are linked in one closure manifest
 - [ ] `make reproduce` performs a clean candidate replay without sourcing shell fragments or network installs
+- [ ] candidate bundles are recorded as `CANDIDATE_VERIFIED` and do not contain `MPP_ARTIFACT_COMPLETE`
+- [ ] frozen bundles are recorded as `FROZEN_VERIFIED` and are reverified before `MPP_ARTIFACT_COMPLETE` is written last
 - [ ] `scripts/verify_bundle.py` revalidates closure from filesystem contents rather than trusting status strings
 - [ ] no manually typed scientific results appear in publication tables or figures
 
@@ -24,6 +26,9 @@
 
 - [ ] accountable rendered/scientific review record exists
 - [ ] reviewer identity, review basis, review date, and reviewed artifact hashes are recorded
+- [ ] `review_date` is strict ISO `YYYY-MM-DD`, parseable, and not later than the bundle-generation date
+- [ ] only `INDEPENDENT_DOMAIN_EXPERT_REVIEW` can satisfy the production freeze gate
+- [ ] `expertise_scope`, `independence_basis`, and `reviewed_run_id` are non-empty
 - [ ] detached reviewer signature and trusted allowed-signers registry are supplied from outside the bundle
 - [ ] denominator, interval, negative-result, simulation-label, editability, accessibility, and claim-language checks are explicitly marked
 - [ ] AI output, self-review, or user approval is not mislabeled as independent review

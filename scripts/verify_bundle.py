@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import shutil
 import stat
 import subprocess
@@ -49,9 +51,19 @@ CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
 MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
 VERIFY_REPORT_SCHEMA = "POI_MPP_FREEZE_VERIFICATION_REPORT_V1"
 PUBLICATION_SCHEMA = "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3"
+SENTINEL_SCHEMA = "POI_MPP_FREEZE_SENTINEL_V1"
 SENTINEL = "MPP_ARTIFACT_COMPLETE"
 TEST_ONLY_SCHEMA = "TEST_ONLY_NON_EVIDENCE"
 NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+CURRENT_DATE = date(2026, 8, 23)
+REVIEW_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+BUNDLE_STATE_CANDIDATE = "CANDIDATE_VERIFIED"
+BUNDLE_STATE_FROZEN = "FROZEN_VERIFIED"
+VERIFICATION_MODE_NORMAL = "normal"
+VERIFICATION_MODE_PRE_SENTINEL_FROZEN = "pre_sentinel_frozen"
+QUALIFYING_REVIEW_BASIS = "INDEPENDENT_DOMAIN_EXPERT_REVIEW"
+NONQUALIFYING_REVIEW_BASIS = "ACCOUNTABLE_NON_INDEPENDENT_REVIEW"
+ALLOWED_REVIEW_BASES = {QUALIFYING_REVIEW_BASIS, NONQUALIFYING_REVIEW_BASIS}
 EXPECTED_EXPERIMENTS = tuple(f"E{index}" for index in range(1, 9))
 EXPECTED_CLAIMS = {
     "C1": ("E1", ("T6", "F5")),
@@ -65,10 +77,8 @@ EXPECTED_CLAIMS = {
 }
 EXPECTED_CLAIM_ORDER = tuple(EXPECTED_CLAIMS)
 REQUIRED_MANUAL_REVIEW_HASH_KEYS = (
-    "manifest.json",
     "claim_support_matrix.json",
     "publication/artifact_manifest.json",
-    "verification_report.json",
 )
 
 
@@ -88,6 +98,9 @@ class ManualReviewRecord(_FrozenModel):
     reviewer_identity: str | None = None
     review_basis: str | None = None
     review_date: str | None = None
+    expertise_scope: str | None = None
+    independence_basis: str | None = None
+    reviewed_run_id: str | None = None
     reviewed_artifact_hashes: dict[str, str] = Field(default_factory=dict)
     checks: ManualReviewChecks | None = None
 
@@ -175,6 +188,7 @@ class AuthoritativeInputs(_FrozenModel):
 class BundleManifest(_FrozenModel):
     schema_version: str
     bundle_kind: str
+    bundle_state: str
     run_id: str
     repo_root: str
     report_relative_path: str
@@ -200,6 +214,20 @@ class BundleManifest(_FrozenModel):
             raise ValueError(f"schema_version must equal {TASK22_SCHEMA}")
         return value
 
+    @field_validator("bundle_kind")
+    @classmethod
+    def _validate_bundle_kind(cls, value: str) -> str:
+        if value not in {"candidate", "frozen"}:
+            raise ValueError("bundle_kind must equal candidate or frozen")
+        return value
+
+    @field_validator("bundle_state")
+    @classmethod
+    def _validate_bundle_state(cls, value: str) -> str:
+        if value not in {BUNDLE_STATE_CANDIDATE, BUNDLE_STATE_FROZEN}:
+            raise ValueError(f"bundle_state must equal {BUNDLE_STATE_CANDIDATE} or {BUNDLE_STATE_FROZEN}")
+        return value
+
     @field_validator(
         "report_relative_path",
         "claim_matrix_relative_path",
@@ -220,6 +248,9 @@ class BundleManifest(_FrozenModel):
             raise ValueError("required_experiments must exactly equal E1..E8 in order")
         if tuple(self.experiments) != EXPECTED_EXPERIMENTS:
             raise ValueError("experiment records must exactly equal E1..E8 in order")
+        expected_state = BUNDLE_STATE_CANDIDATE if self.bundle_kind == "candidate" else BUNDLE_STATE_FROZEN
+        if self.bundle_state != expected_state:
+            raise ValueError("bundle_kind and bundle_state must agree")
         return self
 
 
@@ -231,12 +262,42 @@ class VerificationSummary(_FrozenModel):
     claims: dict[str, str]
     sentinel_present: bool
     manual_review_authenticated: bool = False
+    bundle_state: str
 
     @field_validator("schema_version")
     @classmethod
     def _validate_schema(cls, value: str) -> str:
         if value != VERIFY_REPORT_SCHEMA:
             raise ValueError(f"schema_version must equal {VERIFY_REPORT_SCHEMA}")
+        return value
+
+    @field_validator("bundle_state")
+    @classmethod
+    def _validate_bundle_state(cls, value: str) -> str:
+        if value not in {BUNDLE_STATE_CANDIDATE, BUNDLE_STATE_FROZEN}:
+            raise ValueError(f"bundle_state must equal {BUNDLE_STATE_CANDIDATE} or {BUNDLE_STATE_FROZEN}")
+        return value
+
+
+class SentinelRecord(_FrozenModel):
+    schema_version: str
+    run_id: str
+    bundle_state: str
+    manifest_sha256: str
+    verification_report_sha256: str
+
+    @field_validator("schema_version")
+    @classmethod
+    def _validate_schema(cls, value: str) -> str:
+        if value != SENTINEL_SCHEMA:
+            raise ValueError(f"schema_version must equal {SENTINEL_SCHEMA}")
+        return value
+
+    @field_validator("bundle_state")
+    @classmethod
+    def _validate_bundle_state(cls, value: str) -> str:
+        if value != BUNDLE_STATE_FROZEN:
+            raise ValueError(f"bundle_state must equal {BUNDLE_STATE_FROZEN}")
         return value
 
 
@@ -446,7 +507,7 @@ def _publication_expected_files(bundle: LoadedBundle) -> set[str]:
     }
 
 
-def _validate_bundle_closure(bundle: LoadedBundle) -> tuple[str, ...]:
+def _validate_bundle_closure(bundle: LoadedBundle, *, verification_mode: str) -> tuple[str, ...]:
     expected = {
         "manifest.json",
         bundle.manifest.report_relative_path,
@@ -466,6 +527,8 @@ def _validate_bundle_closure(bundle: LoadedBundle) -> tuple[str, ...]:
         if optional_path is not None:
             expected.add(optional_path)
     expected |= _publication_expected_files(bundle)
+    if bundle.manifest.bundle_state == BUNDLE_STATE_FROZEN and verification_mode == VERIFICATION_MODE_NORMAL:
+        expected.add(SENTINEL)
     actual = _enumerate_files(Path(bundle.root))
     if actual != expected:
         missing = sorted(expected - actual)
@@ -499,9 +562,69 @@ def _validate_experiments(bundle: LoadedBundle) -> tuple[str, ...]:
     return tuple(dict.fromkeys(reasons))
 
 
-def _structural_reasons(bundle: LoadedBundle) -> tuple[str, ...]:
+def _sentinel_effective_presence(bundle: LoadedBundle, *, verification_mode: str) -> bool:
+    actual_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    if verification_mode == VERIFICATION_MODE_PRE_SENTINEL_FROZEN and bundle.manifest.bundle_state == BUNDLE_STATE_FROZEN:
+        return True
+    return actual_present
+
+
+def _validate_sentinel_state(bundle: LoadedBundle, *, verification_mode: str) -> tuple[str, ...]:
     reasons: list[str] = []
-    reasons.extend(_validate_bundle_closure(bundle))
+    actual_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    if bundle.manifest.bundle_state == BUNDLE_STATE_CANDIDATE:
+        if actual_present:
+            reasons.append("candidate bundles must not contain the completion sentinel")
+        if bundle.manifest.sentinel_present:
+            reasons.append("candidate bundles must record sentinel_present as false")
+        if bundle.stored_report.sentinel_present:
+            reasons.append("candidate verification reports must record sentinel_present as false")
+        return tuple(reasons)
+    if bundle.manifest.sentinel_present is not True:
+        reasons.append("frozen bundles must record sentinel_present as true in manifest.json")
+    if bundle.stored_report.sentinel_present is not True:
+        reasons.append("frozen bundles must record sentinel_present as true in verification_report.json")
+    if verification_mode == VERIFICATION_MODE_PRE_SENTINEL_FROZEN:
+        if actual_present:
+            reasons.append("pre-sentinel frozen verification requires the sentinel to be absent")
+        return tuple(reasons)
+    if not actual_present:
+        reasons.append("frozen bundles require the completion sentinel")
+    return tuple(reasons)
+
+
+def _validate_sentinel_payload(bundle: LoadedBundle, *, verification_mode: str) -> tuple[str, ...]:
+    if bundle.manifest.bundle_state != BUNDLE_STATE_FROZEN or verification_mode != VERIFICATION_MODE_NORMAL:
+        return ()
+    sentinel_path = _resolve_relative(Path(bundle.root), SENTINEL)
+    if not sentinel_path.exists():
+        return ()
+    try:
+        payload = SentinelRecord.model_validate(_safe_read_json(sentinel_path, root=Path(bundle.root)))
+    except (BundleVerificationError, ValidationError) as error:
+        return (str(error),)
+    reasons: list[str] = []
+    if payload.run_id != bundle.manifest.run_id:
+        reasons.append("sentinel run_id does not match manifest.json")
+    if payload.manifest_sha256 != _digest_for_relative_path(Path(bundle.root), "manifest.json"):
+        reasons.append("sentinel manifest_sha256 does not match manifest.json")
+    if payload.verification_report_sha256 != _digest_for_relative_path(Path(bundle.root), bundle.manifest.report_relative_path):
+        reasons.append("sentinel verification_report_sha256 does not match verification_report.json")
+    return tuple(dict.fromkeys(reasons))
+
+
+def _parse_review_date(value: str) -> date:
+    if not REVIEW_DATE_PATTERN.fullmatch(value):
+        raise ValueError("manual review review_date must use strict ISO YYYY-MM-DD format")
+    parsed = date.fromisoformat(value)
+    if parsed > CURRENT_DATE:
+        raise ValueError(f"manual review review_date must not be in the future relative to {CURRENT_DATE.isoformat()}")
+    return parsed
+
+
+def _structural_reasons(bundle: LoadedBundle, *, verification_mode: str) -> tuple[str, ...]:
+    reasons: list[str] = []
+    reasons.extend(_validate_bundle_closure(bundle, verification_mode=verification_mode))
     reasons.extend(bundle.manifest.blockers)
     claim_order = tuple(row.claim_id for row in bundle.claim_matrix.claims)
     if claim_order != EXPECTED_CLAIM_ORDER:
@@ -521,12 +644,13 @@ def _structural_reasons(bundle: LoadedBundle) -> tuple[str, ...]:
         reasons.append("manifest manual_review reviewer_identity contradicts manual_review.json")
     if bundle.manifest.manual_review.review_date != bundle.manual_review_record.review_date:
         reasons.append("manifest manual_review review_date contradicts manual_review.json")
+    if bundle.stored_report.bundle_state != bundle.manifest.bundle_state:
+        reasons.append("verification report bundle_state contradicts manifest.json")
     for experiment_id, experiment in sorted(bundle.manifest.experiments.items()):
         if experiment.origin == "SYNTHETIC_NON_EVIDENCE":
             reasons.append(f"{experiment_id} synthetic substitution is forbidden")
-    sentinel_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
-    if bundle.manifest.sentinel_present != sentinel_present:
-        reasons.append("manifest sentinel_present contradicts filesystem state")
+    reasons.extend(_validate_sentinel_state(bundle, verification_mode=verification_mode))
+    reasons.extend(_validate_sentinel_payload(bundle, verification_mode=verification_mode))
     return tuple(dict.fromkeys(reasons))
 
 
@@ -534,12 +658,17 @@ def _claims_map(bundle: LoadedBundle) -> dict[str, str]:
     return {row.claim_id: row.disposition for row in bundle.claim_matrix.claims}
 
 
-def verify_bundle_structure(bundle_root: Path, *, enforce_stored_report: bool = False) -> VerificationSummary:
+def verify_bundle_structure(
+    bundle_root: Path,
+    *,
+    enforce_stored_report: bool = False,
+    verification_mode: str = VERIFICATION_MODE_NORMAL,
+) -> VerificationSummary:
     bundle = _load_bundle(bundle_root, allow_test_only=True)
-    reasons = list(_structural_reasons(bundle))
-    sentinel_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    reasons = list(_structural_reasons(bundle, verification_mode=verification_mode))
+    sentinel_present = _sentinel_effective_presence(bundle, verification_mode=verification_mode)
     completeness = "COMPLETE" if not reasons and bundle.manifest.completeness == "COMPLETE" else "INCOMPLETE"
-    if completeness != "COMPLETE" and sentinel_present:
+    if completeness != "COMPLETE" and (_resolve_relative(Path(bundle.root), SENTINEL)).exists():
         reasons.append("sentinel present before verification completed")
         completeness = "INCOMPLETE"
     summary = VerificationSummary(
@@ -549,6 +678,7 @@ def verify_bundle_structure(bundle_root: Path, *, enforce_stored_report: bool = 
         claims=_claims_map(bundle),
         sentinel_present=sentinel_present,
         manual_review_authenticated=bundle.manual_review_record.status == "COMPLETE",
+        bundle_state=bundle.manifest.bundle_state,
     )
     if enforce_stored_report and bundle.stored_report.model_dump(mode="json") != summary.model_dump(mode="json"):
         summary = summary.model_copy(
@@ -595,8 +725,28 @@ def _validate_manual_review(
         reasons.append("manual review requires reviewer_identity")
     if not record.review_basis:
         reasons.append("manual review requires review_basis")
+    elif record.review_basis not in ALLOWED_REVIEW_BASES:
+        reasons.append(
+            "manual review review_basis must be one of "
+            + ", ".join(sorted(ALLOWED_REVIEW_BASES))
+        )
     if not record.review_date:
         reasons.append("manual review requires review_date")
+    else:
+        try:
+            _parse_review_date(record.review_date)
+        except ValueError as error:
+            reasons.append(str(error))
+    if not record.expertise_scope or not record.expertise_scope.strip():
+        reasons.append("manual review requires expertise_scope")
+    if record.review_basis == QUALIFYING_REVIEW_BASIS and (
+        not record.independence_basis or not record.independence_basis.strip()
+    ):
+        reasons.append("manual review requires independence_basis for INDEPENDENT_DOMAIN_EXPERT_REVIEW")
+    if not record.reviewed_run_id:
+        reasons.append("manual review requires reviewed_run_id")
+    elif record.reviewed_run_id != bundle.manifest.run_id:
+        reasons.append("manual review reviewed_run_id does not match manifest.json run_id")
     if record.checks is None:
         reasons.append("manual review requires explicit checks")
     else:
@@ -659,6 +809,9 @@ def _validate_manual_review(
             return (tuple(dict.fromkeys(reasons)), False)
     except (BundleVerificationError, OSError) as error:
         reasons.append(str(error))
+        return (tuple(dict.fromkeys(reasons)), False)
+    if record.review_basis != QUALIFYING_REVIEW_BASIS:
+        reasons.append("manual review basis is explicitly non-independent and cannot satisfy the production freeze gate")
         return (tuple(dict.fromkeys(reasons)), False)
     return (tuple(dict.fromkeys(reasons)), not reasons)
 
@@ -809,9 +962,10 @@ def verify_bundle(
     manual_review_allowed_signers: Path | None = None,
     manual_review_signature: Path | None = None,
     enforce_stored_report: bool = True,
+    verification_mode: str = VERIFICATION_MODE_NORMAL,
 ) -> VerificationSummary:
     bundle = _load_bundle(bundle_root, allow_test_only=False)
-    reasons: list[str] = list(_structural_reasons(bundle))
+    reasons: list[str] = list(_structural_reasons(bundle, verification_mode=verification_mode))
     manual_review_reasons, manual_review_authenticated = _validate_manual_review(
         bundle,
         allowed_signers_path=manual_review_allowed_signers,
@@ -820,9 +974,9 @@ def verify_bundle(
     reasons.extend(manual_review_reasons)
     reasons.extend(_revalidate_e7(bundle))
     reasons.extend(_revalidate_e8(bundle))
-    sentinel_present = (_resolve_relative(Path(bundle.root), SENTINEL)).exists()
+    sentinel_present = _sentinel_effective_presence(bundle, verification_mode=verification_mode)
     completeness = "COMPLETE" if not reasons and bundle.manifest.completeness == "COMPLETE" else "INCOMPLETE"
-    if completeness != "COMPLETE" and sentinel_present:
+    if completeness != "COMPLETE" and (_resolve_relative(Path(bundle.root), SENTINEL)).exists():
         reasons.append("sentinel present before verification completed")
         completeness = "INCOMPLETE"
     summary = VerificationSummary(
@@ -832,6 +986,7 @@ def verify_bundle(
         claims=_claims_map(bundle),
         sentinel_present=sentinel_present,
         manual_review_authenticated=manual_review_authenticated,
+        bundle_state=bundle.manifest.bundle_state,
     )
     if enforce_stored_report and bundle.stored_report.model_dump(mode="json") != summary.model_dump(mode="json"):
         summary = summary.model_copy(
@@ -851,11 +1006,65 @@ def _copy_bundle(source_root: Path, target_root: Path) -> None:
 
 def _sentinel_payload(bundle_root: Path, summary: VerificationSummary) -> bytes:
     payload = {
+        "schema_version": SENTINEL_SCHEMA,
         "run_id": summary.run_id,
+        "bundle_state": summary.bundle_state,
         "manifest_sha256": _digest_for_relative_path(bundle_root, "manifest.json"),
         "verification_report_sha256": _digest_for_relative_path(bundle_root, "verification_report.json"),
     }
     return (json.dumps(payload, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
+def _atomic_write_json(path: Path, payload: object) -> None:
+    _atomic_write_bytes(path, (json.dumps(payload, sort_keys=True, indent=2) + "\n").encode("utf-8"))
+
+
+def _rewrite_frozen_bundle_state(
+    bundle_root: Path,
+    source_summary: VerificationSummary,
+    *,
+    manual_review_allowed_signers: Path | None,
+    manual_review_signature: Path | None,
+) -> VerificationSummary:
+    root = _safe_root(bundle_root)
+    manifest_path = root / "manifest.json"
+    report_path = root / "verification_report.json"
+    manifest_payload = _safe_read_json(manifest_path, root=root)
+    report_payload = _safe_read_json(report_path, root=root)
+    manifest_payload["bundle_kind"] = "frozen"
+    manifest_payload["bundle_state"] = BUNDLE_STATE_FROZEN
+    manifest_payload["sentinel_present"] = True
+    report_payload.update(
+        {
+            "schema_version": VERIFY_REPORT_SCHEMA,
+            "run_id": source_summary.run_id,
+            "completeness": source_summary.completeness,
+            "blockers": list(source_summary.blockers),
+            "claims": source_summary.claims,
+            "sentinel_present": True,
+            "manual_review_authenticated": source_summary.manual_review_authenticated,
+            "bundle_state": BUNDLE_STATE_FROZEN,
+        }
+    )
+    _atomic_write_json(manifest_path, manifest_payload)
+    _atomic_write_json(report_path, report_payload)
+    pre_summary = verify_bundle(
+        root,
+        manual_review_allowed_signers=manual_review_allowed_signers,
+        manual_review_signature=manual_review_signature,
+        enforce_stored_report=False,
+        verification_mode=VERIFICATION_MODE_PRE_SENTINEL_FROZEN,
+    )
+    if pre_summary.completeness != "COMPLETE":
+        raise BundleVerificationError(pre_summary.blockers)
+    _atomic_write_json(report_path, pre_summary.model_dump(mode="json"))
+    return verify_bundle(
+        root,
+        manual_review_allowed_signers=manual_review_allowed_signers,
+        manual_review_signature=manual_review_signature,
+        enforce_stored_report=True,
+        verification_mode=VERIFICATION_MODE_PRE_SENTINEL_FROZEN,
+    )
 
 
 def promote_bundle(
@@ -871,9 +1080,12 @@ def promote_bundle(
         source_root,
         manual_review_allowed_signers=manual_review_allowed_signers,
         manual_review_signature=manual_review_signature,
+        verification_mode=VERIFICATION_MODE_NORMAL,
     )
     if summary.completeness != "COMPLETE":
         raise BundleVerificationError(summary.blockers)
+    if summary.bundle_state != BUNDLE_STATE_CANDIDATE:
+        raise BundleVerificationError("promotion requires a candidate bundle in CANDIDATE_VERIFIED state")
     frozen_root = frozen_root.resolve()
     frozen_root.mkdir(parents=True, exist_ok=True)
     target_root = frozen_root / summary.run_id
@@ -884,10 +1096,17 @@ def promote_bundle(
     replaced_target = False
     try:
         _copy_bundle(source_root, staging_root)
+        copied_summary = _rewrite_frozen_bundle_state(
+            staging_root,
+            summary,
+            manual_review_allowed_signers=manual_review_allowed_signers,
+            manual_review_signature=manual_review_signature,
+        )
         copied_summary = verify_bundle(
             staging_root,
             manual_review_allowed_signers=manual_review_allowed_signers,
             manual_review_signature=manual_review_signature,
+            verification_mode=VERIFICATION_MODE_PRE_SENTINEL_FROZEN,
         )
         if copied_summary.completeness != "COMPLETE":
             raise BundleVerificationError(copied_summary.blockers)
@@ -899,11 +1118,20 @@ def promote_bundle(
             target_root,
             manual_review_allowed_signers=manual_review_allowed_signers,
             manual_review_signature=manual_review_signature,
+            verification_mode=VERIFICATION_MODE_PRE_SENTINEL_FROZEN,
         )
         if destination_summary.completeness != "COMPLETE":
             raise BundleVerificationError(destination_summary.blockers)
         _atomic_write_bytes(target_root / SENTINEL, _sentinel_payload(target_root, destination_summary))
         _fsync_directory(target_root)
+        frozen_summary = verify_bundle(
+            target_root,
+            manual_review_allowed_signers=manual_review_allowed_signers,
+            manual_review_signature=manual_review_signature,
+            verification_mode=VERIFICATION_MODE_NORMAL,
+        )
+        if frozen_summary.completeness != "COMPLETE":
+            raise BundleVerificationError(frozen_summary.blockers)
         return target_root
     except Exception:
         if replaced_target and target_root.exists():
@@ -943,6 +1171,13 @@ def main(argv: list[str] | None = None) -> int:
                 manual_review_signature=signature,
                 simulate_failure=args.simulate_promotion_failure,
             )
+            summary = verify_bundle(
+                target_root,
+                manual_review_allowed_signers=allowed_signers,
+                manual_review_signature=signature,
+                verification_mode=VERIFICATION_MODE_NORMAL,
+            )
+            payload = summary.model_dump(mode="json")
             payload["frozen_root"] = str(target_root)
         _print_json(payload)
         return 0 if summary.completeness == "COMPLETE" and not summary.blockers else 1

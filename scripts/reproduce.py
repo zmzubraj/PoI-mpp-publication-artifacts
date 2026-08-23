@@ -37,6 +37,7 @@ TASK22_SCHEMA = "POI_MPP_FREEZE_BUNDLE_V1"
 CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
 MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
 MANUAL_REVIEW_ABSENT = "manual scientific review record is absent"
+BUNDLE_STATE_CANDIDATE = "CANDIDATE_VERIFIED"
 ALLOWED_CLAIM_DISPOSITIONS = {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"}
 EXPECTED_CLAIMS = {
     "C1": ("E1", ("T6", "F5")),
@@ -103,6 +104,7 @@ class ManualReviewSummary(_FrozenModel):
 class CandidateManifest(_FrozenModel):
     schema_version: str
     bundle_kind: str
+    bundle_state: str
     run_id: str
     repo_root: str
     report_relative_path: str
@@ -506,6 +508,7 @@ def _candidate_manifest(
     return CandidateManifest(
         schema_version=TASK22_SCHEMA,
         bundle_kind="candidate",
+        bundle_state=BUNDLE_STATE_CANDIDATE,
         run_id=run_context.run_id,
         repo_root=str(REPO_ROOT),
         report_relative_path="verification_report.json",
@@ -550,6 +553,7 @@ def _placeholder_report(run_id: str) -> dict[str, object]:
         "claims": {},
         "sentinel_present": False,
         "manual_review_authenticated": False,
+        "bundle_state": BUNDLE_STATE_CANDIDATE,
     }
 
 

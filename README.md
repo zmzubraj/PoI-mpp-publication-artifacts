@@ -71,9 +71,10 @@ Run:
 make reproduce
 ```
 
-Current expected outcome on Saturday, August 22, 2026:
+Current expected outcome on Sunday, August 23, 2026:
 
 - `scripts/reproduce.py` writes a typed candidate bundle under `results/tmp/candidates/<run_id>/`
+- the candidate manifest/report state is `CANDIDATE_VERIFIED`
 - the command exits nonzero with `INCOMPLETE`
 - no `results/frozen/<run_id>/` directory is created
 - no `MPP_ARTIFACT_COMPLETE` sentinel is created
@@ -89,6 +90,10 @@ Current expected blockers:
 Tracked or non-runtime unversioned changes still block freezing when they exist, but ignored runtime outputs under `results/` no longer poison the Task 22 run id by themselves.
 
 The current candidate path is intentionally evidence-closure only. It may preserve `SUPPORTED`, `NOT_SUPPORTED`, or `INCONCLUSIVE` claim dispositions when the underlying evidence exists, but it does not certify publication completeness until every gate passes.
+
+If a future freeze ever completes, the promoted bundle must move to `FROZEN_VERIFIED`, must be reverified at the frozen destination, and only then may `MPP_ARTIFACT_COMPLETE` be written as the last file with the final manifest/report digests.
+
+Manual scientific review is not a free-form JSON note. For production freeze completion it must be externally authenticated, use `review_basis=INDEPENDENT_DOMAIN_EXPERT_REVIEW`, carry a strict ISO `review_date`, and bind the reviewed run/artifact hashes through a detached signature verified against a trusted allowed-signers registry outside the bundle.
 
 ## First commands
 
