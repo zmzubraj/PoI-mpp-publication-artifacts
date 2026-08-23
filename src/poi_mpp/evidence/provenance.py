@@ -103,13 +103,20 @@ def _git_revision(repo_root: Path) -> str:
 
     try:
         status = subprocess.run(
-            ["git", "-C", str(repo_root), "status", "--porcelain"],
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "status",
+                "--porcelain",
+                "--untracked-files=all",
+            ],
             check=True,
             capture_output=True,
             text=True,
             timeout=5,
         )
-        if status.stdout:
+        if _has_material_git_status(status.stdout):
             return UNVERSIONED_BLOCKED
         completed = subprocess.run(
             ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
@@ -122,6 +129,27 @@ def _git_revision(repo_root: Path) -> str:
         return UNVERSIONED_BLOCKED
     candidate = completed.stdout.strip()
     return candidate if _GIT_REVISION.fullmatch(candidate) else UNVERSIONED_BLOCKED
+
+
+def _has_material_git_status(porcelain: str) -> bool:
+    """Ignore only newly generated publication outputs, never source changes.
+
+    Publication CLIs collect provenance after earlier experiment slices may
+    already have written untracked files below ``results/publication``.  Those
+    generated outputs do not change the executing code revision.  Any tracked
+    change, rename, deletion, or untracked file outside that dedicated output
+    tree still fails closed.
+    """
+
+    for line in porcelain.splitlines():
+        if not line:
+            continue
+        status = line[:2]
+        path = line[3:] if len(line) > 3 else ""
+        if status == "??" and path.startswith("results/publication/"):
+            continue
+        return True
+    return False
 
 
 def _lock_hash(lock_path: Path) -> str | None:

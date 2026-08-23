@@ -177,6 +177,68 @@ def test_collect_environment_blocks_dirty_checkout_without_touching_real_checkou
     )
 
 
+def test_collect_environment_ignores_only_untracked_publication_outputs(tmp_path: Path):
+    subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True)
+    (tmp_path / "tracked.txt").write_text("frozen", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tracked.txt"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+        check=True,
+    )
+    expected = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    generated = tmp_path / "results" / "publication" / "e1" / "rows.json"
+    generated.parent.mkdir(parents=True)
+    generated.write_text("{}", encoding="utf-8")
+
+    environment = collect_environment(repo_root=tmp_path, lock_path=tmp_path / "missing.lock")
+
+    assert environment.code_revision == expected
+
+
+def test_collect_environment_blocks_untracked_source_outside_publication_outputs(tmp_path: Path):
+    subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True)
+    (tmp_path / "tracked.txt").write_text("frozen", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tracked.txt"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "--quiet",
+            "-m",
+            "fixture",
+        ],
+        check=True,
+    )
+    (tmp_path / "untracked_module.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+    environment = collect_environment(repo_root=tmp_path, lock_path=tmp_path / "missing.lock")
+
+    assert environment.code_revision == UNVERSIONED_BLOCKED
+
+
 def test_collect_environment_marks_unversioned_roots_blocked_without_touching_checkout(tmp_path: Path):
     environment = collect_environment(repo_root=tmp_path, lock_path=tmp_path / "missing.lock")
 
