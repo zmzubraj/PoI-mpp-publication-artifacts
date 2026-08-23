@@ -19,11 +19,15 @@ Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current manuscript sourc
 
 Current evidence boundary:
 
-- `C1`-`C6`: incomplete / inconclusive
+- `C1`: canonical real-model fixed-order pilot / inconclusive
+- `C2`: canonical real-model narrow pilot / inconclusive
+- `C3`: waiting external evaluator authority
+- `C4`: declared-outcome-playback simulation / inconclusive
+- `C5`-`C6`: supported within canonical reproducible-simulation scope only
 - `C7`: supported by local Foundry measurement
 - `C8`: reproducible simulation / inconclusive
 
-No canonical machine-readable review bundle is currently attached. The eventual handoff must generate and hash-bind:
+The canonical machine-readable report bundle is attached at `../../../../publication/artifact_manifest.json` (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c`). It does not satisfy external authority, independent review, or the freeze sentinel. A freeze-eligible handoff must additionally generate and hash-bind any verifier-required:
 
 - `verification_report.json`
 - `claim_support_matrix.json`

@@ -6,24 +6,24 @@ This file is not a completed review, not a verdict, and not a signature-bearing 
 
 ## Current claim matrix boundary
 
-Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current narrative source of truth. No canonical machine-readable review bundle is presently attached to this unsigned draft packet; one must be generated from the clean, version-bound publication build before external review can satisfy the freeze gate.
+Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current narrative source of truth. The tracked canonical machine-readable bundle is `../../../../publication/artifact_manifest.json` (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c`). That bundle is review input only: this unsigned packet does not satisfy the independent-review or freeze gate.
 
 Current claim status:
 
 | Claim | Current status | Evidence origin ceiling |
 |---|---|---|
-| `C1` | incomplete / inconclusive | an authorized fixed-order pilot exists only as ignored local raw output; no admissible publication artifact is present, and the design cannot support C1 |
-| `C2` | incomplete / inconclusive | an authorized narrow pilot exists only as ignored local raw output; no admissible publication artifact is present, and the tested scope cannot support C2 |
-| `C3` | incomplete / inconclusive | E3 confirmatory authority absent |
-| `C4` | incomplete / inconclusive | no admissible publication artifact is present; the current implementation is declared-outcome playback rather than executed reconstruction |
-| `C5` | incomplete / inconclusive | no tracked or frozen publication artifact is present |
-| `C6` | incomplete / inconclusive | no tracked or frozen publication artifact is present |
+| `C1` | inconclusive | canonical authorized real-model fixed-order pilot; the design ceiling prevents support for C1 |
+| `C2` | inconclusive | canonical authorized real-model narrow pilot; the tested scope prevents support for C2 |
+| `C3` | waiting external | E3 confirmatory evaluator authority and evidence are absent |
+| `C4` | inconclusive | canonical declared-outcome-playback simulation, not executed reconstruction |
+| `C5` | supported within simulation scope | canonical reproducible simulation only |
+| `C6` | supported within simulation scope | canonical reproducible simulation only |
 | `C7` | supported | local Foundry measurement only |
 | `C8` | inconclusive | reproducible simulation only |
 
 ## Evidence access list
 
-The external reviewer should ultimately be given read access to a canonical hash-bound artifact set. The following tracked source files are the current draft inputs, but their hashes must be recomputed after the canonical bundle is generated; this unsigned packet is not itself freeze-eligible.
+The external reviewer should be given read access to the canonical manifest-closed artifact set and the following manuscript inputs. This unsigned packet is not itself freeze-eligible.
 
 | Relative path | Current role |
 |---|---|
@@ -32,8 +32,11 @@ The external reviewer should ultimately be given read access to a canonical hash
 | `../../../PAPER_ARTIFACT_MAP.md` | artifact closure rules |
 | `../tables/T4_experiment_design_and_current_status.md` | experiment-by-experiment current status |
 | `../tables/T7_limitations_and_nonclaims.md` | explicit non-claims |
+| `../../../../publication/artifact_manifest.json` | canonical artifact closure, hashes, dispositions, and omissions |
+| `../../../../publication/tables/claim_matrix.json` | canonical claim-to-artifact status matrix |
+| `../../../../publication/tables/omissions.json` | explicit E3 omission ledger |
 
-The canonical handoff must add the generated `manifest.json`, `claim_support_matrix.json`, `publication/artifact_manifest.json`, and `verification_report.json`, with exact SHA-256 values computed from the final reviewed revisions.
+The freeze-eligible handoff must bind the canonical `publication/artifact_manifest.json` and every reviewed manuscript/review file to exact SHA-256 values. If separate freeze-level `manifest.json`, `claim_support_matrix.json`, or `verification_report.json` files are required by the verifier, those must also be generated and bound; the canonical report manifest does not impersonate them.
 
 If the reviewer is assessing a freeze-eligible bundle rather than only the manuscript, the reviewed hash set must also include the actual reviewed bundle files required by the verifier:
 

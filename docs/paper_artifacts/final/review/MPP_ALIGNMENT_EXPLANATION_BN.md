@@ -72,49 +72,46 @@ Novelty provisional থাকার কারণগুলো non-compensating:
 
 ## ৪) বর্তমান claim/evidence status: exact update
 
-বর্তমান workspace ব্যাখ্যা করার সময় দুইটি জিনিস আলাদা করে দেখতে হবে:
+বর্তমান workspace বোঝার source of truth হলো canonical
+`publication/artifact_manifest.json`। এর SHA-256 হলো
+`bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`।
 
-- পুরোনো Task22 candidate verification report-এ যা লেখা আছে
-- বর্তমান workstream-এর নতুন update
+এই canonical bundle-এ E1, E2, এবং E4-E8-এর table/figure artifact আছে; E3-এর
+T4, T8, ও F7 `WAITING_EXTERNAL` omission হিসেবে আছে। এই evidence state আর
+artifact regeneration-এর অপেক্ষার state নয়। কিন্তু bundle থাকা আর
+publication-ready হওয়া এক জিনিস নয়।
 
-### ৪.১ পুরোনো candidate report কী বলছে
+এখনো তিনটি independent blocker আছে:
 
-Ignored local Task22 candidate-এর historical verification report-এ `WAITING_LOCAL_MODEL_ARTIFACT` blocker ছিল। ওই temporary report tracked বা publication-admissible provenance নয়; এটি শুধু বোঝায় যে সেই পুরোনো candidate তৈরির সময় exact local model artifact absent ছিল।
+- E3-এর external evaluator authority;
+- authenticated independent manual review; এবং
+- publication-freeze sentinel।
 
-### ৪.২ বর্তমান update কী
-
-বর্তমান update অনুযায়ী exact Qwen 1.5B local model artifact এখন acquired এবং hash-verified।
-
-কিন্তু এখানেই claim upgrade করা যাবে না। কারণ:
-
-- exact model artifact পাওয়া গেছে মানেই E1 pilot automatically admissible নয়
-- E1 pilot এখনো admissible নয়, কারণ runtime/cache-method corrections এখনো claim-ready publication evidence boundary-তে freeze হয়নি
-- অর্থাৎ model provenance gap আংশিকভাবে কমেছে, কিন্তু E1 evidence gate এখনো closed নয়
-
-এই distinction খুব গুরুত্বপূর্ণ:
-
-- “artifact acquired” ≠ “experiment admitted”
-- “hash verified model” ≠ “publication-grade E1 evidence”
-- “mechanics available” ≠ “claim supported”
+AI output, AI approval, বা user approval—কোনোটিই independent review নয়।
 
 ## ৫) claim-by-claim current status
 
 বর্তমান evidence boundary অনুযায়ী:
 
-- `C7` locally supported
-- `C8` simulation-based but inconclusive
-- `C1` থেকে `C6` এখনো supported নয়
-
-আরও স্পষ্টভাবে:
-
-- `C1`: supported নয়; authorized real E1 pilot চালানো হয়েছে, কিন্তু publication decision এখনো `INCOMPLETE / INCONCLUSIVE`
-- `C2`: executed real pilot artifact এখন আছে, কিন্তু publication freeze gate এখনো complete নয়; তাই final claim এখনো supported বলা যাবে না
-- `C3`: supported নয়; external evaluator authority এখনো দরকার
-- `C4`: reproducible simulation run আছে, কিন্তু provenance freeze gate incomplete; তাই final claim এখনো supported নয়
-- `C5`: reproducible simulation run আছে, কিন্তু provenance freeze gate incomplete; তাই final claim এখনো supported নয়
-- `C6`: reproducible simulation run আছে, কিন্তু provenance freeze gate incomplete; তাই final claim এখনো supported নয়
-- `C7`: local Foundry measurement boundary-র মধ্যে supported
-- `C8`: reproducible simulation surface আছে, কিন্তু disposition inconclusive
+- `C1` / E1: `INCONCLUSIVE` fixed-order real-model pilot। দুই paired observation,
+  ছয় measured row; mean two-run 5197.17125 ms, MPP 2678.932229 ms, delta
+  2518.239021 ms, bootstrap interval [2440.923209, 2595.554833]। Fixed order
+  থাকার কারণে general cost-advantage claim করা যাবে না।
+- `C2` / E2: `INCONCLUSIVE` narrow real-model pilot। 4/4 attacked observation
+  detect হয়েছে; তিনটি exact surface, একটি empirical surface, Wilson interval
+  [0.5101091635454027, 1.0], এবং এক honest control-এ false positive নেই। এটা
+  general detection claim নয়।
+- `C3` / E3: `WAITING_EXTERNAL`; external evaluator authority না আসা পর্যন্ত
+  semantic performance evidence নেই।
+- `C4` / E4: `INCONCLUSIVE` declared playback simulation; executed
+  reconstruction নয়।
+- `C5` / E5: `SUPPORTED`, কিন্তু শুধু declared reproducible-simulation
+  scenario-র জন্য; figure নেই।
+- `C6` / E6: `SUPPORTED`, কিন্তু শুধু declared reproducible-simulation
+  scenario-র জন্য; open-network Sybil resistance নয়।
+- `C7` / E7: local Foundry measurement boundary-র মধ্যে `SUPPORTED`; 15 row,
+  max gas 467937, max block-limit fraction 0.00043580029159784317।
+- `C8` / E8: 10-row reproducible simulation, কিন্তু `INCONCLUSIVE`।
 
 এখানে দুটি boundary মনে রাখতে হবে:
 
@@ -154,9 +151,9 @@ Ignored local Task22 candidate-এর historical verification report-এ `WAITIN
 
 কারণ:
 
-- positive support এখন মূলত `C7`-এ সীমাবদ্ধ
-- `C8` complete surface হলেও inconclusive
-- `C1`-`C6` supported নয়
+- evidence disposition একরকম নয়: E1, E2, E4, ও E8 inconclusive; E5 ও E6
+  declared simulation-এ supported; E7 local Foundry-তে supported; E3-এ evidence
+  নেই
 
 ### ঘ) Reproducibility discipline
 
@@ -169,7 +166,8 @@ Ignored local Task22 candidate-এর historical verification report-এ `WAITIN
 
 সীমা:
 
-- canonical publication bundle এখনো complete নয়
+- canonical publication artifact bundle আছে, কিন্তু freeze, authority, এবং
+  independent-review gate এখনো complete নয়
 
 ### ঙ) Primitive novelty
 
@@ -186,10 +184,9 @@ Ignored local Task22 candidate-এর historical verification report-এ `WAITIN
 
 কারণ:
 
-- `C1`-`C6` supported নয়
 - external evaluator authority এখনো বাকি
 - independent domain-expert review/signature এখনো বাকি
-- publication-complete state এখনো অর্জিত হয়নি
+- publication-freeze sentinel এখনো নেই
 
 ## ৭) external evaluator এবং independent domain-expert signature কেন এখনো বাধ্যতামূলক
 
@@ -217,9 +214,9 @@ Ignored local Task22 candidate-এর historical verification report-এ `WAITIN
 - repository architecture এবং software composition শক্তিশালী
 - primitive novelty এখনো provisional
 - empirical support এখনো narrow
-- `C7` supported
-- `C8` inconclusive
-- `C1`-`C6` supported নয়
-- exact Qwen 1.5B local model artifact এখন acquired এবং hash-verified; E1 runtime/cache boundary fix-এর পরে authorized pilot চালানো হয়েছে, কিন্তু publication disposition এখনো `INCOMPLETE / INCONCLUSIVE`
-- external evaluator authority এবং independent domain-expert signature এখনো required
+- E1, E2, E4, এবং E8 `INCONCLUSIVE`
+- E5 ও E6 declared simulation scope-এ `SUPPORTED`
+- E7 local Foundry scope-এ `SUPPORTED`
+- E3 `WAITING_EXTERNAL`
+- external evaluator authority, independent domain-expert review/signature, এবং publication-freeze sentinel এখনো required
 - তাই paper-এ language অবশ্যই evidence-bounded থাকতে হবে; কোনো overall score, compensating score table, বা stronger-than-evidence success language ব্যবহার করা উচিত নয়

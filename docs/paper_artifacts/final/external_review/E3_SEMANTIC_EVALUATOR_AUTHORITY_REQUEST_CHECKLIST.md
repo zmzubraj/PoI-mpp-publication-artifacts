@@ -14,8 +14,8 @@ Current repository statement:
 - design summary: grounded semantic assurance using held-out grounded items
 - required publication artifacts: `T4` + `T8` + `F7`
 - evidence-origin contract: `REAL_MODEL_EXECUTION` for confirmation
-- current publication status: no authorized confirmatory publication artifact currently present
-- current claim disposition: `INCONCLUSIVE`
+- current publication status: canonical omission records explicitly retain `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`; no authorized confirmatory E3 evidence is present
+- current claim disposition: `WAITING_EXTERNAL`
 
 Reference surfaces:
 
@@ -38,7 +38,7 @@ The external evaluator authority must be able to do all of the following:
 
 ## Current draft request set
 
-The following tracked source set should be shown to the external authority only after a canonical bundle has been generated and the exact final revisions have been hashed. The values from an earlier temporary candidate are intentionally not carried forward because that candidate is not the current canonical bundle.
+The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `../../../../publication/artifact_manifest.json` (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c`); it records E3 as an explicit omission, not evidence.
 
 | Relative path | Why it matters |
 |---|---|
@@ -49,8 +49,10 @@ The following tracked source set should be shown to the external authority only 
 | `../../../MAIN_RESULTS_TARGETS.md` | current blockers and claim rule |
 | `../tables/T4_experiment_design_and_current_status.md` | current E3 design/status summary |
 | `../tables/T7_limitations_and_nonclaims.md` | explicit non-claims and review limits |
+| `../../../../publication/artifact_manifest.json` | canonical artifact closure and E3 omission status |
+| `../../../../publication/tables/omissions.json` | explicit `T4`, `T8`, and `F7` waiting-external records |
 
-The canonical authority handoff must add the generated `verification_report.json` and `claim_support_matrix.json` and bind every listed artifact to its exact SHA-256 value.
+The authority handoff must bind every listed artifact to its exact SHA-256 value. Any separately required freeze-level `verification_report.json` and `claim_support_matrix.json` must be generated and bound without treating this request checklist as authority.
 
 ## Future bind set once E3 artifacts exist
 
@@ -70,7 +72,7 @@ These artifacts are not currently present as authorized confirmatory publication
 - [ ] generate and provide the full canonical hash-bound request set derived from the draft inputs above
 - [ ] provide the exact E3 capability request without upgrading current claim status
 - [ ] provide privacy and confidentiality handling expectations
-- [ ] state that `C3` is currently incomplete / inconclusive
+- [ ] state that `C3` is currently `WAITING_EXTERNAL` with no authorized confirmatory evidence
 - [ ] state that any future approval must bind exact artifact hashes
 - [ ] state that no AI output or producer self-attestation can substitute for the authority decision
 

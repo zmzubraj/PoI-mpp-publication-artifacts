@@ -6,24 +6,27 @@
 
 Proof of Intelligence (PoI) should not require a second full frontier-model execution for every accepted response, and it should not require a full zero-knowledge proof of the common path for every response. This manuscript presents a complete protocol architecture in which a single model execution yields a user-visible answer together with committed execution and semantic audit surfaces. After commitment finality, post-commit randomness selects audit obligations, and only successfully matured receipts may contribute to next-epoch protocol weight. The full architecture covers commitment, audit compilation, optimistic dispute, data-availability retention, bounded task credit, and EVM-compatible receipt and credit management.
 
-This manuscript also reports the current state of a deliberately narrow Minimum Publishable Prototype (MPP). The approved first-publication MPP is limited to 1B-8B open-weight models, a local EVM/Foundry environment, and reproducible artifact plumbing for experiments E1-E8. It explicitly excludes 70B and larger validation, mixture-of-experts execution, confidential GPU/TEE execution, a production dispute VM, production decentralized data availability, and a production consensus client. Within that narrow scope, the repository implements the evidence kernel, protocol kernel, and artifact pipeline, but the canonical publication process remains intentionally incomplete. As of August 23, 2026, claims C1-C6 remain incomplete; local Foundry verification supports only the narrow C7 engineering boundary and still requires a regenerated canonical paper artifact; and the historical C8 surface is a reproducible but inconclusive simulation snapshot pending canonical regeneration. The manuscript therefore separates the proposed full architecture from the implemented MPP, and separates implemented software from measured evidence.
+This manuscript also reports the current state of a deliberately narrow Minimum Publishable Prototype (MPP). The approved first-publication MPP is limited to 1B-8B open-weight models, a local EVM/Foundry environment, and canonical artifacts for experiments E1-E8. It explicitly excludes 70B and larger validation, mixture-of-experts execution, confidential GPU/TEE execution, a production dispute VM, production decentralized data availability, and a production consensus client. The canonical manifest (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`) records `INCONCLUSIVE` E1, E2, E4, and E8 results; `SUPPORTED` E5-E7 results within their declared simulation or local-Foundry boundaries; and `WAITING_EXTERNAL` E3 artifacts. The package is not publication-ready because external evaluator authority, authenticated independent manual review, and the publication-freeze sentinel remain unresolved. The manuscript therefore separates the proposed full architecture from the implemented MPP, and separates implemented software from measured evidence.
 
 ## Evidence and status box
 
-Historical local Task 22 candidate state (diagnostic only; not canonical publication provenance):
+Canonical publication-artifact status:
 
 | Item | Current status |
 |---|---|
-| Bundle state | `CANDIDATE_VERIFIED` |
-| Completeness | `INCOMPLETE` |
-| C1-C6 | incomplete / inconclusive |
-| C7 | supported (`LOCAL_FOUNDRY_MEASUREMENT`) |
-| C8 | complete but inconclusive (`REPRODUCIBLE_SIMULATION`) |
-| Freeze sentinel | absent |
-| Manual scientific review authentication | absent |
-| Current blockers | No admissible E1-E6 publication artifact is currently present; E1 is a fixed-order pilot design, E2 has a narrow scope, E3 lacks external evaluator authority, E4 is declared-outcome playback rather than executed reconstruction, and E5-E6 still require clean version-bound runs; authenticated external manual review is absent |
+| Canonical manifest | `publication/artifact_manifest.json`, SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943` |
+| E1 / C1 | `INCONCLUSIVE` real-model fixed-order pilot (T6, F5) |
+| E2 / C2 | `INCONCLUSIVE` narrow real-model pilot (T7, F6) |
+| E3 / C3 | `WAITING_EXTERNAL`; T4, T8, and F7 have no evidence |
+| E4 / C4 | `INCONCLUSIVE` declared playback simulation (T9, F8) |
+| E5 / C5 | `SUPPORTED` declared reproducible simulation only (T10; no figure) |
+| E6 / C6 | `SUPPORTED` declared reproducible simulation only (T11, F9, F10) |
+| E7 / C7 | `SUPPORTED` local Foundry measurement (T12, F12) |
+| E8 / C8 | `INCONCLUSIVE` reproducible simulation (T13, F11) |
+| Publication readiness | `NOT_PUBLICATION_READY` |
+| Blocking gates | External evaluator authority for E3; authenticated independent manual review; absent publication-freeze sentinel |
 
-This box is descriptive, not a score. It summarizes a historical ignored local Task 22 candidate snapshot. That temporary snapshot is not tracked, is not an admissible publication source, and must be replaced by a clean, version-bound canonical bundle before paper submission.
+This box is descriptive, not a score. A canonical artifact bundle exists, but its existence does not close the three blocking gates or authorize submission. AI work, AI approval, and user approval are not independent review.
 
 ## 1. Introduction
 
@@ -168,20 +171,11 @@ Relevant repository contracts include:
 
 ### 4.2 End-to-end state
 
-Within its approved scope, the MPP software is materially implemented: evidence schemas, protocol objects, Python-Solidity parity surfaces, reporting builders, Foundry contract scaffolds, and the candidate verification path are present. However, the publication bundle is not complete. That distinction is recorded mechanically by the current Task 22 candidate status rather than inferred from prose.
+Within its approved scope, the MPP software is materially implemented: evidence schemas, protocol objects, Python-Solidity parity surfaces, reporting builders, Foundry contract scaffolds, and a canonical publication-artifact pipeline are present. The manifest is the source of truth for result status; software implementation does not compensate for an inconclusive experiment, an absent authority, missing independent review, or an absent freeze sentinel.
 
-### 4.3 Historical local candidate state
+### 4.3 Canonical publication state
 
-An earlier Task 22 run exists only under the ignored local `results/tmp/` tree. It is retained as diagnostic history, not as canonical publication provenance. Its recorded state was:
-
-- bundle state: `CANDIDATE_VERIFIED`
-- completeness: `INCOMPLETE`
-- claims C1-C6: `INCONCLUSIVE` because required publication artifacts are absent
-- claim C7: `SUPPORTED`
-- claim C8: `INCONCLUSIVE`
-- sentinel: absent
-
-The ignored temporary files that recorded this state are not admissible evidence and are intentionally not cited as paper provenance. A clean, version-bound canonical bundle must regenerate the verification report and claim matrix.
+The canonical artifact manifest contains E1, E2, and E4-E8 result surfaces and records the E3 omission ledger. It does not make the manuscript publication-ready. E3 remains `WAITING_EXTERNAL`, and the independent-review and freeze-sentinel gates remain open. These gate states are part of the scientific interpretation rather than formatting or administrative details.
 
 ## 5. Experimental design and artifact contract
 
@@ -198,82 +192,49 @@ That contract matters because the current manuscript includes both evidence-bear
 
 ### 6.1 Claim-level summary
 
-The current claim-support matrix yields:
+The canonical claim matrix records C1 `INCONCLUSIVE`, C2 `INCONCLUSIVE`, E3
+`WAITING_EXTERNAL`, C4 `INCONCLUSIVE`, C5 `SUPPORTED` within a declared
+simulation, C6 `SUPPORTED` within a declared simulation, E7 local boundedness
+`SUPPORTED`, and E8 `INCONCLUSIVE`. Those dispositions are non-compensating.
 
-- C1: incomplete / inconclusive
-- C2: incomplete / inconclusive
-- C3: incomplete / inconclusive
-- C4: incomplete / inconclusive
-- C5: incomplete / inconclusive
-- C6: incomplete / inconclusive
-- C7: complete / supported
-- C8: complete / inconclusive
+### 6.2 E1 and E2: bounded real-model pilots
 
-The rest of this section therefore separates incomplete empirical targets, measured local evidence, and reproducible simulation.
+E1 (T6, F5) is a fixed-order real-model pilot with two paired observations and
+six measured rows. The mean two-run baseline is 5197.17125 ms, the mean MPP
+single-pass measurement is 2678.932229 ms, and the paired delta is 2518.239021
+ms with bootstrap interval [2440.923209, 2595.554833]. Fixed ordering leaves
+E1 `INCONCLUSIVE`; this result cannot support a general C1 cost-advantage
+claim.
 
-### 6.2 E1-E6: incomplete publication targets
+E2 (T7, F6) is a narrow real-model pilot. It records 4/4 detected attacked
+observations across three exact and one empirical floating-point surface, with
+Wilson interval [0.5101091635454027, 1.0], plus one honest control and no false
+positive. It remains `INCONCLUSIVE`, not a general execution-audit efficacy
+claim.
 
-The repository pre-allocates paper artifact names for E1-E6, but the authorized evidence needed for claim support is not present in the current candidate.
+### 6.3 E3-E6: authority boundary and declared simulations
 
-Current missing quantitative targets are:
+E3 has no evidence artifact. T4, T8, and F7 are `WAITING_EXTERNAL` because
+external evaluator authority has not been supplied. Semantic performance must
+not be reported before that gate is resolved.
 
-- C1: `publication/tables/T6_single_pass_cost.csv` and `publication/figures/F5_single_pass_cost.svg`
-- C2: `publication/tables/T7_execution_audit_security.csv` and `publication/figures/F6_audit_soundness.svg`
-- C3: `publication/tables/T4_dataset_composition.status.json`, `publication/tables/T8_semantic_verification.csv`, and `publication/figures/F7_semantic_verification_quality.svg`
-- C4: `publication/tables/T9_data_availability.csv` and `publication/figures/F8_da_withholding.svg`
-- C5: `publication/tables/T10_watcher_dispute_economics.csv`
-- C6: `publication/tables/T11_sybil_economics.csv`, `publication/figures/F9_sybil_advantage.svg`, and `publication/figures/F10_economic_security.svg`
+E4 (T9, F8) is an `INCONCLUSIVE` declared playback simulation, not executed
+reconstruction evidence. E5 (T10) is `SUPPORTED` only for its declared
+watcher/dispute-economic simulation scenarios and has no figure. E6 (T11, F9,
+F10) is `SUPPORTED` only for its declared Sybil/task-budget simulation
+scenarios. Neither E5 nor E6 supplies production or open-network evidence.
 
-Interpretation:
+### 6.4 E7 and E8: local measurement and simulation
 
-- the artifact names exist as targets in the reporting contract;
-- their presence in the design map does not make them evidentiary results;
-- no quantitative claim should be drawn for C1-C6 from the current candidate bundle.
+E7 (T12, F12) contains 15 `SUPPORTED` local Foundry measurements. The largest
+observed gas value is 467937 for `CREDIT_ALLOCATE` at batch size 8, and the
+maximum fraction of the configured block limit is 0.00043580029159784317. This
+supports local boundedness only; it does not establish Ethereum-mainnet
+economics, production throughput, or production consensus performance.
 
-Suggested caption pattern for these deferred measured surfaces:
-
-> Placeholder artifact name allocated by the publication pipeline. The corresponding experiment is incomplete or unauthorized in the August 23, 2026 candidate bundle; no quantitative claim should be inferred from this placeholder.
-
-### 6.3 E7: local EVM boundedness
-
-The strongest currently supported claim is C7, which corresponds to bounded EVM-path behavior for the current MPP contract set under local Foundry measurement.
-
-Measured artifact sources:
-
-- `publication/tables/T12_evm_boundedness.csv`
-- `publication/figures/F12_evm_gas_state_scaling.svg`
-- `publication/raw/E7_live_bundle.json`
-
-Current evidence status:
-
-- all published E7 rows are marked `SUPPORTED`;
-- the largest observed gas value in the current candidate is `467,937` for `CREDIT_ALLOCATE` at batch size `8`;
-- the largest reported fraction of the local block gas limit is `0.000436`;
-- the evidence origin is local Foundry measurement, not mainnet execution and not production consensus throughput evidence.
-
-Suggested caption:
-
-> **Figure F12 / Table T12.** Local Foundry measurements of the MPP normal path and bounded receipt-credit operations. Heavy AI execution remains off-chain, while the EVM stores compact commitment, audit, receipt, and credit state. These measurements support local boundedness for the current MPP contract set only; they do not establish Ethereum mainnet deployment economics or production throughput.
-
-### 6.4 E8: next-epoch consensus-weight simulation
-
-The repository also generates a complete E8 publication surface, but its disposition remains inconclusive.
-
-Simulation artifact sources:
-
-- `publication/tables/T13_consensus_safety.csv`
-- `publication/figures/F11_consensus_dynamics.svg`
-- `publication/figures/F11_consensus_dynamics.json`
-
-Current evidence status:
-
-- all current E8 publication rows are `INCONCLUSIVE`;
-- the evidence origin is explicitly `REPRODUCIBLE_SIMULATION`;
-- the surface is suitable for describing the modeled weight-conversion logic, but not for claiming demonstrated consensus security.
-
-Suggested caption:
-
-> **Figure F11 / Table T13.** Reproducible simulation of next-epoch committee weight dynamics under bounded-receipt scenarios. These artifacts show how the protocol maps matured receipts into candidate next-epoch weight, but the current disposition remains inconclusive and should not be represented as an empirical consensus-security proof.
+E8 (T13, F11) contains 10 `INCONCLUSIVE` reproducible-simulation rows. It may
+describe modeled receipt-to-weight dynamics, but it is not demonstrated
+consensus security.
 
 ## 7. Discussion
 
@@ -291,8 +252,9 @@ The repository currently demonstrates:
 
 The repository does not yet demonstrate:
 
-- executed publication-grade E1-E6 evidence;
-- externally authorized semantic confirmation for E3;
+- external-evaluator-authorized semantic confirmation for E3;
+- a publication-freeze sentinel;
+- authenticated independent manual review;
 - 70B or larger model validation;
 - MoE or distributed production validation;
 - confidential GPU or TEE execution evidence;
@@ -310,9 +272,9 @@ Second, novelty remains provisional. This repository contains architecture and a
 
 Third, semantic claims are narrow. The implemented MPP is limited to objective and grounded tasks, not open-ended semantic competence.
 
-Fourth, empirical support is narrow. C7 is supported locally; C8 is present only as reproducible but inconclusive simulation; C1-C6 remain incomplete.
+Fourth, empirical support is heterogeneous. E1, E2, E4, and E8 are `INCONCLUSIVE`; E5 and E6 are supported only within declared simulation scenarios; and E7 is supported only for local Foundry boundedness. E3 is evidence-absent and `WAITING_EXTERNAL`.
 
-Fifth, the canonical publication process remains intentionally incomplete because the repository preserves unresolved gates rather than relabeling them as success. The exact Qwen 1.5B local model artifact has been acquired and hash-verified. Authorized E1 and E2 local pilots exist only as ignored raw workspace outputs and are not admissible publication artifacts: E1 used a fixed-order pilot design that cannot support C1, and E2 covered only one narrow model-task-layer-token-slice boundary. No admissible E4-E6 publication artifact is currently present; E4 is explicitly declared-outcome playback rather than executed reconstruction, while E5-E6 still require clean, version-bound simulation runs. External evaluator authority and authenticated external manual review also remain absent.
+Fifth, the canonical bundle remains not publication-ready because it preserves unresolved gates rather than relabeling them as success. External evaluator authority, authenticated independent manual review, and the publication-freeze sentinel remain required. Neither AI production nor user approval is independent review.
 
 ## 9. Deferred future phases
 
@@ -330,7 +292,7 @@ The following surfaces are deferred and should remain labeled as future work rat
 
 The proposed PoI architecture addresses a real systems problem: how to make useful AI responses auditable without requiring a second full frontier-model execution or a full common-path proof for each accepted response. The architecture combines response commitment, execution and semantic audit surfaces, post-commit randomness, optimistic dispute, DA retention, bounded task credit, and EVM-compatible receipt management into a coherent protocol proposal.
 
-The current repository substantiates that this architecture can be reduced into a disciplined first-publication MPP. The strongest present repository-grounded result is local EVM boundedness (C7). The next-epoch weight pipeline (C8) is implemented as a reproducible simulation surface but remains inconclusive. The remaining central empirical claims (C1-C6) are still incomplete in the canonical publication candidate and must remain incomplete in the manuscript until authorized executed evidence exists.
+The current repository substantiates that this architecture can be reduced into a disciplined first-publication MPP. The strongest present repository-grounded result is local EVM boundedness (E7). E1 and E2 have canonical but inconclusive real-model pilot artifacts; E4 and E8 are inconclusive simulations; E5 and E6 are supported only within their declared simulations; and E3 remains blocked for external authority. The manuscript must preserve each boundary.
 
 The correct current interpretation is therefore not that the architecture is fully validated, and not that it is merely conceptual. It is that a coherent PoI MPP has been implemented with strong fail-closed artifact discipline, while the central publication evidence package remains only partially complete.
 
@@ -353,7 +315,7 @@ The correct current interpretation is therefore not that the architecture is ful
 
 ### Current quantitative publication artifacts
 
-No clean, version-bound canonical quantitative publication bundle is currently attached to this manuscript. The tracked T5 and T6 paper tables are historical presentation snapshots only; they must be regenerated from canonical E7/E8 outputs and hash-bound before submission. The future canonical bundle must include the claim matrix, omission ledger, E7 table and figure, and E8 table and figure.
+The attached canonical publication bundle is rooted at `publication/artifact_manifest.json` with SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`. It includes the claim matrix, omission ledger, and E1, E2, E4-E8 artifacts. Its presence does not authorize submission: E3 authority, authenticated independent manual review, and the publication-freeze sentinel remain open gates.
 
 ## References
 

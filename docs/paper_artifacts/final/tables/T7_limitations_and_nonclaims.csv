@@ -1,9 +1,9 @@
 limitation_id,statement,affected_surface,current_status,current_implication
-L1,"Authorized publication artifacts for E1-E6 are absent in the current workspace.",E1_to_E6,Open,"Those experiments may be described as planned or targeted only, not as findings."
-L2,"The recorded Task 21 candidate was blocked by WAITING_LOCAL_MODEL_ARTIFACT; the exact Qwen 1.5B artifact is now acquired and hash-verified, but E1 methodology/runtime re-review and WAITING_EXTERNAL_EVALUATOR_AUTHORITY remain unresolved.",Real_model_execution_path,Open,"The final paper cannot claim a completed real end-to-end publication replay or C1 support."
-L3,"The publication bundle remains INCOMPLETE and no MPP_ARTIFACT_COMPLETE sentinel exists.",Task22_freeze_state,Open,"No publication-complete claim is admissible."
+L1,"Canonical E1 E2 and E4-E8 artifacts exist but their recorded dispositions and scope ceilings are non-compensating.",E1_to_E8,Open,"Preserve INCONCLUSIVE simulation-only or local-Foundry-only language exactly."
+L2,"E3 T4 T8 and F7 remain WAITING_EXTERNAL because WAITING_EXTERNAL_EVALUATOR_AUTHORITY is unresolved.",Semantic_verification_path,Open,"No semantic performance claim is admissible."
+L3,"The publication-freeze sentinel is absent.",Freeze_state,Open,"The canonical bundle is not publication-ready."
 L4,"Accountable external manual scientific review is absent.",Independent_review_gate,Open,"No independent-review completion claim is admissible."
 L5,"E7 is a local Foundry measurement surface rather than an Ethereum mainnet cost claim.",C7_scope,Open,"The paper may claim local boundedness evidence only."
-L6,"E8 is a reproducible simulation surface and the current disposition is INCONCLUSIVE.",C8_scope,Open,"The paper must preserve simulation-bounded and inconclusive language."
+L6,"E8 is a 10-row reproducible simulation surface and the current disposition is INCONCLUSIVE.",E8_scope,Open,"The paper must preserve simulation-bounded and inconclusive language."
 L7,"The MPP does not claim production 70B/600B deployment, full MoE serving, full per-response zkML, a production decentralized DA network, or a production L1 consensus client.",Deployment_scope,Open,"Those topics remain future or deferred work."
 L8,"Semantic verification is operational and task-conditioned rather than a universal proof of intelligence or truth.",Semantic_boundary,Open,"Open-ended or underdetermined tasks must remain capped or abstained."

@@ -1,13 +1,14 @@
 # Final paper tables pack
 
-This directory contains editable paper-table drafts derived from the architecture and the evidence state reviewed on Sunday, August 23, 2026. Historical numeric snapshots are not canonical publication provenance until regenerated from a clean, version-bound artifact bundle.
+This directory contains editable paper-table drafts reconciled to the canonical publication manifest (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`) on Sunday, August 23, 2026.
 
 Boundary rules:
 
 - No fabricated or target-only result values appear here.
-- E1-E6 are not presented as findings because authorized publication artifacts are absent.
-- E7 is included as a historical local Foundry presentation snapshot pending canonical regeneration.
-- E8 is included as a historical reproducible-simulation presentation snapshot pending canonical regeneration and remains explicitly `INCONCLUSIVE`.
+- E1, E2, and E4-E8 have canonical result artifacts; their canonical dispositions and scope limits must be preserved.
+- E3 remains `WAITING_EXTERNAL` with no evidence for T4, T8, or F7.
+- E7 is local Foundry evidence only; E8 is explicitly `INCONCLUSIVE` reproducible simulation.
+- The bundle is not publication-ready until E3 external authority, authenticated independent manual review, and the freeze sentinel are resolved.
 - Conceptual architecture tables are separated from result-bearing tables.
 
 Files:

@@ -6,8 +6,8 @@
 | Local EVM test chain (Anvil/Foundry) | Primary/In scope | In scope | Current EVM boundedness evidence is local. |
 | Commitment plus trace plus randomized audit plus simple optimistic dispute | Primary/In scope | In scope | Core vertical slice for the first publication package. |
 | Grounded semantic verifier with calibrated `ABSTAIN` | Primary/In scope | In scope | Semantic uncertainty must fail closed. |
-| Erasure-coded artifact availability experiment | Primary/In scope | In scope | Architecturally in scope even though current publication evidence is still absent. |
-| PoI credit and next-epoch committee simulation | Primary/In scope | In scope | Architecturally in scope; the historical E8 snapshot is simulation-bounded and inconclusive, with canonical regeneration still required. |
+| Erasure-coded artifact availability experiment | Primary/In scope | In scope | Canonical E4 is an `INCONCLUSIVE` declared playback simulation, not executed reconstruction evidence. |
+| PoI credit and next-epoch committee simulation | Primary/In scope | In scope | Canonical E8 is a simulation-bounded, 10-row `INCONCLUSIVE` surface. |
 | Production 70B/600B/trillion-parameter deployment | Deferred/Out of scope | Deferred | Extension target rather than an MPP requirement. |
 | Full MoE distributed serving | Deferred/Out of scope | Deferred | Architecture discusses it but the current MPP does not claim a production implementation. |
 | Full per-response zkML proof | Deferred/Out of scope | Deferred | Explicitly not required on the common path. |

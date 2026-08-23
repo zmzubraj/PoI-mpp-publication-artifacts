@@ -1,9 +1,8 @@
-Table 5. Historical local C7 EVM boundedness snapshot; not current canonical publication provenance.
+Table 5. Paper-facing static presentation of canonical E7/T12 local Foundry boundedness.
 
 Origin:
-- retained as a tracked presentation snapshot from an ignored local Task 22 candidate;
-- the ignored temporary source is not admissible publication provenance;
-- a clean, version-bound E7 run must regenerate and hash-bind this table before submission.
+- canonical `publication/tables/T12_evm_boundedness.csv` and F12;
+- canonical manifest SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`.
 
 Units:
 - `gas_used` is EVM gas.
@@ -15,5 +14,5 @@ Denominators and sample notes:
 - `uncertainty=N/A_single_measurement` means these rows are current measured surfaces, not interval-estimated benchmarks.
 
 Status:
-- The underlying local Foundry boundary is testable, but this snapshot must not be cited as the canonical evidence artifact.
-- After canonical regeneration, the evidence ceiling remains a local boundedness statement for `C7`, never Ethereum mainnet production cost evidence.
+- The canonical E7 table has 15 rows, maximum gas 467937, and maximum configured-block-limit fraction 0.00043580029159784317.
+- The evidence ceiling remains a local boundedness statement for E7, never Ethereum mainnet production cost evidence.

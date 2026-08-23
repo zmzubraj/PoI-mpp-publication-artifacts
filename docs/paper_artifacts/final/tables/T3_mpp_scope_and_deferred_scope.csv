@@ -5,8 +5,8 @@ topic,category,mpp_status,note
 "Local EVM test chain (Anvil/Foundry)",Primary_In_Scope,In scope,Current EVM boundedness evidence is local.
 "Commitment plus trace plus randomized audit plus simple optimistic dispute",Primary_In_Scope,In scope,Core vertical slice for the first publication package.
 "Grounded semantic verifier with calibrated ABSTAIN",Primary_In_Scope,In scope,Semantic uncertainty must fail closed.
-"Erasure-coded artifact availability experiment",Primary_In_Scope,In scope,Architecturally in scope even though current publication evidence is still absent.
-"PoI credit and next-epoch committee simulation",Primary_In_Scope,In scope,Architecturally in scope; the historical E8 snapshot is simulation-bounded and inconclusive with canonical regeneration still required.
+"Erasure-coded artifact availability experiment",Primary_In_Scope,In scope,Canonical E4 is an INCONCLUSIVE declared playback simulation and not executed reconstruction evidence.
+"PoI credit and next-epoch committee simulation",Primary_In_Scope,In scope,Canonical E8 is a simulation-bounded 10-row INCONCLUSIVE surface.
 "Production 70B/600B/trillion-parameter deployment",Deferred_Out_Of_Scope,Deferred,Extension target rather than an MPP requirement.
 "Full MoE distributed serving",Deferred_Out_Of_Scope,Deferred,Architecture discusses it but the current MPP does not claim a production implementation.
 "Full per-response zkML proof",Deferred_Out_Of_Scope,Deferred,Explicitly not required on the common path.

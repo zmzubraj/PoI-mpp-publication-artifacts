@@ -1,9 +1,8 @@
-Table 6. Historical local C8 next-epoch simulation snapshot; not current canonical publication provenance.
+Table 6. Paper-facing static presentation of canonical E8/T13 next-epoch simulation.
 
 Origin:
-- retained as a tracked presentation snapshot from an ignored local Task 22 candidate;
-- the ignored temporary source is not admissible publication provenance;
-- a clean, version-bound E8 run must regenerate and hash-bind this table before submission.
+- canonical `publication/tables/T13_consensus_safety.csv` and F11;
+- canonical manifest SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`.
 
 Units:
 - `total_active_weight_micros` is reported in the canonical simulation’s micro-weight units.
@@ -14,5 +13,4 @@ Denominators and sample notes:
 - `ZERO_TOTAL_WEIGHT` rows have no meaningful threshold probabilities; those entries remain `N/A`.
 
 Status:
-- This snapshot is not yet admissible as a canonical result surface.
-- After canonical regeneration, it remains simulation-bounded and `INCONCLUSIVE`; it must not be upgraded to production-readiness or deployment proof.
+- The canonical surface has 10 rows and remains simulation-bounded and `INCONCLUSIVE`; it must not be upgraded to production-readiness or deployment proof.
