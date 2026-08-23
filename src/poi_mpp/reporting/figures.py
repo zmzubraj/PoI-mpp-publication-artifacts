@@ -100,9 +100,241 @@ def _series_svg(
     return ("\n".join(lines) + "\n").encode("utf-8")
 
 
+def _experiment_subtitle(experiment: LoadedExperiment, description: str) -> str:
+    origin = experiment.origin or "ORIGIN_UNDECLARED"
+    scope = experiment.scope or "SCOPE_UNDECLARED"
+    return f"{origin} | scope={scope} | {description}; disposition={experiment.disposition}"
+
+
+def _sorted_points(points: tuple[dict[str, Any], ...] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        (dict(point) for point in points),
+        key=lambda point: json.dumps(point, sort_keys=True, separators=(",", ":")),
+    )
+
+
+def _json_output(points: list[dict[str, Any]]) -> bytes:
+    return (json.dumps(points, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
+def _e2_figure_points(experiment: LoadedExperiment) -> list[dict[str, Any]]:
+    source_points = _sorted_points(experiment.figure_points)
+    if source_points:
+        normalized: list[dict[str, Any]] = []
+        for point in source_points:
+            if {"exact_detected", "empirical_detected", "denominator"} <= set(point):
+                denominator = int(point["denominator"])
+                if denominator < 0:
+                    raise ValueError("E2 denominator cannot be negative for F6")
+                if denominator == 0:
+                    continue
+                normalized.append(
+                    {
+                        **point,
+                        "overall_detection_rate": (
+                            int(point["exact_detected"]) + int(point["empirical_detected"])
+                        )
+                        / denominator,
+                    }
+                )
+                continue
+            if "detected" in point or "detection_rate" in point:
+                normalized.append(
+                    {
+                        **point,
+                        "overall_detection_rate": (
+                            require_finite_number(point["detection_rate"], label="E2 detection_rate")
+                            if "detection_rate" in point
+                            else float(bool(point["detected"]))
+                        ),
+                    }
+                )
+                continue
+            raise ValueError("E2 F6 point lacks detection counts, detected, or detection_rate")
+        return normalized
+    if experiment.summary is None:
+        return []
+    summary = experiment.summary
+    denominator = int(summary["denominator"])
+    if denominator < 0:
+        raise ValueError("E2 denominator cannot be negative for F6")
+    if denominator == 0:
+        return []
+    confidence_interval = summary.get("confidence_interval", (0.0, 1.0))
+    return [
+        {
+            "attack_family": "aggregate",
+            "analysis_surface": "SUPPORTED_AUDIT_SURFACES",
+            "exact_detected": int(summary["exact_detected"]),
+            "empirical_detected": int(summary["empirical_detected"]),
+            "denominator": denominator,
+            "overall_detection_rate": (
+                int(summary["exact_detected"]) + int(summary["empirical_detected"])
+            )
+            / denominator,
+            "lower_ci": require_finite_number(confidence_interval[0], label="E2 lower_ci"),
+            "upper_ci": require_finite_number(confidence_interval[1], label="E2 upper_ci"),
+        }
+    ]
+
+
 def _experiment_figure_outputs(experiment: LoadedExperiment) -> dict[str, bytes]:
     outputs: dict[str, bytes] = {}
-    if experiment.experiment_id == "E8" and experiment.figure_points:
+    if experiment.experiment_id == "E1" and (experiment.figure_points or experiment.table_rows):
+        points = _sorted_points(experiment.figure_points or experiment.table_rows)
+        grouped: dict[str, list[tuple[str, float]]] = defaultdict(list)
+        x_values: list[str] = []
+        for point in points:
+            if point.get("is_warmup") is True:
+                continue
+            pair_id = str(point.get("pair_id", point["variant"]))
+            variant = str(point["variant"])
+            grouped[variant].append(
+                (pair_id, require_finite_number(point["measured_ms"], label="E1 measured_ms"))
+            )
+            x_values.append(pair_id)
+        outputs["figures/F5_single_pass_cost.svg"] = _series_svg(
+            artifact_id="F5",
+            title="Single-pass Cost",
+            subtitle=_experiment_subtitle(experiment, "paired pilot wall-clock timings"),
+            x_label="Pair ID",
+            y_label="Measured ms",
+            x_values=x_values,
+            series=grouped,
+            source_hashes=experiment.source_hashes,
+        )
+        outputs["figures/F5_single_pass_cost.json"] = _json_output(points)
+    elif experiment.experiment_id == "E2" and (experiment.figure_points or experiment.summary):
+        points = _e2_figure_points(experiment)
+        if not points:
+            outputs["figures/F6_audit_soundness.svg"] = _status_svg(
+                artifact_id="F6",
+                title="Audit Soundness Status",
+                subtitle=_experiment_subtitle(
+                    experiment,
+                    "NARROW_SCOPE_PILOT has no supported audit-surface denominator",
+                ),
+                source_hashes=experiment.source_hashes,
+            )
+            outputs["figures/F6_audit_soundness.json"] = _json_output([])
+            return outputs
+        grouped: dict[str, list[tuple[str, float]]] = defaultdict(list)
+        x_values: list[str] = []
+        for point in points:
+            x_label = str(point.get("attack_family", point.get("surface", "aggregate")))
+            series_name = str(point.get("analysis_surface", point.get("surface", "detection_rate")))
+            grouped[series_name].append(
+                (
+                    x_label,
+                    require_finite_number(point["overall_detection_rate"], label="E2 overall_detection_rate"),
+                )
+            )
+            x_values.append(x_label)
+        outputs["figures/F6_audit_soundness.svg"] = _series_svg(
+            artifact_id="F6",
+            title="Audit Soundness",
+            subtitle=_experiment_subtitle(experiment, "NARROW_SCOPE_PILOT detection rates"),
+            x_label="Attack Family",
+            y_label="Overall Detection Rate",
+            x_values=x_values,
+            series=grouped,
+            source_hashes=experiment.source_hashes,
+        )
+        outputs["figures/F6_audit_soundness.json"] = _json_output(points)
+    elif experiment.experiment_id == "E4" and (experiment.figure_points or experiment.table_rows):
+        points = _sorted_points(experiment.figure_points or experiment.table_rows)
+        grouped = defaultdict(list)
+        x_values = []
+        for point in points:
+            scenario_id = str(point["scenario_id"])
+            mode = str(point.get("mode", "declared_simulation"))
+            grouped[mode].append(
+                (
+                    scenario_id,
+                    require_finite_number(point["miss_probability"], label="E4 miss_probability"),
+                )
+            )
+            x_values.append(scenario_id)
+        outputs["figures/F8_da_withholding.svg"] = _series_svg(
+            artifact_id="F8",
+            title="DA Withholding",
+            subtitle=_experiment_subtitle(experiment, "declared-outcome miss probabilities"),
+            x_label="Scenario",
+            y_label="Miss Probability",
+            x_values=x_values,
+            series=grouped,
+            source_hashes=experiment.source_hashes,
+        )
+        outputs["figures/F8_da_withholding.json"] = _json_output(points)
+    elif experiment.experiment_id == "E6" and experiment.figure_points:
+        points = _sorted_points(experiment.figure_points)
+        f9_grouped: dict[str, list[tuple[str, float]]] = defaultdict(list)
+        f9_x_values: list[str] = []
+        f10_grouped: dict[str, list[tuple[str, float]]] = defaultdict(list)
+        f10_x_values: list[str] = []
+        for point in points:
+            if "normalized_expected_credit" in point:
+                x_label = str(point["identities"])
+                f9_grouped[str(point["capacity_model"])].append(
+                    (
+                        x_label,
+                        require_finite_number(
+                            point["normalized_expected_credit"],
+                            label="E6 normalized_expected_credit",
+                        ),
+                    )
+                )
+                f9_x_values.append(x_label)
+                continue
+            if "estimated_cost_to_target_weight_micros" in point:
+                x_label = str(point["identities"])
+                f10_grouped[f"{point['capacity_model']}:{point['target_weight_fraction']}"].append(
+                    (
+                        x_label,
+                        require_finite_number(
+                            float(point["estimated_cost_to_target_weight_micros"]),
+                            label="E6 estimated_cost_to_target_weight_micros",
+                        ),
+                    )
+                )
+                f10_x_values.append(x_label)
+        outputs["figures/F9_sybil_advantage.svg"] = _series_svg(
+            artifact_id="F9",
+            title="Sybil Advantage",
+            subtitle=_experiment_subtitle(experiment, "normalized expected credit by identity count"),
+            x_label="Identities",
+            y_label="Normalized Expected Credit",
+            x_values=f9_x_values,
+            series=f9_grouped,
+            source_hashes=experiment.source_hashes,
+        )
+        outputs["figures/F9_sybil_advantage.json"] = (
+            json.dumps(
+                [point for point in points if "normalized_expected_credit" in point],
+                sort_keys=True,
+                indent=2,
+            )
+            + "\n"
+        ).encode("utf-8")
+        outputs["figures/F10_economic_security.svg"] = _series_svg(
+            artifact_id="F10",
+            title="Economic Security",
+            subtitle=_experiment_subtitle(experiment, "cost to target weight by identity count"),
+            x_label="Identities",
+            y_label="Cost to Target Weight Micros",
+            x_values=f10_x_values,
+            series=f10_grouped,
+            source_hashes=experiment.source_hashes,
+        )
+        outputs["figures/F10_economic_security.json"] = (
+            json.dumps(
+                [point for point in points if "estimated_cost_to_target_weight_micros" in point],
+                sort_keys=True,
+                indent=2,
+            )
+            + "\n"
+        ).encode("utf-8")
+    elif experiment.experiment_id == "E8" and experiment.figure_points:
         grouped: dict[str, list[tuple[str, float]]] = defaultdict(list)
         x_values: list[str] = []
         for point in experiment.figure_points:
