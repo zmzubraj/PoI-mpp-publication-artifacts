@@ -9,6 +9,11 @@ import pytest
 from poi_mpp.evidence import ArtifactValidationError
 from poi_mpp.evidence.config import RunConfig, approved_schema_hash
 from poi_mpp.evidence.models import EvidenceOrigin
+from poi_mpp.experiments.e7_evm import (
+    default_measurement_contract,
+    e7_publication_dataset_hash,
+    e7_publication_model_hash,
+)
 
 
 def _run_config(
@@ -17,6 +22,7 @@ def _run_config(
     authorization_scope: str = "PUBLICATION_EVIDENCE_AUTHORIZED",
     origin: EvidenceOrigin = EvidenceOrigin.FOUNDRY_MEASUREMENT,
 ) -> RunConfig:
+    contract = default_measurement_contract()
     return RunConfig.model_validate(
         {
             "schema_version": "POI_MPP_RUN_CONFIG_V1",
@@ -25,8 +31,8 @@ def _run_config(
             "experiment_id": "E7",
             "origin": origin,
             "authorization_scope": authorization_scope,
-            "model_hash": "5" * 64,
-            "dataset_hash": "6" * 64,
+            "model_hash": e7_publication_model_hash(contract),
+            "dataset_hash": e7_publication_dataset_hash(contract=contract, repo_root=_repo_root()),
             "parent_hashes": (),
             "data_availability": {
                 "total_shards": 16,

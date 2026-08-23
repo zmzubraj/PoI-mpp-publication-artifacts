@@ -16,6 +16,7 @@ from poi_mpp.experiments.e7_evm import (
     E7MeasurementRow,
     E7ParityAttachment,
     PUBLICATION_EVIDENCE_AUTHORIZED,
+    _atomic_write_json,
     _path_hash,
     assert_cli_authority_boundary,
     collect_foundry_measurements,
@@ -23,6 +24,7 @@ from poi_mpp.experiments.e7_evm import (
     default_measurement_contract,
     load_default_parity_attachment,
     parse_foundry_measurement_report,
+    public_e7_bundle,
     repo_root,
     verify_current_e7_parity,
 )
@@ -272,7 +274,7 @@ def collect_and_summarize_e7_publication(
     bundle = collect_foundry_measurements(
         contracts_root=contracts_root,
         run_config=run_config,
-        output_path=bundle_output_path,
+        output_path=None,
         measurement_contract=measurement_contract,
         timeout=timeout,
     )
@@ -290,6 +292,8 @@ def collect_and_summarize_e7_publication(
         parity_bound=not any("parity" in reason.lower() for reason in reasons),
         claim_disposition="SUPPORTED" if not reasons else "INCONCLUSIVE",
     )
+    public_bundle = public_e7_bundle(bundle, repo_root=repo_root())
+    _atomic_write_json(Path(bundle_output_path), public_bundle.model_dump(mode="json"))
     return E7PublicationResult(
         bundle=bundle,
         parity_verification=parity_verification,

@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validat
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.config import RunConfig, config_hash
 from poi_mpp.evidence.models import EvidenceOrigin
+from poi_mpp.evidence.publication_paths import publication_path_ref
 from poi_mpp.evidence.validation import ArtifactValidationError
 
 
@@ -1111,7 +1112,7 @@ def collect_foundry_measurements(
     *,
     contracts_root: str | Path,
     run_config: RunConfig,
-    output_path: str | Path,
+    output_path: str | Path | None,
     measurement_contract: E7MeasurementContract | None = None,
     timeout: int = 120,
 ) -> E7Bundle:
@@ -1137,9 +1138,85 @@ def collect_foundry_measurements(
         contracts_root=contracts_dir,
         run_config=run_config,
     )
-    output_file = Path(output_path)
-    _atomic_write_json(output_file, bundle.model_dump(mode="json"))
+    if output_path is not None:
+        output_file = Path(output_path)
+        _atomic_write_json(output_file, bundle.model_dump(mode="json"))
     return bundle
+
+
+def _required_public_path_ref(path: str | Path, *, repo_root: Path) -> str:
+    rendered = publication_path_ref(path, repo_root=repo_root)
+    if rendered is None:  # pragma: no cover - non-null input is guaranteed above
+        raise ValueError("E7 publication path reference cannot be null")
+    return rendered
+
+
+def _public_command_token(token: str, *, repo_root: Path) -> str:
+    if token.startswith("file://") or Path(token).is_absolute():
+        return _required_public_path_ref(token, repo_root=repo_root)
+    return token
+
+
+def public_e7_bundle(
+    bundle: E7Bundle,
+    *,
+    repo_root: str | Path | None = None,
+) -> E7Bundle:
+    """Return a model-valid publication copy without machine-local paths.
+
+    Cryptographic row material, run configuration, measurements, and provenance
+    hashes remain unchanged.  Only display/reference paths are rewritten.
+    """
+
+    root = (Path(repo_root) if repo_root is not None else _ROOT).resolve(strict=False)
+    raw_report_path = _required_public_path_ref(bundle.raw_report_path, repo_root=root)
+    canonical_report_path = _required_public_path_ref(
+        bundle.collector_capability.canonical_report_path,
+        repo_root=root,
+    )
+    observed_report_path = (
+        raw_report_path
+        if bundle.collector_capability.observed_report_path == bundle.raw_report_path
+        else _required_public_path_ref(
+            bundle.collector_capability.observed_report_path,
+            repo_root=root,
+        )
+    )
+    collector = bundle.collector_capability.model_copy(
+        update={
+            "observed_report_path": observed_report_path,
+            "canonical_report_path": canonical_report_path,
+        }
+    )
+    manifest = bundle.manifest.model_copy(
+        update={
+            "contracts_root": _required_public_path_ref(bundle.manifest.contracts_root, repo_root=root),
+            "canonical_report_path": canonical_report_path,
+            "command": tuple(
+                _public_command_token(token, repo_root=root)
+                for token in bundle.manifest.command
+            ),
+            "artifacts": tuple(
+                artifact.model_copy(
+                    update={
+                        "source_path": _required_public_path_ref(
+                            artifact.source_path,
+                            repo_root=root,
+                        )
+                    }
+                )
+                for artifact in bundle.manifest.artifacts
+            ),
+        }
+    )
+    public_bundle = bundle.model_copy(
+        update={
+            "raw_report_path": raw_report_path,
+            "collector_capability": collector,
+            "manifest": manifest,
+        }
+    )
+    return E7Bundle.model_validate(public_bundle.model_dump(mode="json"))
 
 
 def assert_cli_authority_boundary(run_config: RunConfig) -> None:
