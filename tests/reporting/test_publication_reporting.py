@@ -207,7 +207,8 @@ def test_e8_inconclusive_is_preserved_and_labeled(tmp_path: Path):
     assert "REPRODUCIBLE_SIMULATION" in f11
     assert any(entry.artifact_id == "T13" for entry in manifest.outputs)
     assert t4_status["artifact_id"] == "T4"
-    assert t4_status["disposition"] == "MISSING"
+    assert t4_status["disposition"] == "WAITING_EXTERNAL"
+    assert t4_status["reason"] == "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
 
 
 def test_generated_svg_includes_source_hash_caption(tmp_path: Path):
