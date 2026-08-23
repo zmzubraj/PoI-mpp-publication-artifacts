@@ -171,12 +171,21 @@ AI output, AI approval, বা user approval—কোনোটিই independent
 
 ### ঙ) Primitive novelty
 
-অবস্থা: provisional
+অবস্থা: provisional এবং primitive layer-এ low-to-moderate
 
 কারণ:
 
-- strongest-prior-art package নেই
-- independent novelty challenge নেই
+- CommitLLM open-weight LLM inference-এর commitment, challenge-time trace opening,
+  exact/Freivalds-style audit এবং per-response full proof এড়ানোর একটি close
+  implementation predecessor
+- opML on-chain ML-এর optimistic fraud-proof path আগেই দেখিয়েছে
+- strongest-prior-art package এখনো reproducible case হিসেবে frozen নয়
+- differently owned independent novelty challenge নেই
+
+সম্ভাব্য differentiator primitive execution proof নয়; বরং execution/semantic
+evidence থেকে retention, receipt maturity, task-budgeted credit এবং bounded
+next-epoch consensus weight পর্যন্ত protocol composition। এই composition
+materially novel কি না, সেটা এখনো independently established নয়।
 
 ### চ) Publication readiness
 
@@ -213,6 +222,8 @@ AI output, AI approval, বা user approval—কোনোটিই independent
 - implemented MPP paper-এর narrow first-publication interpretation-এর সাথে broadly aligned
 - repository architecture এবং software composition শক্তিশালী
 - primitive novelty এখনো provisional
+- provisional primitive novelty central estimate 35/100 (uncertainty band 25-45); এটি developmental score, scientific gate নয়
+- protocol-composition differentiation central estimate 68/100 (uncertainty band 55-75), independent prior-art challenge-এর আগে ceiling প্রযোজ্য
 - empirical support এখনো narrow
 - E1, E2, E4, এবং E8 `INCONCLUSIVE`
 - E5 ও E6 declared simulation scope-এ `SUPPORTED`
@@ -220,3 +231,6 @@ AI output, AI approval, বা user approval—কোনোটিই independent
 - E3 `WAITING_EXTERNAL`
 - external evaluator authority, independent domain-expert review/signature, এবং publication-freeze sentinel এখনো required
 - তাই paper-এ language অবশ্যই evidence-bounded থাকতে হবে; কোনো overall score, compensating score table, বা stronger-than-evidence success language ব্যবহার করা উচিত নয়
+
+বিস্তারিত non-compensating scorecard paper-এর বাইরে
+`PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md`-এ আছে।

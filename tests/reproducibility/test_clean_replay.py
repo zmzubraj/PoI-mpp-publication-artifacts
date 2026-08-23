@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 import pytest
+import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -72,7 +73,7 @@ def test_full_replay_spec_uses_canonical_e7_input_bindings(tmp_path: Path) -> No
         package_lock_hash=None,
     )
 
-    reproduce_module._report_spec(
+    spec = reproduce_module._report_spec(
         tmp_path,
         context,
         full_mode=True,
@@ -80,7 +81,9 @@ def test_full_replay_spec_uses_canonical_e7_input_bindings(tmp_path: Path) -> No
         e8_contract_relative_path=None,
     )
 
-    config = _read_json(tmp_path / "inputs" / "e7_run_config.json")
+    assert spec["sources"]["E1"]["rows_path"] == "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+    assert spec["sources"]["E2"]["summary_path"] == "results/publication/e2-real-eb866c2/e2_summary.json"
+    config = yaml.safe_load((tmp_path / "inputs" / "e7_run_config.yaml").read_text(encoding="utf-8"))
     assert config["model_hash"] == e7_publication_model_hash()
     assert config["dataset_hash"] == e7_publication_dataset_hash(repo_root=REPO_ROOT)
 
@@ -449,8 +452,8 @@ def test_reproduce_current_workspace_is_incomplete_and_writes_no_frozen_sentinel
     manifest = _read_json(candidate_root / "manifest.json")
     assert manifest["completeness"] == "INCOMPLETE"
     blockers = "\n".join(str(item) for item in payload["blockers"])
-    assert "WAITING_LOCAL_MODEL_ARTIFACT" in blockers
     assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" in blockers
+    assert "WAITING_LOCAL_MODEL_ARTIFACT" not in blockers
     assert "manual scientific review record is absent" in blockers
     assert "results/tmp/candidates" in payload["candidate_relative_path"]
     assert not any((REPO_ROOT / "results" / "frozen").glob("*/MPP_ARTIFACT_COMPLETE"))

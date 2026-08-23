@@ -10,6 +10,7 @@ const {
   Footer,
   Header,
   HeadingLevel,
+  ImageRun,
   PageBreak,
   PageNumber,
   Packer,
@@ -30,13 +31,61 @@ const DEFAULT_SOURCE = path.join(
 );
 const DEFAULT_OUTPUT = path.join(
   REPO_ROOT,
-  "docs/paper_artifacts/final/deliverables/POI_MPP_PUBLICATION_DRAFT.docx",
+  "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx",
 );
 const MANIFEST_PATH = path.join(REPO_ROOT, "publication/artifact_manifest.json");
 const MANIFEST_SHA256 = "416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49";
 
 const sourcePath = path.resolve(process.argv[2] || DEFAULT_SOURCE);
 const outputPath = path.resolve(process.argv[3] || DEFAULT_OUTPUT);
+
+function pngDimensions(buffer) {
+  const signature = buffer.subarray(0, 8).toString("hex");
+  if (signature !== "89504e470d0a1a0a" || buffer.length < 24) {
+    throw new Error("manuscript images must be valid PNG files");
+  }
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+function manuscriptImage(imageReference, caption) {
+  const candidate = path.resolve(path.dirname(sourcePath), imageReference);
+  const realRoot = fs.realpathSync(REPO_ROOT);
+  const realCandidate = fs.realpathSync(candidate);
+  if (realCandidate !== realRoot && !realCandidate.startsWith(`${realRoot}${path.sep}`)) {
+    throw new Error(`manuscript image escapes repository root: ${imageReference}`);
+  }
+  if (path.extname(realCandidate).toLowerCase() !== ".png") {
+    throw new Error(`manuscript image must be PNG: ${imageReference}`);
+  }
+  const data = fs.readFileSync(realCandidate);
+  const dimensions = pngDimensions(data);
+  const maxWidth = 600;
+  const maxHeight = 720;
+  const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.height, 1);
+  const width = Math.max(1, Math.round(dimensions.width * scale));
+  const height = Math.max(1, Math.round(dimensions.height * scale));
+  return [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      keepNext: true,
+      spacing: { before: 140, after: 80 },
+      children: [
+        new ImageRun({
+          data,
+          type: "png",
+          transformation: { width, height },
+          altText: { title: caption, description: caption, name: path.basename(realCandidate) },
+        }),
+      ],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      keepNext: true,
+      spacing: { after: 180 },
+      children: [new TextRun({ text: caption, italics: true, size: 18, color: "3E4D53" })],
+    }),
+  ];
+}
 
 function inlineRuns(text, base = {}) {
   const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)]+\))/g;
@@ -128,6 +177,7 @@ function collapseWrappedLines(markdown) {
     /^\s*\d+\.\s+/.test(line) ||
     /^>\s+/.test(line) ||
     /^---+$/.test(line.trim()) ||
+    /^!\[[^\]]+\]\([^)]+\.png\)\s*$/.test(line.trim()) ||
     /^\s*\|/.test(line);
 
   for (const line of rawLines) {
@@ -159,15 +209,22 @@ function markdownToDocx(markdown) {
     if (line.startsWith("```")) {
       if (inCode) {
         children.push(
-          new Paragraph({
-            keepLines: true,
-            spacing: { before: 100, after: 160 },
-            shading: { type: ShadingType.CLEAR, fill: "F2F2F2" },
-            border: {
-              left: { style: BorderStyle.SINGLE, size: 8, color: "1F4E5F", space: 6 },
-            },
-            children: [new TextRun({ text: code.join("\n"), font: "Courier New", size: 18 })],
-          }),
+          ...code.map(
+            (codeLine, codeIndex) =>
+              new Paragraph({
+                keepLines: true,
+                spacing: {
+                  before: codeIndex === 0 ? 100 : 0,
+                  after: codeIndex === code.length - 1 ? 160 : 0,
+                  line: 230,
+                },
+                shading: { type: ShadingType.CLEAR, fill: "F2F2F2" },
+                border: {
+                  left: { style: BorderStyle.SINGLE, size: 8, color: "1F4E5F", space: 6 },
+                },
+                children: [new TextRun({ text: codeLine || " ", font: "Courier New", size: 17 })],
+              }),
+          ),
         );
         code = [];
       }
@@ -176,6 +233,11 @@ function markdownToDocx(markdown) {
     }
     if (inCode) {
       code.push(line);
+      continue;
+    }
+    const image = line.match(/^!\[([^\]]+)\]\(([^)]+\.png)\)\s*$/);
+    if (image) {
+      children.push(...manuscriptImage(image[2], image[1]));
       continue;
     }
     if (/^\s*\|/.test(line) && lines[index + 1] && /\|\s*:?-{3,}/.test(lines[index + 1])) {
@@ -277,7 +339,7 @@ async function main() {
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 600 },
-      children: [new TextRun({ text: "Evidence-bound Minimum Publishable Prototype draft", font: "Arial", size: 26, color: "4F7180" })],
+      children: [new TextRun({ text: "Evidence-bound Minimum Publishable Prototype manuscript", font: "Arial", size: 26, color: "4F7180" })],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -312,7 +374,7 @@ async function main() {
 
   const document = new Document({
     creator: "PoI MPP publication artifact pipeline",
-    title: "Proof of Intelligence Consensus Architecture — Evidence-bound MPP draft",
+    title: "Proof of Intelligence Consensus Architecture — Evidence-bound MPP manuscript",
     subject: "Canonical manuscript export; not publication-ready",
     description: `Generated from ${path.relative(REPO_ROOT, sourcePath)} and canonical manifest ${MANIFEST_SHA256}`,
     styles: {
@@ -345,7 +407,7 @@ async function main() {
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
                 border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "A7B7BE" } },
-                children: [new TextRun({ text: "PoI MPP | Evidence-bound draft", size: 17, color: "607D89" })],
+                children: [new TextRun({ text: "PoI MPP | Evidence-bound manuscript", size: 17, color: "607D89" })],
               }),
             ],
           }),

@@ -6,7 +6,7 @@
 | E2 | `e2_tamper_detection.csv` + attack manifests | T7 | F6 | execution audit soundness |
 | E3 | `e3_semantic_eval.csv` + confusion records | T8 | F7 | semantic utility / abstention |
 | E4 | `e4_da_withholding.csv` | T9 | F8 | DA gate |
-| E5 | `e5_watcher_economics.csv` | T10 | optional economics subplot | watcher incentive |
-| E6 | `e6_sybil_economics.csv` | T11 | F9 | Sybil neutrality |
+| E5 | `e5_watcher_economics.csv` | T10 | none | watcher incentive |
+| E6 | `e6_sybil_economics.csv` | T11 | F9 + F10 | Sybil neutrality and modeled cost-to-target |
 | E7 | `e7_evm_boundedness.csv` + Foundry snapshots | T12 | F12 | EVM boundedness |
 | E8 | `e8_consensus_weight_sim.csv` | T13 | F11 | next-epoch consensus resource |

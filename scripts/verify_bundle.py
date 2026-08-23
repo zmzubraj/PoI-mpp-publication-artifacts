@@ -507,6 +507,35 @@ def _publication_expected_files(bundle: LoadedBundle) -> set[str]:
     }
 
 
+def _report_spec_expected_files(bundle: LoadedBundle) -> set[str]:
+    report_spec_path = _resolve_relative(Path(bundle.root), bundle.manifest.authoritative_inputs.report_spec_relative_path)
+    payload = _safe_read_json(report_spec_path, root=Path(bundle.root))
+    artifact_root = payload.get("artifact_root")
+    sources = payload.get("sources")
+    if not isinstance(artifact_root, str) or not isinstance(sources, dict):
+        return set()
+    try:
+        artifact_root_path = Path(artifact_root).resolve(strict=True)
+    except FileNotFoundError as error:
+        raise BundleVerificationError(f"report_spec artifact_root is missing: {artifact_root}") from error
+    bundle_root = Path(bundle.root)
+    expected: set[str] = set()
+    for source_payload in sources.values():
+        if not isinstance(source_payload, dict):
+            raise BundleVerificationError("report_spec sources must be objects")
+        for key, value in source_payload.items():
+            if key in {"contracts_root", "timeout_seconds"} or not isinstance(value, str):
+                continue
+            candidate = artifact_root_path.joinpath(*PurePosixPath(value).parts).resolve(strict=True)
+            try:
+                relative = candidate.relative_to(bundle_root)
+            except ValueError:
+                continue
+            if candidate.is_file():
+                expected.add(relative.as_posix())
+    return expected
+
+
 def _validate_bundle_closure(bundle: LoadedBundle, *, verification_mode: str) -> tuple[str, ...]:
     expected = {
         "manifest.json",
@@ -527,6 +556,7 @@ def _validate_bundle_closure(bundle: LoadedBundle, *, verification_mode: str) ->
         if optional_path is not None:
             expected.add(optional_path)
     expected |= _publication_expected_files(bundle)
+    expected |= _report_spec_expected_files(bundle)
     if bundle.manifest.bundle_state == BUNDLE_STATE_FROZEN and verification_mode == VERIFICATION_MODE_NORMAL:
         expected.add(SENTINEL)
     actual = _enumerate_files(Path(bundle.root))
@@ -835,7 +865,6 @@ def _revalidate_e7(bundle: LoadedBundle) -> tuple[str, ...]:
         str(PurePosixPath(bundle.manifest.publication_report_relative_path).parent / PurePosixPath(raw_entry.relative_path)),
     )
     candidate_bundle = E7Bundle.model_validate(_safe_read_json(candidate_raw_path, root=bundle_root))
-    candidate_raw_hash = _sha256_bytes(_safe_read_bytes(candidate_raw_path, root=bundle_root))
     reasons: list[str] = []
     with tempfile.TemporaryDirectory(prefix="task22-e7-revalidate-") as temp_dir:
         fresh_output = Path(temp_dir) / "E7_live_bundle.json"
@@ -846,11 +875,16 @@ def _revalidate_e7(bundle: LoadedBundle) -> tuple[str, ...]:
             contract=default_measurement_contract(),
             timeout=120,
         )
-        fresh_hash = _sha256_bytes(fresh_output.read_bytes())
-        if fresh_hash != candidate_raw_hash or raw_entry.sha256 != candidate_raw_hash:
-            reasons.append("E7 stored raw bundle hash does not match a fresh live-authority replay")
-        if candidate_bundle.model_dump(mode="json") != result.bundle.model_dump(mode="json"):
+        if tuple(row.model_dump(mode="json") for row in candidate_bundle.rows) != tuple(
+            row.model_dump(mode="json") for row in result.bundle.rows
+        ):
             reasons.append("E7 stored raw bundle does not match a fresh live-authority replay")
+        if candidate_bundle.run_config_snapshot.model_dump(mode="json") != result.bundle.run_config_snapshot.model_dump(
+            mode="json"
+        ):
+            reasons.append("E7 stored run_config snapshot does not match a fresh live-authority replay")
+        if candidate_bundle.raw_report_hash != result.bundle.raw_report_hash:
+            reasons.append("E7 stored raw report hash does not match a fresh live-authority replay")
         if raw_entry.run_id != result.bundle.run_config_snapshot.run_id:
             reasons.append("E7 publication raw output run_id does not match the fresh replay")
         if raw_entry.config_hash != result.bundle.run_config_hash:

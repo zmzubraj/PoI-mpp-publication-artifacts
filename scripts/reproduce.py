@@ -23,7 +23,7 @@ if str(SRC_ROOT) not in sys.path:
 from poi_mpp.evidence import UNVERSIONED_BLOCKED, approved_schema_hash, collect_environment
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.experiments.e8_consensus import default_e8_publication_plan_path, load_and_run_e8_publication
-from poi_mpp.experiments.e7_evm import e7_publication_dataset_hash, e7_publication_model_hash
+from poi_mpp.orchestration.run_mpp import _verify_local_model_artifact, load_local_mpp_config
 from poi_mpp.reporting.manifest import PublicationReportManifestModel, validate_existing_manifest
 from verify_bundle import VERIFY_REPORT_SCHEMA, verify_bundle
 
@@ -34,6 +34,7 @@ CANDIDATE_ROOT = RESULTS_ROOT / "tmp" / "candidates"
 REPORT_ALL = REPO_ROOT / "scripts" / "report_all.py"
 RUN_MPP = REPO_ROOT / "scripts" / "run_mpp.py"
 LOCAL_MPP_CONFIG = REPO_ROOT / "configs" / "e2e" / "local.yaml"
+PUBLICATION_REPORT_SPEC = REPO_ROOT / "configs" / "publication_report.json"
 TASK22_SCHEMA = "POI_MPP_FREEZE_BUNDLE_V1"
 CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
 MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
@@ -272,32 +273,48 @@ def _report_spec(
     input_root.mkdir(parents=True, exist_ok=True)
     sources: dict[str, dict[str, str]] = {}
     if full_mode:
-        run_config = {
-            "schema_version": "POI_MPP_RUN_CONFIG_V1",
-            "schema_hash": approved_schema_hash(),
-            "run_id": f"{run_context.run_id}-e7-live",
-            "experiment_id": "E7",
-            "origin": EvidenceOrigin.FOUNDRY_MEASUREMENT.value,
-            "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
-            "model_hash": e7_publication_model_hash(),
-            "dataset_hash": e7_publication_dataset_hash(repo_root=REPO_ROOT),
-            "parent_hashes": [],
-            "data_availability": {
-                "total_shards": 16,
-                "samples": 8,
-                "replacement": False,
-            },
-        }
-        run_config_path = _write_json(input_root / "e7_run_config.json", run_config)
-        sources["E7"] = {
-            "run_config_path": _artifact_root_relative(str(run_config_path.relative_to(staging_root))),
-            "contracts_root": str((REPO_ROOT / "contracts").resolve()),
-        }
+        raw = json.loads(PUBLICATION_REPORT_SPEC.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict) or not isinstance(raw.get("sources"), dict):
+            raise ValueError("configs/publication_report.json must remain a JSON object with a sources mapping")
+        for experiment_id, source_payload in raw["sources"].items():
+            if not isinstance(source_payload, dict):
+                raise ValueError(f"publication_report source for {experiment_id} must be a mapping")
+            staged_source: dict[str, str] = {}
+            for key, value in source_payload.items():
+                if key == "timeout_seconds":
+                    staged_source[key] = str(int(value))
+                    continue
+                if key == "contracts_root":
+                    contracts_root = Path(value)
+                    if not contracts_root.is_absolute():
+                        contracts_root = (REPO_ROOT / contracts_root).resolve()
+                    staged_source[key] = str(contracts_root)
+                    continue
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(f"publication_report source {experiment_id}.{key} must be a non-blank string")
+                source_path = Path(value)
+                if not source_path.is_absolute():
+                    source_path = (REPO_ROOT / source_path).resolve()
+                if not source_path.is_file():
+                    raise ValueError(f"publication_report source {experiment_id}.{key} is missing: {source_path}")
+                staged_relative = PurePosixPath(value)
+                if experiment_id == "E7" and key == "run_config_path":
+                    staged_relative = PurePosixPath("e7_run_config.yaml")
+                staged_path = input_root / staged_relative
+                staged_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source_path, staged_path)
+                staged_source[key] = _artifact_root_relative(str(staged_path.relative_to(staging_root)))
+            sources[experiment_id] = staged_source
     if e8_rows_relative_path is not None and e8_contract_relative_path is not None:
-        sources["E8"] = {
-            "rows_path": _artifact_root_relative(e8_rows_relative_path),
-            "contract_path": _artifact_root_relative(e8_contract_relative_path),
-        }
+        if full_mode:
+            sources.setdefault("E8", {})
+            sources["E8"]["rows_path"] = _artifact_root_relative(e8_rows_relative_path)
+            sources["E8"]["contract_path"] = _artifact_root_relative(e8_contract_relative_path)
+        else:
+            sources["E8"] = {
+                "rows_path": _artifact_root_relative(e8_rows_relative_path),
+                "contract_path": _artifact_root_relative(e8_contract_relative_path),
+            }
     return {
         "artifact_root": str(input_root.resolve()),
         "output_root": str((staging_root / "publication").resolve()),
@@ -336,10 +353,7 @@ def _task21_blockers(staging_root: Path, *, full_mode: bool) -> tuple[tuple[str,
     task21_config_path = staging_root / "inputs" / "task21_local_config.json"
     staged_config = _sanitized_task21_config()
     _write_json(task21_config_path, staged_config)
-    reasons = (
-        "WAITING_LOCAL_MODEL_ARTIFACT: exact local model artifact is absent",
-        "WAITING_EXTERNAL_EVALUATOR_AUTHORITY: external evaluator authority remains absent",
-    )
+    blocker, reasons = _verify_local_model_artifact(load_local_mpp_config(task21_config_path))
     status_path = staging_root / "task21" / "task21_blockers.json"
     _write_json(
         status_path,
@@ -347,6 +361,7 @@ def _task21_blockers(staging_root: Path, *, full_mode: bool) -> tuple[tuple[str,
             "schema_version": "POI_MPP_TASK21_BLOCKER_CHAIN_V1",
             "mode": "full" if full_mode else "candidate-only",
             "config_path": str(task21_config_path.relative_to(staging_root)),
+            "blocker": blocker.value,
             "blocker_chain": list(reasons),
         },
     )
@@ -371,6 +386,10 @@ def _sanitized_task21_config() -> dict[str, Any]:
         values = manifest.get(mapping_key)
         if isinstance(values, dict):
             manifest[mapping_key] = {name: str(value) for name, value in values.items()}
+    semantic = cloned.get("semantic", {})
+    schema_path = semantic.get("confirmatory_schema_path")
+    if isinstance(schema_path, str) and not Path(schema_path).is_absolute():
+        semantic["confirmatory_schema_path"] = str((LOCAL_MPP_CONFIG.parent / schema_path).resolve())
     return cloned
 
 
@@ -587,7 +606,7 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
         report_spec_relative_path="inputs/report_spec.json",
         task21_config_relative_path="inputs/task21_local_config.json",
         task21_blocker_relative_path=str(task21_result_path.relative_to(staging_root)),
-        e7_run_config_relative_path="inputs/e7_run_config.json" if full_mode else None,
+        e7_run_config_relative_path="inputs/e7_run_config.yaml" if full_mode else None,
         e8_rows_relative_path=e8_rows_relative_path,
         e8_contract_relative_path=e8_contract_relative_path,
     )

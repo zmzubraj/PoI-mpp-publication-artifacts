@@ -5,7 +5,7 @@ run_config:
   experiment_id: E3
   origin: REAL_MODEL_EXECUTION
   authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
-  model_hash: 1111111111111111111111111111111111111111111111111111111111111111
+  model_hash: f9ff3b28cce44e9cbbddf5211b98025f2511a51a0114c18983ec99b3d124ccf6
   dataset_hash: 2222222222222222222222222222222222222222222222222222222222222222
   parent_hashes: []
   data_availability:
@@ -16,21 +16,30 @@ model:
   model_root: /Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/local-models/qwen2.5-1.5b
   tokenizer_root: /Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/local-models/qwen2.5-1.5b
   manifest:
-    model_id: local-qwen-1.5b
+    model_id: local-qwen2.5-1.5b-r989aa79
     repository: Qwen/Qwen2.5-1.5B-Instruct
-    revision: 1111111111111111111111111111111111111111
+    revision: 989aa7980e4cf806f80c7fef2b1adb7bc71aa306
     tokenizer_id: Qwen/Qwen2.5-1.5B-Instruct
-    tokenizer_revision: 2222222222222222222222222222222222222222
+    tokenizer_revision: 989aa7980e4cf806f80c7fef2b1adb7bc71aa306
     license_id: apache-2.0
     parameter_scale: 1.5B
-    precision: int4
-    quantization: q4_k_m
+    precision: bfloat16
+    quantization: none
     runtime_name: transformers
-    runtime_version: 4.44.0
+    runtime_version: 5.14.1
     model_file_hashes:
-      model.safetensors: 3333333333333333333333333333333333333333333333333333333333333333
+      LICENSE: 832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e
+      POI_MODEL_REVISION.json: 3f07ddacacf37c4b15042967a3754f4e2b01f0ebd954ac8be9bbb24a5d7dc7b9
+      README.md: 2e1bcd8bd964728a820be709fa0f7b9dd54817a94fd2254c535df70c5e67fada
+      config.json: 98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670
+      generation_config.json: e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6
+      model.safetensors: dd924a11b4c220f385b51ffa522daea7c9f3d850e31b162bb5661df483c6d3ee
     tokenizer_file_hashes:
-      tokenizer.json: 4444444444444444444444444444444444444444444444444444444444444444
+      POI_MODEL_REVISION.json: 3f07ddacacf37c4b15042967a3754f4e2b01f0ebd954ac8be9bbb24a5d7dc7b9
+      merges.txt: 599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3
+      tokenizer.json: c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539
+      tokenizer_config.json: 5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583
+      vocab.json: ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910
   decode_policy:
     seed: 7
     max_new_tokens: 24
@@ -47,7 +56,7 @@ chain:
   startup_timeout_seconds: 20
   command_timeout_seconds: 120
 semantic:
-  confirmatory_schema_path: configs/confirmatory/e3.schema.yaml
+  confirmatory_schema_path: ../confirmatory/e3.schema.yaml
   evaluator_registry_reference: authority://external-evaluator-registry/task21
 output_root: results/e2e/local
 committee_size: 1
