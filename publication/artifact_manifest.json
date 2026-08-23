@@ -1,7 +1,7 @@
 {
   "artifact_root_relative_path": "..",
-  "environment_hash": "09ed1e6114ff1f852b0839058fb4c20f546844446b2e23becce6d3dbe1047c1c",
-  "generator_source_closure_hash": "b4269b0f7a96ec94c6ea658299f8ec1f663c75d0903ad557eff5396b0ffbda3f",
+  "build_environment_hash": "54d08714888b9e6a87ac74ad265c89f835eb9ae43a2614dd4036ddd4e307f676",
+  "generator_source_closure_hash": "8173a59976b88002afd032651eff3edb192f77399b557792edfef1404d9811d4",
   "inputs": [
     {
       "config_hash": null,
@@ -616,7 +616,7 @@
       "relative_path": "raw/E7_live_bundle.json",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": "POI_MPP_E7_BUNDLE_V1",
-      "sha256": "89572582123c7c79e80908abac86d2376d515e904c73d5f8782d0b015d37e3fe",
+      "sha256": "00ae1ef910e22f82582813547f3bd2eb29c3542934d8701e4efd04205980439e",
       "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
@@ -1095,6 +1095,6 @@
       "source_hashes": []
     }
   ],
-  "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3",
-  "self_digest": "41ca21599ea4beee4459b156b2f4aa07712dbe7df71ab57468815df85ba5969c"
+  "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4",
+  "self_digest": "23d2d6df0a6f7d259192322e3ea30ee3430e77e4f80cd579ff49a461c285a299"
 }

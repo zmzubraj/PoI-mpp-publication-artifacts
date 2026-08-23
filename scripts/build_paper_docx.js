@@ -33,7 +33,7 @@ const DEFAULT_OUTPUT = path.join(
   "docs/paper_artifacts/final/deliverables/POI_MPP_PUBLICATION_DRAFT.docx",
 );
 const MANIFEST_PATH = path.join(REPO_ROOT, "publication/artifact_manifest.json");
-const MANIFEST_SHA256 = "9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad";
+const MANIFEST_SHA256 = "416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49";
 
 const sourcePath = path.resolve(process.argv[2] || DEFAULT_SOURCE);
 const outputPath = path.resolve(process.argv[3] || DEFAULT_OUTPUT);

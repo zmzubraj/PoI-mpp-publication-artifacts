@@ -6,7 +6,7 @@
 
 Proof of Intelligence (PoI) should not require a second full frontier-model execution for every accepted response, and it should not require a full zero-knowledge proof of the common path for every response. This manuscript presents a complete protocol architecture in which a single model execution yields a user-visible answer together with committed execution and semantic audit surfaces. After commitment finality, post-commit randomness selects audit obligations, and only successfully matured receipts may contribute to next-epoch protocol weight. The full architecture covers commitment, audit compilation, optimistic dispute, data-availability retention, bounded task credit, and EVM-compatible receipt and credit management.
 
-This manuscript also reports the current state of a deliberately narrow Minimum Publishable Prototype (MPP). The approved first-publication MPP is limited to 1B-8B open-weight models, a local EVM/Foundry environment, and canonical artifacts for experiments E1-E8. It explicitly excludes 70B and larger validation, mixture-of-experts execution, confidential GPU/TEE execution, a production dispute VM, production decentralized data availability, and a production consensus client. The canonical manifest (SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`) records `INCONCLUSIVE` E1, E2, E4, and E8 results; `SUPPORTED` E5-E7 results within their declared simulation or local-Foundry boundaries; and `WAITING_EXTERNAL` E3 artifacts. The package is not publication-ready because external evaluator authority, authenticated independent manual review, and the publication-freeze sentinel remain unresolved. The manuscript therefore separates the proposed full architecture from the implemented MPP, and separates implemented software from measured evidence.
+This manuscript also reports the current state of a deliberately narrow Minimum Publishable Prototype (MPP). The approved first-publication MPP is limited to 1B-8B open-weight models, a local EVM/Foundry environment, and canonical artifacts for experiments E1-E8. It explicitly excludes 70B and larger validation, mixture-of-experts execution, confidential GPU/TEE execution, a production dispute VM, production decentralized data availability, and a production consensus client. The canonical manifest (SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`) records `INCONCLUSIVE` E1, E2, E4, and E8 results; `SUPPORTED` E5-E7 results within their declared simulation or local-Foundry boundaries; and `WAITING_EXTERNAL` E3 artifacts. The package is not publication-ready because external evaluator authority, authenticated independent manual review, and the publication-freeze sentinel remain unresolved. The manuscript therefore separates the proposed full architecture from the implemented MPP, and separates implemented software from measured evidence.
 
 ## Evidence and status box
 
@@ -14,7 +14,7 @@ Canonical publication-artifact status:
 
 | Item | Current status |
 |---|---|
-| Canonical manifest | `publication/artifact_manifest.json`, SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad` |
+| Canonical manifest | `publication/artifact_manifest.json`, SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49` |
 | E1 / C1 | `INCONCLUSIVE` real-model fixed-order pilot (T6, F5) |
 | E2 / C2 | `INCONCLUSIVE` narrow real-model pilot (T7, F6) |
 | E3 / C3 | `WAITING_EXTERNAL`; T4, T8, and F7 have no evidence |
@@ -315,7 +315,7 @@ The correct current interpretation is therefore not that the architecture is ful
 
 ### Current quantitative publication artifacts
 
-The attached canonical publication bundle is rooted at `publication/artifact_manifest.json` with SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`. It includes the claim matrix, omission ledger, and E1, E2, E4-E8 artifacts. Its presence does not authorize submission: E3 authority, authenticated independent manual review, and the publication-freeze sentinel remain open gates.
+The attached canonical publication bundle is rooted at `publication/artifact_manifest.json` with SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`. It includes the claim matrix, omission ledger, and E1, E2, E4-E8 artifacts. Its presence does not authorize submission: E3 authority, authenticated independent manual review, and the publication-freeze sentinel remain open gates.
 
 ## References
 

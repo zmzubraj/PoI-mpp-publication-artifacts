@@ -2,7 +2,7 @@ Table 5. Paper-facing static presentation of canonical E7/T12 local Foundry boun
 
 Origin:
 - canonical `publication/tables/T12_evm_boundedness.csv` and F12;
-- canonical manifest SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`.
+- canonical manifest SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`.
 
 Units:
 - `gas_used` is EVM gas.

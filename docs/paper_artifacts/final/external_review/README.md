@@ -27,7 +27,7 @@ Current evidence boundary:
 - `C7`: supported by local Foundry measurement
 - `C8`: reproducible simulation / inconclusive
 
-The canonical machine-readable report bundle is attached at `../../../../publication/artifact_manifest.json` (SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`). It does not satisfy external authority, independent review, or the freeze sentinel. A freeze-eligible handoff must additionally generate and hash-bind any verifier-required:
+The canonical machine-readable report bundle is attached at `../../../../publication/artifact_manifest.json` (SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`). It does not satisfy external authority, independent review, or the freeze sentinel. A freeze-eligible handoff must additionally generate and hash-bind any verifier-required:
 
 - `verification_report.json`
 - `claim_support_matrix.json`
