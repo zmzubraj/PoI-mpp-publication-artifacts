@@ -149,16 +149,18 @@ def _fake_real_bundle(run_config, task, manifest, policy):
         adapter=_RealFixtureAdapter(),
     )
     capture = derive_tensor_product_capture(
-        activation_rows=((1.25, -0.5, 2.0),),
+        activation_rows=((1.25, -0.5, 2.0, 0.75),),
         weight_rows=(
-            (2.0, 4.0, 6.0),
-            (1.0, 3.0, 5.0),
+            (2.0, 4.0, 6.0, 8.0),
+            (1.0, 3.0, 5.0, 7.0),
+            (0.5, 1.5, 2.5, 3.5),
+            (1.25, 2.25, 3.25, 4.25),
         ),
         spec=TensorCaptureSpec(
             layer_path="model.layers.0.mlp.down_proj",
             activation_token_index=0,
-            input_width=3,
-            output_width=2,
+            input_width=4,
+            output_width=4,
             fixed_point_scale=1000,
         ),
     )
@@ -233,6 +235,51 @@ def test_run_real_e2_rejects_model_hash_mismatch_before_bundle_execution(tmp_pat
         )
 
 
+def test_run_real_e2_rejects_capture_shape_outside_frozen_narrow_scope(
+    tmp_path: Path,
+) -> None:
+    module = _load_cli_module()
+    manifest = _manifest()
+    policy = module.default_policy(seed=7, max_new_tokens=24)
+    capture_spec = TensorCaptureSpec(
+        layer_path="model.layers.0.mlp.down_proj",
+        activation_token_index=0,
+        input_width=3,
+        output_width=4,
+        fixed_point_scale=1000,
+    )
+    config_path = tmp_path / "run.yaml"
+    task_path = tmp_path / "task.yaml"
+    manifest_path = tmp_path / "manifest.yaml"
+    capture_path = tmp_path / "capture.yaml"
+    _write_config(
+        config_path,
+        model_hash=manifest.manifest_hash(policy).removeprefix("0x"),
+        dataset_hash=module.dataset_hash_for_inputs(
+            task_document=_task_document(),
+            policy=policy,
+            capture_spec=capture_spec,
+        ),
+    )
+    _write_yaml(task_path, _task_document())
+    _write_yaml(manifest_path, manifest.model_dump(mode="json"))
+    _write_yaml(capture_path, capture_spec.model_dump(mode="json"))
+
+    with pytest.raises(SystemExit, match="frozen 4x4 activation slice"):
+        module.run_real_e2(
+            config_path=config_path,
+            task_path=task_path,
+            model_manifest_path=manifest_path,
+            model_path=tmp_path / "model",
+            output_root=tmp_path / "out",
+            publication_authorized=True,
+            capture_spec_path=capture_path,
+            bundle_factory=lambda **_: (_ for _ in ()).throw(
+                AssertionError("bundle factory must not run for an unfrozen capture shape")
+            ),
+        )
+
+
 def test_run_real_e2_wires_bundle_provenance_and_raw_artifacts(tmp_path: Path) -> None:
     module = _load_cli_module()
     manifest = _manifest()
@@ -304,7 +351,27 @@ def test_run_real_e2_wires_bundle_provenance_and_raw_artifacts(tmp_path: Path) -
     assert result.capture_artifact_path == tmp_path / "out" / "e2_tensor_capture.json"
     assert result.publication_record_path == tmp_path / "out" / "e2_publication_record.json"
     assert json.loads(result.capture_artifact_path.read_text(encoding="utf-8"))["layer_path"] == "model.layers.0.mlp.down_proj"
-    assert json.loads(result.publication_record_path.read_text(encoding="utf-8"))["claim_id"] == "C2"
+    publication_record = json.loads(result.publication_record_path.read_text(encoding="utf-8"))
+    summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
+    raw_rows = json.loads(result.raw_rows_path.read_text(encoding="utf-8"))
+    attacked_rows = [row for row in raw_rows if row["is_attacked"]]
+    assert len(attacked_rows) == 4
+    assert all(row["detected"] for row in attacked_rows)
+    assert {row["origin"] for row in raw_rows} == {"REAL_MODEL_EXECUTION"}
+    assert publication_record["claim_id"] == "C2"
+    assert publication_record["payload"]["measurement_design"] == "NARROW_SCOPE_PILOT"
+    assert publication_record["payload"]["claim_disposition_reason"] == (
+        "NARROW_SCOPE_PILOT is methodologically capped at INCONCLUSIVE; "
+        "one model, one task, one layer, one token, one 4x4 activation slice, "
+        "and four attack observations cannot support paper claim C2"
+    )
+    assert publication_record["claim_disposition"] == "INCONCLUSIVE"
+    assert summary["measurement_design"] == "NARROW_SCOPE_PILOT"
+    assert summary["claim_disposition"] == "INCONCLUSIVE"
+    assert result.publication_decision.completeness == "COMPLETE"
+    assert result.publication_decision.claim_support == "INCONCLUSIVE"
+    assert result.frozen_artifact_path == tmp_path / "out" / "registry" / "frozen.json"
+    assert captures["registry_record"] == publication_record
     assert captures["bundle_factory"]["model_path"] == tmp_path / "model"
     assert captures["bundle_factory"]["tokenizer_path"] == tmp_path / "tokenizer"
     assert captures["repo_root"] == tmp_path / "repo"
@@ -368,4 +435,8 @@ def test_main_prints_only_public_artifact_references(
     assert payload["publication_record_path"] == "e2_publication_record.json"
     assert payload["summary_path"] == "e2_summary.json"
     assert payload["frozen_artifact_path"] == "frozen.json"
+    assert payload["measurement_design"] == "NARROW_SCOPE_PILOT"
+    assert payload["claim_disposition_reason"].startswith(
+        "NARROW_SCOPE_PILOT is methodologically capped at INCONCLUSIVE"
+    )
     assert str(tmp_path) not in json.dumps(payload)
