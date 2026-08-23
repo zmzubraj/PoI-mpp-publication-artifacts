@@ -1,0 +1,36 @@
+{
+  "artifact_root": ".",
+  "output_root": "publication",
+  "sources": {
+    "E1": {
+      "rows_path": "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+    },
+    "E2": {
+      "rows_path": "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
+      "summary_path": "results/publication/e2-real-eb866c2/e2_summary.json"
+    },
+    "E4": {
+      "metadata_path": "results/publication/e4-11de165/e4_metadata.json",
+      "rows_path": "results/publication/e4-11de165/e4_rows.json",
+      "summary_path": "results/publication/e4-11de165/e4_summary.json"
+    },
+    "E5": {
+      "contract_path": "configs/confirmatory/e5.yaml",
+      "rows_path": "results/publication/e5-11de165/e5_rows.json"
+    },
+    "E6": {
+      "contract_path": "configs/confirmatory/e6.yaml",
+      "rows_path": "results/publication/e6-11de165/e6_rows.json"
+    },
+    "E7": {
+      "contracts_root": "contracts",
+      "run_config_path": "configs/publication_foundry/e7.run.yaml",
+      "timeout_seconds": 180
+    },
+    "E8": {
+      "contract_path": "configs/confirmatory/e8.yaml",
+      "rows_path": "results/publication/e8-11de165/e8_publication_artifact.json"
+    }
+  },
+  "write_status_figures": true
+}

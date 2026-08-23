@@ -1,0 +1,16 @@
+{
+  "contract_hash": "bf9a1f1041a25f8e22f7d1ae6316b78c178ce72be61dd784ba5528f4152abf01",
+  "frozen_artifact_path": "results/publication/e5-11de165/registry/E5-SUMMARY.frozen.json",
+  "plan_hash": "8bf9cdcc6f3347b567f31f39d61c9ddf0998c55702445b560495ea4ac78bddfb",
+  "publication_decision": {
+    "claim_id": "C5",
+    "claim_support": "SUPPORTED",
+    "completeness": "COMPLETE",
+    "reasons": []
+  },
+  "publication_precheck_reasons": [],
+  "publication_scope": "E5_CONFIRMATORY_PUBLICATION_V1",
+  "required_model_version": "POI_MPP_E5_SIMULATOR_V1",
+  "run_config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+  "schema_version": "POI_MPP_E5_PUBLICATION_METADATA_V1"
+}

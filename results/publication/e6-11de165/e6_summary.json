@@ -1,0 +1,36 @@
+{
+  "assumption_ledger": [
+    "attacker_identity_count=1",
+    "attacker_identity_count=64",
+    "attacker_total_capacity_units=12",
+    "capacity_model=CAPACITY_COMMITTED",
+    "capacity_model=IDENTITY_UNIFORM",
+    "capacity_model=OPERATOR_SLOT",
+    "honest_operator_count=5",
+    "role=NEGATIVE_CONTROL",
+    "role=SUPPORT",
+    "target_weight_fraction=1/3",
+    "task_count=48",
+    "task_credit_budget=90"
+  ],
+  "boundary_row_count": 0,
+  "budget_non_exceedance_all": true,
+  "claim_disposition": "SUPPORTED",
+  "claim_id": "C6",
+  "credit_issuance_exact_all": true,
+  "denominator": 6,
+  "epsilon_sybil": 0.02,
+  "max_negative_control_upper_advantage": 1908.369141,
+  "max_support_upper_advantage": 0.0,
+  "min_negative_control_lower_advantage": 1908.369141,
+  "minimum_negative_controls": 2,
+  "negative_control_count": 2,
+  "origins": [
+    "REPRODUCIBLE_SIMULATION"
+  ],
+  "scenario_count": 6,
+  "schema_version": "POI_MPP_E6_SUMMARY_V1",
+  "support_row_count": 4,
+  "task_accounting_exact_all": true,
+  "zero_credit_zero_weight_all": true
+}

@@ -1,0 +1,30 @@
+{
+  "assumption_ledger": [
+    "bonded_auditor_detection_probability=0.900000",
+    "challenge_success_probability=0.800000",
+    "correlation_model=INDEPENDENT",
+    "correlation_model=SHARED_INFRASTRUCTURE",
+    "family=BONDED_AUDITOR",
+    "family=INDEPENDENT",
+    "fraud_value_micros=2000000",
+    "per_watcher_attempt_probability=0.250000",
+    "shared_infrastructure_failure_probability=0.400000",
+    "watchers=4"
+  ],
+  "claim_disposition": "SUPPORTED",
+  "claim_id": "C5",
+  "denominator": 2,
+  "families": [
+    "BONDED_AUDITOR",
+    "INDEPENDENT"
+  ],
+  "maximum_supported_interval_width": 0.2,
+  "minimum_supported_scenarios": 2,
+  "minimum_supported_simulations": 4096,
+  "origins": [
+    "REPRODUCIBLE_SIMULATION"
+  ],
+  "scenario_count": 2,
+  "schema_version": "POI_MPP_E5_SUMMARY_V1",
+  "supported_scenario_count": 2
+}

@@ -1,0 +1,596 @@
+[
+  {
+    "allocated_credit_interval_micros": [
+      "4320.000000",
+      "4320.000000"
+    ],
+    "allocated_credit_mean_micros": "4320.000000",
+    "allocated_task_count_interval": [
+      "48.000000",
+      "48.000000"
+    ],
+    "allocated_task_count_mean": "48.000000",
+    "assumption_label": "CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED",
+    "assumption_ledger": [
+      "role=SUPPORT",
+      "capacity_model=CAPACITY_COMMITTED",
+      "attacker_identity_count=1",
+      "attacker_total_capacity_units=12",
+      "honest_operator_count=5",
+      "task_count=48",
+      "task_credit_budget=90",
+      "target_weight_fraction=1/3"
+    ],
+    "attacker_collateral_micros": 3000000,
+    "attacker_credit_interval_micros": [
+      "693.632813",
+      "721.406250"
+    ],
+    "attacker_expected_credit_micros": "707.871094",
+    "attacker_expected_share": 0.1665379902962255,
+    "attacker_expected_weight_micros": "297.949219",
+    "attacker_identity_count": 1,
+    "attacker_identity_fixed_cost_micros": 20000,
+    "attacker_share_interval": [
+      0.1659424893355598,
+      0.1670324325508428
+    ],
+    "attacker_success_probability": 0.65,
+    "attacker_total_capacity_units": 12,
+    "attacker_weight_interval_micros": [
+      "296.689453",
+      "298.828125"
+    ],
+    "beta_micros": 10000,
+    "budget_non_exceedance": true,
+    "capacity_cost_micros_per_unit": 25000,
+    "capacity_model": "CAPACITY_COMMITTED",
+    "capacity_subsidy_micros": 0,
+    "collateral_cost_multiplier_microx": 1000000,
+    "concentration_cap_micros": 2000000,
+    "config_contract_hash": "d524f1f75e3419f59d62c6bab338adcde4ef3a83d52ec323d4e76eaaf2b00ecf",
+    "credit_issuance_exact": true,
+    "credit_utilization_ratio": 1.0,
+    "estimated_cost_to_target_weight_micros": "6645130.427587",
+    "experiment_id": "E6",
+    "group_id": "support-capacity-committed",
+    "honest_capacity_units": 12,
+    "honest_collateral_micros": 3000000,
+    "honest_operator_count": 5,
+    "honest_success_probability": 0.65,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "debf4e00cfac11c91fa461c03d2dadfe2495db39fcd7a254bc90ec627b4ea3a8",
+    "role": "SUPPORT",
+    "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+      "experiment_id": "E6",
+      "model_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e6-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e6-simulation-v1",
+    "scenario_contract_hash": "0dcc7ce59d8ea9c04a24a63b09ad2eb8f5e5d16f72e4ab207137c72627f31e3e",
+    "scenario_id": "support-capacity-committed-1",
+    "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+    "seed": 17,
+    "simulation_model_version": "POI_MPP_E6_SIMULATOR_V1",
+    "simulations": 1024,
+    "target_weight_denominator": 3,
+    "target_weight_numerator": 1,
+    "task_accounting_exact": true,
+    "task_count": 48,
+    "task_credit_budget": 90,
+    "unallocated_task_count_interval": [
+      "0.000000",
+      "0.000000"
+    ],
+    "unallocated_task_count_mean": "0.000000",
+    "zero_credit_implies_zero_weight": true
+  },
+  {
+    "allocated_credit_interval_micros": [
+      "4320.000000",
+      "4320.000000"
+    ],
+    "allocated_credit_mean_micros": "4320.000000",
+    "allocated_task_count_interval": [
+      "48.000000",
+      "48.000000"
+    ],
+    "allocated_task_count_mean": "48.000000",
+    "assumption_label": "CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED",
+    "assumption_ledger": [
+      "role=SUPPORT",
+      "capacity_model=CAPACITY_COMMITTED",
+      "attacker_identity_count=64",
+      "attacker_total_capacity_units=12",
+      "honest_operator_count=5",
+      "task_count=48",
+      "task_credit_budget=90",
+      "target_weight_fraction=1/3"
+    ],
+    "attacker_collateral_micros": 3000000,
+    "attacker_credit_interval_micros": [
+      "693.632813",
+      "721.406250"
+    ],
+    "attacker_expected_credit_micros": "707.871094",
+    "attacker_expected_share": 0.1665379902962255,
+    "attacker_expected_weight_micros": "297.949219",
+    "attacker_identity_count": 64,
+    "attacker_identity_fixed_cost_micros": 20000,
+    "attacker_share_interval": [
+      0.1659424893355598,
+      0.1670324325508428
+    ],
+    "attacker_success_probability": 0.65,
+    "attacker_total_capacity_units": 12,
+    "attacker_weight_interval_micros": [
+      "296.689453",
+      "298.828125"
+    ],
+    "beta_micros": 10000,
+    "budget_non_exceedance": true,
+    "capacity_cost_micros_per_unit": 25000,
+    "capacity_model": "CAPACITY_COMMITTED",
+    "capacity_subsidy_micros": 0,
+    "collateral_cost_multiplier_microx": 1000000,
+    "concentration_cap_micros": 2000000,
+    "config_contract_hash": "d524f1f75e3419f59d62c6bab338adcde4ef3a83d52ec323d4e76eaaf2b00ecf",
+    "credit_issuance_exact": true,
+    "credit_utilization_ratio": 1.0,
+    "estimated_cost_to_target_weight_micros": "9167077.517575",
+    "experiment_id": "E6",
+    "group_id": "support-capacity-committed",
+    "honest_capacity_units": 12,
+    "honest_collateral_micros": 3000000,
+    "honest_operator_count": 5,
+    "honest_success_probability": 0.65,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "1e57ff990fc286c95b3547d18dde994d39afb987deebc668ee64b0fe878c783d",
+    "role": "SUPPORT",
+    "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+      "experiment_id": "E6",
+      "model_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e6-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e6-simulation-v1",
+    "scenario_contract_hash": "ba16146b84fe3b00e1878ae23e8e7f1aa6d7092a233b4e6e84caa5d075d5f089",
+    "scenario_id": "support-capacity-committed-64",
+    "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+    "seed": 17,
+    "simulation_model_version": "POI_MPP_E6_SIMULATOR_V1",
+    "simulations": 1024,
+    "target_weight_denominator": 3,
+    "target_weight_numerator": 1,
+    "task_accounting_exact": true,
+    "task_count": 48,
+    "task_credit_budget": 90,
+    "unallocated_task_count_interval": [
+      "0.000000",
+      "0.000000"
+    ],
+    "unallocated_task_count_mean": "0.000000",
+    "zero_credit_implies_zero_weight": true
+  },
+  {
+    "allocated_credit_interval_micros": [
+      "4320.000000",
+      "4320.000000"
+    ],
+    "allocated_credit_mean_micros": "4320.000000",
+    "allocated_task_count_interval": [
+      "48.000000",
+      "48.000000"
+    ],
+    "allocated_task_count_mean": "48.000000",
+    "assumption_label": "CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED",
+    "assumption_ledger": [
+      "role=SUPPORT",
+      "capacity_model=OPERATOR_SLOT",
+      "attacker_identity_count=1",
+      "attacker_total_capacity_units=12",
+      "honest_operator_count=5",
+      "task_count=48",
+      "task_credit_budget=90",
+      "target_weight_fraction=1/3"
+    ],
+    "attacker_collateral_micros": 3000000,
+    "attacker_credit_interval_micros": [
+      "691.699219",
+      "719.824219"
+    ],
+    "attacker_expected_credit_micros": "705.849609",
+    "attacker_expected_share": 0.16661753100975646,
+    "attacker_expected_weight_micros": "298.037109",
+    "attacker_identity_count": 1,
+    "attacker_identity_fixed_cost_micros": 20000,
+    "attacker_share_interval": [
+      0.1661343262442911,
+      0.16707148254599963
+    ],
+    "attacker_success_probability": 0.65,
+    "attacker_total_capacity_units": 12,
+    "attacker_weight_interval_micros": [
+      "297.128906",
+      "298.681641"
+    ],
+    "beta_micros": 10000,
+    "budget_non_exceedance": true,
+    "capacity_cost_micros_per_unit": 25000,
+    "capacity_model": "OPERATOR_SLOT",
+    "capacity_subsidy_micros": 0,
+    "collateral_cost_multiplier_microx": 1000000,
+    "concentration_cap_micros": 2000000,
+    "config_contract_hash": "d524f1f75e3419f59d62c6bab338adcde4ef3a83d52ec323d4e76eaaf2b00ecf",
+    "credit_issuance_exact": true,
+    "credit_utilization_ratio": 1.0,
+    "estimated_cost_to_target_weight_micros": "6641958.141859",
+    "experiment_id": "E6",
+    "group_id": "support-operator-slot",
+    "honest_capacity_units": 12,
+    "honest_collateral_micros": 3000000,
+    "honest_operator_count": 5,
+    "honest_success_probability": 0.65,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "23f598222ac01420a9683d45f3c48ecab2e46a4bbf9135ed1046d47e8351f445",
+    "role": "SUPPORT",
+    "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+      "experiment_id": "E6",
+      "model_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e6-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e6-simulation-v1",
+    "scenario_contract_hash": "101b65882eb2c6e50990a90509abec11b9602332696fc2c0eafef9e1c78969d6",
+    "scenario_id": "support-operator-slot-1",
+    "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+    "seed": 17,
+    "simulation_model_version": "POI_MPP_E6_SIMULATOR_V1",
+    "simulations": 1024,
+    "target_weight_denominator": 3,
+    "target_weight_numerator": 1,
+    "task_accounting_exact": true,
+    "task_count": 48,
+    "task_credit_budget": 90,
+    "unallocated_task_count_interval": [
+      "0.000000",
+      "0.000000"
+    ],
+    "unallocated_task_count_mean": "0.000000",
+    "zero_credit_implies_zero_weight": true
+  },
+  {
+    "allocated_credit_interval_micros": [
+      "4320.000000",
+      "4320.000000"
+    ],
+    "allocated_credit_mean_micros": "4320.000000",
+    "allocated_task_count_interval": [
+      "48.000000",
+      "48.000000"
+    ],
+    "allocated_task_count_mean": "48.000000",
+    "assumption_label": "CAPACITY_NEUTRAL_OPERATOR_AGGREGATION_DECLARED",
+    "assumption_ledger": [
+      "role=SUPPORT",
+      "capacity_model=OPERATOR_SLOT",
+      "attacker_identity_count=64",
+      "attacker_total_capacity_units=12",
+      "honest_operator_count=5",
+      "task_count=48",
+      "task_credit_budget=90",
+      "target_weight_fraction=1/3"
+    ],
+    "attacker_collateral_micros": 3000000,
+    "attacker_credit_interval_micros": [
+      "691.699219",
+      "719.824219"
+    ],
+    "attacker_expected_credit_micros": "705.849609",
+    "attacker_expected_share": 0.16661753100975646,
+    "attacker_expected_weight_micros": "298.037109",
+    "attacker_identity_count": 64,
+    "attacker_identity_fixed_cost_micros": 20000,
+    "attacker_share_interval": [
+      0.1661343262442911,
+      0.16707148254599963
+    ],
+    "attacker_success_probability": 0.65,
+    "attacker_total_capacity_units": 12,
+    "attacker_weight_interval_micros": [
+      "297.128906",
+      "298.681641"
+    ],
+    "beta_micros": 10000,
+    "budget_non_exceedance": true,
+    "capacity_cost_micros_per_unit": 25000,
+    "capacity_model": "OPERATOR_SLOT",
+    "capacity_subsidy_micros": 0,
+    "collateral_cost_multiplier_microx": 1000000,
+    "concentration_cap_micros": 2000000,
+    "config_contract_hash": "d524f1f75e3419f59d62c6bab338adcde4ef3a83d52ec323d4e76eaaf2b00ecf",
+    "credit_issuance_exact": true,
+    "credit_utilization_ratio": 1.0,
+    "estimated_cost_to_target_weight_micros": "9162701.292082",
+    "experiment_id": "E6",
+    "group_id": "support-operator-slot",
+    "honest_capacity_units": 12,
+    "honest_collateral_micros": 3000000,
+    "honest_operator_count": 5,
+    "honest_success_probability": 0.65,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "bf4ffaf39fccded2ce9319213d076d5065f82916f4008b7f690d6f2bd2e5140e",
+    "role": "SUPPORT",
+    "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+      "experiment_id": "E6",
+      "model_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e6-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e6-simulation-v1",
+    "scenario_contract_hash": "09a97945fdd559290d1443266260de203b68b46b233b4d692674ba3373466068",
+    "scenario_id": "support-operator-slot-64",
+    "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+    "seed": 17,
+    "simulation_model_version": "POI_MPP_E6_SIMULATOR_V1",
+    "simulations": 1024,
+    "target_weight_denominator": 3,
+    "target_weight_numerator": 1,
+    "task_accounting_exact": true,
+    "task_count": 48,
+    "task_credit_budget": 90,
+    "unallocated_task_count_interval": [
+      "0.000000",
+      "0.000000"
+    ],
+    "unallocated_task_count_mean": "0.000000",
+    "zero_credit_implies_zero_weight": true
+  },
+  {
+    "allocated_credit_interval_micros": [
+      "4320.000000",
+      "4320.000000"
+    ],
+    "allocated_credit_mean_micros": "4320.000000",
+    "allocated_task_count_interval": [
+      "48.000000",
+      "48.000000"
+    ],
+    "allocated_task_count_mean": "48.000000",
+    "assumption_label": "IDENTITY_PROPORTIONAL_SCHEDULER_DECLARED",
+    "assumption_ledger": [
+      "role=NEGATIVE_CONTROL",
+      "capacity_model=IDENTITY_UNIFORM",
+      "attacker_identity_count=1",
+      "attacker_total_capacity_units=12",
+      "honest_operator_count=5",
+      "task_count=48",
+      "task_credit_budget=90",
+      "target_weight_fraction=1/3"
+    ],
+    "attacker_collateral_micros": 3000000,
+    "attacker_credit_interval_micros": [
+      "691.699219",
+      "719.824219"
+    ],
+    "attacker_expected_credit_micros": "705.849609",
+    "attacker_expected_share": 0.16661753100975646,
+    "attacker_expected_weight_micros": "298.037109",
+    "attacker_identity_count": 1,
+    "attacker_identity_fixed_cost_micros": 20000,
+    "attacker_share_interval": [
+      0.1661343262442911,
+      0.16707148254599963
+    ],
+    "attacker_success_probability": 0.65,
+    "attacker_total_capacity_units": 12,
+    "attacker_weight_interval_micros": [
+      "297.128906",
+      "298.681641"
+    ],
+    "beta_micros": 10000,
+    "budget_non_exceedance": true,
+    "capacity_cost_micros_per_unit": 25000,
+    "capacity_model": "IDENTITY_UNIFORM",
+    "capacity_subsidy_micros": 0,
+    "collateral_cost_multiplier_microx": 1000000,
+    "concentration_cap_micros": 2000000,
+    "config_contract_hash": "d524f1f75e3419f59d62c6bab338adcde4ef3a83d52ec323d4e76eaaf2b00ecf",
+    "credit_issuance_exact": true,
+    "credit_utilization_ratio": 1.0,
+    "estimated_cost_to_target_weight_micros": "6641958.141859",
+    "experiment_id": "E6",
+    "group_id": "negative-identity-uniform",
+    "honest_capacity_units": 12,
+    "honest_collateral_micros": 3000000,
+    "honest_operator_count": 5,
+    "honest_success_probability": 0.65,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "d2ca4114d18f4f05a01adea550213219bd276b2d04cb685c80b2b061d23f11ed",
+    "role": "NEGATIVE_CONTROL",
+    "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+      "experiment_id": "E6",
+      "model_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e6-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e6-simulation-v1",
+    "scenario_contract_hash": "b7405d60a1bc87bd19871d3bea42bac014653dd2632b0309a4be731e40c60729",
+    "scenario_id": "negative-identity-uniform-1",
+    "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+    "seed": 17,
+    "simulation_model_version": "POI_MPP_E6_SIMULATOR_V1",
+    "simulations": 1024,
+    "target_weight_denominator": 3,
+    "target_weight_numerator": 1,
+    "task_accounting_exact": true,
+    "task_count": 48,
+    "task_credit_budget": 90,
+    "unallocated_task_count_interval": [
+      "0.000000",
+      "0.000000"
+    ],
+    "unallocated_task_count_mean": "0.000000",
+    "zero_credit_implies_zero_weight": true
+  },
+  {
+    "allocated_credit_interval_micros": [
+      "4320.000000",
+      "4320.000000"
+    ],
+    "allocated_credit_mean_micros": "4320.000000",
+    "allocated_task_count_interval": [
+      "48.000000",
+      "48.000000"
+    ],
+    "allocated_task_count_mean": "48.000000",
+    "assumption_label": "IDENTITY_PROPORTIONAL_SCHEDULER_DECLARED",
+    "assumption_ledger": [
+      "role=NEGATIVE_CONTROL",
+      "capacity_model=IDENTITY_UNIFORM",
+      "attacker_identity_count=64",
+      "attacker_total_capacity_units=12",
+      "honest_operator_count=5",
+      "task_count=48",
+      "task_credit_budget=90",
+      "target_weight_fraction=1/3"
+    ],
+    "attacker_collateral_micros": 3000000,
+    "attacker_credit_interval_micros": [
+      "2594.794922",
+      "2634.873047"
+    ],
+    "attacker_expected_credit_micros": "2614.218750",
+    "attacker_expected_share": 0.19402527117715496,
+    "attacker_expected_weight_micros": "300.000000",
+    "attacker_identity_count": 64,
+    "attacker_identity_fixed_cost_micros": 20000,
+    "attacker_share_interval": [
+      0.1926086788038884,
+      0.1951906029727326
+    ],
+    "attacker_success_probability": 0.65,
+    "attacker_total_capacity_units": 12,
+    "attacker_weight_interval_micros": [
+      "300.000000",
+      "300.000000"
+    ],
+    "beta_micros": 10000,
+    "budget_non_exceedance": true,
+    "capacity_cost_micros_per_unit": 25000,
+    "capacity_model": "IDENTITY_UNIFORM",
+    "capacity_subsidy_micros": 0,
+    "collateral_cost_multiplier_microx": 1000000,
+    "concentration_cap_micros": 2000000,
+    "config_contract_hash": "d524f1f75e3419f59d62c6bab338adcde4ef3a83d52ec323d4e76eaaf2b00ecf",
+    "credit_issuance_exact": true,
+    "credit_utilization_ratio": 1.0,
+    "estimated_cost_to_target_weight_micros": "7868390.841071",
+    "experiment_id": "E6",
+    "group_id": "negative-identity-uniform",
+    "honest_capacity_units": 12,
+    "honest_collateral_micros": 3000000,
+    "honest_operator_count": 5,
+    "honest_success_probability": 0.65,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "eb8759e569c6ce9da1c9c9d8f2050ddab5c21d1817c3892674d0ae5ac1242b51",
+    "role": "NEGATIVE_CONTROL",
+    "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+      "experiment_id": "E6",
+      "model_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e6-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e6-simulation-v1",
+    "scenario_contract_hash": "024127e26a04e4ee9433c6810f4663aacb9cefb6fe1f8ed1eba66269f03306d2",
+    "scenario_id": "negative-identity-uniform-64",
+    "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+    "seed": 17,
+    "simulation_model_version": "POI_MPP_E6_SIMULATOR_V1",
+    "simulations": 1024,
+    "target_weight_denominator": 3,
+    "target_weight_numerator": 1,
+    "task_accounting_exact": true,
+    "task_count": 48,
+    "task_credit_budget": 90,
+    "unallocated_task_count_interval": [
+      "0.000000",
+      "0.000000"
+    ],
+    "unallocated_task_count_mean": "0.000000",
+    "zero_credit_implies_zero_weight": true
+  }
+]

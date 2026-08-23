@@ -1,0 +1,190 @@
+[
+  {
+    "analytic_invalid_maturity_probability": 0.4096000000000001,
+    "analytic_no_challenge_probability": 0.31640625,
+    "assumption_label": "INDEPENDENT_WATCHERS_DECLARED",
+    "assumption_ledger": [
+      "family=INDEPENDENT",
+      "correlation_model=INDEPENDENT",
+      "watchers=4",
+      "per_watcher_attempt_probability=0.250000",
+      "challenge_success_probability=0.800000",
+      "fraud_value_micros=2000000"
+    ],
+    "attacker_bribe_micros": 0,
+    "bonded_auditor_cost_micros": 0,
+    "bonded_auditor_detection_probability": 0.0,
+    "bonded_auditor_expected_utility_interval_micros": [
+      "0.000000",
+      "0.000000"
+    ],
+    "bonded_auditor_expected_utility_micros": "0.000000",
+    "bonded_auditor_reward_micros": 0,
+    "bonded_auditor_success_probability": 0.0,
+    "challenge_bond_micros": 100000,
+    "challenge_failure_probability": 0.090087890625,
+    "challenge_probability": 0.67578125,
+    "challenge_reward_micros": 250000,
+    "challenge_subsidy_micros": 0,
+    "challenge_success_interval": [
+      0.570534265487446,
+      0.6006918677791628
+    ],
+    "challenge_success_probability": 0.585693359375,
+    "colluding_watchers": 0,
+    "config_contract_hash": "2fa507cff862bed1ad547fff69d55281cee94c505cef31e39ec7be521a340331",
+    "convergence_delta": 0.0078125,
+    "convergence_reference": "analytic_no_challenge",
+    "correlation_model": "INDEPENDENT",
+    "currency_precision": "MICROS_DECIMAL",
+    "declared_challenge_success_probability": 0.8,
+    "experiment_id": "E5",
+    "family": "INDEPENDENT",
+    "fraud_value_micros": 2000000,
+    "invalid_maturity_interval": [
+      0.3993081322208372,
+      0.429465734512554
+    ],
+    "invalid_maturity_probability": 0.414306640625,
+    "no_challenge_interval": [
+      0.31005446952325105,
+      0.3387124365965258
+    ],
+    "no_challenge_probability": 0.32421875,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "per_watcher_challenge_probability": 0.5,
+    "per_watcher_discovery_probability": 0.5,
+    "per_watcher_online_probability": 1.0,
+    "publication_scope": "E5_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "64d6f5b624e3c203ad6722ef77d611a6e06bd519a01e38aa7c07b741a9696425",
+    "run_config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "8bf9cdcc6f3347b567f31f39d61c9ddf0998c55702445b560495ea4ac78bddfb",
+      "experiment_id": "E5",
+      "model_hash": "bf9a1f1041a25f8e22f7d1ae6316b78c178ce72be61dd784ba5528f4152abf01",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e5-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e5-simulation-v1",
+    "scenario_contract_hash": "0fd99cb0127cd11d0fc5a9b689e94a7c7a61d914dd1d3ba893d3726824e076c3",
+    "scenario_id": "publication-independent-baseline",
+    "schema_version": "POI_MPP_E5_SCENARIO_ROW_V1",
+    "seed": 17,
+    "shared_infrastructure_failure_probability": 0.0,
+    "shared_outage_probability": 0.0,
+    "simulation_model_version": "POI_MPP_E5_SIMULATOR_V1",
+    "simulations": 4096,
+    "watch_cost_micros": 10000,
+    "watcher_cost_micros_by_watcher": null,
+    "watcher_count": 4,
+    "watcher_expected_utility_interval_micros": [
+      "32953.491211",
+      "36328.735352"
+    ],
+    "watcher_expected_utility_micros": "34808.959961"
+  },
+  {
+    "analytic_invalid_maturity_probability": null,
+    "analytic_no_challenge_probability": null,
+    "assumption_label": "BONDED_AUDITOR_BACKSTOP_DECLARED",
+    "assumption_ledger": [
+      "family=BONDED_AUDITOR",
+      "correlation_model=SHARED_INFRASTRUCTURE",
+      "watchers=4",
+      "per_watcher_attempt_probability=0.250000",
+      "challenge_success_probability=0.800000",
+      "fraud_value_micros=2000000",
+      "shared_infrastructure_failure_probability=0.400000",
+      "bonded_auditor_detection_probability=0.900000"
+    ],
+    "attacker_bribe_micros": 0,
+    "bonded_auditor_cost_micros": 25000,
+    "bonded_auditor_detection_probability": 0.9,
+    "bonded_auditor_expected_utility_interval_micros": [
+      "68542.480469",
+      "72375.488281"
+    ],
+    "bonded_auditor_expected_utility_micros": "70385.742188",
+    "bonded_auditor_reward_micros": 150000,
+    "bonded_auditor_success_probability": 1.0,
+    "challenge_bond_micros": 100000,
+    "challenge_failure_probability": 0.0048828125,
+    "challenge_probability": 0.945556640625,
+    "challenge_reward_micros": 250000,
+    "challenge_subsidy_micros": 0,
+    "challenge_success_interval": [
+      0.9330179998365595,
+      0.9475038535714999
+    ],
+    "challenge_success_probability": 0.940673828125,
+    "colluding_watchers": 0,
+    "config_contract_hash": "1f89f8aaff92144c94e0a61c45534387c1376a50c982acb50cf52283fe47f9a2",
+    "convergence_delta": 0.00537109375,
+    "convergence_reference": "half_split_invalid_maturity",
+    "correlation_model": "SHARED_INFRASTRUCTURE",
+    "currency_precision": "MICROS_DECIMAL",
+    "declared_challenge_success_probability": 0.8,
+    "experiment_id": "E5",
+    "family": "BONDED_AUDITOR",
+    "fraud_value_micros": 2000000,
+    "invalid_maturity_interval": [
+      0.05249614642850004,
+      0.06698200016344047
+    ],
+    "invalid_maturity_probability": 0.059326171875,
+    "no_challenge_interval": [
+      0.04790316321435348,
+      0.06181850854758083
+    ],
+    "no_challenge_probability": 0.054443359375,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "per_watcher_challenge_probability": 0.5,
+    "per_watcher_discovery_probability": 0.5,
+    "per_watcher_online_probability": 1.0,
+    "publication_scope": "E5_CONFIRMATORY_PUBLICATION_V1",
+    "result_contract_hash": "8f2609682dc3283ecf9f1d90739be494a9ef39bb5e70809043999e35a71a41b2",
+    "run_config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+    "run_config_snapshot": {
+      "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+      "data_availability": {
+        "replacement": false,
+        "samples": 8,
+        "total_shards": 16
+      },
+      "dataset_hash": "8bf9cdcc6f3347b567f31f39d61c9ddf0998c55702445b560495ea4ac78bddfb",
+      "experiment_id": "E5",
+      "model_hash": "bf9a1f1041a25f8e22f7d1ae6316b78c178ce72be61dd784ba5528f4152abf01",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "parent_hashes": [],
+      "run_id": "publication-e5-simulation-v1",
+      "schema_hash": "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1"
+    },
+    "run_id": "publication-e5-simulation-v1",
+    "scenario_contract_hash": "f28f044180bf583cd353bcfa9a3ede400c0525ec4d401a5620693a0781636c36",
+    "scenario_id": "publication-shared-backstop",
+    "schema_version": "POI_MPP_E5_SCENARIO_ROW_V1",
+    "seed": 19,
+    "shared_infrastructure_failure_probability": 0.4,
+    "shared_outage_probability": 0.0,
+    "simulation_model_version": "POI_MPP_E5_SIMULATOR_V1",
+    "simulations": 4096,
+    "watch_cost_micros": 10000,
+    "watcher_cost_micros_by_watcher": null,
+    "watcher_count": 4,
+    "watcher_expected_utility_interval_micros": [
+      "16284.790039",
+      "19534.912109"
+    ],
+    "watcher_expected_utility_micros": "17810.668945"
+  }
+]

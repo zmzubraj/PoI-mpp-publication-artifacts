@@ -1,0 +1,50 @@
+{
+  "claim_disposition": "INCONCLUSIVE",
+  "claim_disposition_reason": "NARROW_SCOPE_PILOT is methodologically capped at INCONCLUSIVE; one model, one task, one layer, one token, one 4x4 activation slice, and four attack observations cannot support paper claim C2",
+  "claim_id": "C2",
+  "confidence_interval": [
+    0.5101091635454027,
+    1.0
+  ],
+  "denominator": 4,
+  "empirical_confidence_interval": [
+    0.20654931437723742,
+    1.0
+  ],
+  "empirical_denominator": 1,
+  "empirical_detected": 1,
+  "empirical_detection_rate": 1.0,
+  "exact_confidence_interval": [
+    0.4385029682449545,
+    1.0
+  ],
+  "exact_denominator": 3,
+  "exact_detected": 3,
+  "exact_detection_rate": 1.0,
+  "false_positive_count": 0,
+  "false_positive_rate": 0.0,
+  "frozen_scope": {
+    "activation_slice": "4x4",
+    "attack_observation_count": 4,
+    "layer_count": 1,
+    "model_count": 1,
+    "task_count": 1,
+    "token_count": 1
+  },
+  "honest_control_count": 1,
+  "measurement_design": "NARROW_SCOPE_PILOT",
+  "minimum_supported_denominator": 2,
+  "minimum_unique_attack_seeds": 2,
+  "residual_surface_ledger": [
+    "exact equality only; no tolerance or probabilistic bound applies",
+    "exact mismatch observed; reject and inspect corruption or serialization drift",
+    "declared modulus path relies on caller-declared exact modular semantics",
+    "binary nonzero Freivalds challenges provide at most 2^-k error under declared exact arithmetic",
+    "field audit rejected the proposed product",
+    "empirical floating-point audit rejected the proposed product",
+    "floating-point checks do not provide exact field soundness"
+  ],
+  "schema_version": "POI_MPP_E2_SUMMARY_V1",
+  "unique_attack_seed_count": 4,
+  "unsupported_attack_count": 0
+}

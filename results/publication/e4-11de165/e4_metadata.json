@@ -1,0 +1,19 @@
+{
+  "claim_disposition_reason": "DECLARED_OUTCOME_PLAYBACK_NOT_EXECUTED_RECONSTRUCTION",
+  "contract_hash": "14978d8542b3cde53f737298e2a916147747be945daec5eafb2309ae28fd4c58",
+  "frozen_artifact_path": "results/publication/e4-11de165/registry/E4-SUMMARY.frozen.json",
+  "method_boundary": "DECLARED_OUTCOME_PLAYBACK",
+  "plan_hash": "b89fb5c5421a649a30e47ecbacb46c4fdebbefeb2ef95aaf0b41d3ec2311b790",
+  "publication_decision": {
+    "claim_id": "C4",
+    "claim_support": "INCONCLUSIVE",
+    "completeness": "COMPLETE",
+    "reasons": [
+      "DECLARED_OUTCOME_PLAYBACK_NOT_EXECUTED_RECONSTRUCTION"
+    ]
+  },
+  "publication_scope": "E4_CONFIRMATORY_PUBLICATION_V1",
+  "required_model_version": "POI_MPP_E4_DECLARED_SIMULATION_V1",
+  "run_config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+  "schema_version": "POI_MPP_E4_PUBLICATION_METADATA_V1"
+}

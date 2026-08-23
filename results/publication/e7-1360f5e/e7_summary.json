@@ -1,0 +1,286 @@
+{
+  "bundle_path": "results/publication/e7-1360f5e/e7_bundle.json",
+  "t12_rows": [
+    {
+      "operation": "AUDIT_OPEN",
+      "batch_size": 1,
+      "gas_used": 126504,
+      "changed_storage_slot_count": 5,
+      "storage_change_upper_bound_bytes": 160,
+      "fraction_of_block_limit": 0.0001178160309791565
+    },
+    {
+      "operation": "AUDIT_RECORD_DA",
+      "batch_size": 1,
+      "gas_used": 5414,
+      "changed_storage_slot_count": 1,
+      "storage_change_upper_bound_bytes": 32,
+      "fraction_of_block_limit": 5.042180418968201e-06
+    },
+    {
+      "operation": "AUDIT_RECORD_RESULT",
+      "batch_size": 1,
+      "gas_used": 5654,
+      "changed_storage_slot_count": 1,
+      "storage_change_upper_bound_bytes": 32,
+      "fraction_of_block_limit": 5.2656978368759155e-06
+    },
+    {
+      "operation": "COMMIT_RESPONSE",
+      "batch_size": 1,
+      "gas_used": 259344,
+      "changed_storage_slot_count": 11,
+      "storage_change_upper_bound_bytes": 352,
+      "fraction_of_block_limit": 0.00024153292179107666
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 1,
+      "gas_used": 104774,
+      "changed_storage_slot_count": 4,
+      "storage_change_upper_bound_bytes": 128,
+      "fraction_of_block_limit": 9.757839143276215e-05
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 2,
+      "gas_used": 156656,
+      "changed_storage_slot_count": 6,
+      "storage_change_upper_bound_bytes": 192,
+      "fraction_of_block_limit": 0.0001458972692489624
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 4,
+      "gas_used": 260426,
+      "changed_storage_slot_count": 10,
+      "storage_change_upper_bound_bytes": 320,
+      "fraction_of_block_limit": 0.0002425406128168106
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 8,
+      "gas_used": 467937,
+      "changed_storage_slot_count": 18,
+      "storage_change_upper_bound_bytes": 576,
+      "fraction_of_block_limit": 0.00043580029159784317
+    },
+    {
+      "operation": "MODEL_REGISTER",
+      "batch_size": 1,
+      "gas_used": 94342,
+      "changed_storage_slot_count": 4,
+      "storage_change_upper_bound_bytes": 128,
+      "fraction_of_block_limit": 8.786283433437347e-05
+    },
+    {
+      "operation": "OPEN_CHALLENGE",
+      "batch_size": 1,
+      "gas_used": 5962,
+      "changed_storage_slot_count": 1,
+      "storage_change_upper_bound_bytes": 32,
+      "fraction_of_block_limit": 5.552545189857483e-06
+    },
+    {
+      "operation": "RECEIPT_ACTIVATE",
+      "batch_size": 1,
+      "gas_used": 59959,
+      "changed_storage_slot_count": 3,
+      "storage_change_upper_bound_bytes": 96,
+      "fraction_of_block_limit": 5.5841170251369476e-05
+    },
+    {
+      "operation": "RECEIPT_MARK_CHALLENGED",
+      "batch_size": 1,
+      "gas_used": 7252,
+      "changed_storage_slot_count": 1,
+      "storage_change_upper_bound_bytes": 32,
+      "fraction_of_block_limit": 6.75395131111145e-06
+    },
+    {
+      "operation": "RECEIPT_MINT_PENDING",
+      "batch_size": 1,
+      "gas_used": 172718,
+      "changed_storage_slot_count": 8,
+      "storage_change_upper_bound_bytes": 256,
+      "fraction_of_block_limit": 0.00016085617244243622
+    },
+    {
+      "operation": "RECEIPT_SLASH",
+      "batch_size": 1,
+      "gas_used": 6964,
+      "changed_storage_slot_count": 1,
+      "storage_change_upper_bound_bytes": 32,
+      "fraction_of_block_limit": 6.485730409622192e-06
+    },
+    {
+      "operation": "TASK_CREATE",
+      "batch_size": 1,
+      "gas_used": 121420,
+      "changed_storage_slot_count": 6,
+      "storage_change_upper_bound_bytes": 192,
+      "fraction_of_block_limit": 0.0001130811870098114
+    }
+  ],
+  "f12_points": [
+    {
+      "operation": "AUDIT_OPEN",
+      "batch_size": 1,
+      "gas_used": 126504
+    },
+    {
+      "operation": "AUDIT_RECORD_DA",
+      "batch_size": 1,
+      "gas_used": 5414
+    },
+    {
+      "operation": "AUDIT_RECORD_RESULT",
+      "batch_size": 1,
+      "gas_used": 5654
+    },
+    {
+      "operation": "COMMIT_RESPONSE",
+      "batch_size": 1,
+      "gas_used": 259344
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 1,
+      "gas_used": 104774
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 2,
+      "gas_used": 156656
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 4,
+      "gas_used": 260426
+    },
+    {
+      "operation": "CREDIT_ALLOCATE",
+      "batch_size": 8,
+      "gas_used": 467937
+    },
+    {
+      "operation": "MODEL_REGISTER",
+      "batch_size": 1,
+      "gas_used": 94342
+    },
+    {
+      "operation": "OPEN_CHALLENGE",
+      "batch_size": 1,
+      "gas_used": 5962
+    },
+    {
+      "operation": "RECEIPT_ACTIVATE",
+      "batch_size": 1,
+      "gas_used": 59959
+    },
+    {
+      "operation": "RECEIPT_MARK_CHALLENGED",
+      "batch_size": 1,
+      "gas_used": 7252
+    },
+    {
+      "operation": "RECEIPT_MINT_PENDING",
+      "batch_size": 1,
+      "gas_used": 172718
+    },
+    {
+      "operation": "RECEIPT_SLASH",
+      "batch_size": 1,
+      "gas_used": 6964
+    },
+    {
+      "operation": "TASK_CREATE",
+      "batch_size": 1,
+      "gas_used": 121420
+    }
+  ],
+  "parity_verification": {
+    "schema_version": "POI_MPP_E7_PARITY_VERIFICATION_V1",
+    "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+    "source_paths": [
+      "src/poi_mpp/evidence/canonical.py",
+      "src/poi_mpp/protocol/commitment.py",
+      "src/poi_mpp/protocol/credit.py",
+      "src/poi_mpp/protocol/receipt.py",
+      "src/poi_mpp/protocol/reference_machine.py",
+      "src/poi_mpp/protocol/types.py",
+      "contracts/src/PolicyRegistry.sol",
+      "contracts/src/ModelRegistry.sol",
+      "contracts/src/TaskManager.sol",
+      "contracts/src/CommitmentHub.sol",
+      "contracts/src/AuditManager.sol",
+      "contracts/src/ReceiptManager.sol",
+      "contracts/src/CreditEngine.sol",
+      "contracts/test/ProtocolRoles.t.sol",
+      "contracts/test/HashVectors.t.sol",
+      "contracts/script/ProtocolVectorWitness.s.sol",
+      "scripts/export_solidity_vectors.py",
+      "tests/integration/test_python_solidity_parity.py",
+      "tests/fixtures/protocol_vectors.json"
+    ],
+    "protocol_vectors_path": "tests/fixtures/protocol_vectors.json",
+    "protocol_vectors_hash": "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
+    "protocol_witness_path": "contracts/out/protocol_witnesses.json",
+    "protocol_witness_hash": "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58",
+    "export_vectors_transcript": {
+      "schema_version": "POI_MPP_E7_COMMAND_TRANSCRIPT_V1",
+      "command": [
+        "python3.11",
+        "scripts/export_solidity_vectors.py"
+      ],
+      "cwd": ".",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_size": 0,
+      "stderr_size": 0,
+      "returncode": 0
+    },
+    "hashvectors_test_transcript": {
+      "schema_version": "POI_MPP_E7_COMMAND_TRANSCRIPT_V1",
+      "command": [
+        "forge",
+        "test",
+        "--match-contract",
+        "HashVectors",
+        "-q"
+      ],
+      "cwd": "contracts",
+      "stdout_hash": "fdc7dd70183c07f7da9907315ed4ab753fc6ba69534202a03152dcdb580fd104",
+      "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_size": 69,
+      "stderr_size": 0,
+      "returncode": 0
+    },
+    "python_parity_transcript": {
+      "schema_version": "POI_MPP_E7_COMMAND_TRANSCRIPT_V1",
+      "command": [
+        "python3.11",
+        "-m",
+        "pytest",
+        "tests/integration/test_python_solidity_parity.py",
+        "-q"
+      ],
+      "cwd": ".",
+      "stdout_hash": "4d2df7a96ce4a667da3ccf295f2d16c728a65ed0e861a3baa919f7bb469b02b5",
+      "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_size": 80,
+      "stderr_size": 0,
+      "returncode": 0
+    }
+  },
+  "summary": {
+    "schema_version": "POI_MPP_E7_SUMMARY_V1",
+    "claim_id": "E7_LOCAL_EVM_BOUNDEDNESS_AND_PARITY",
+    "measurement_count": 15,
+    "max_gas_used": 467937,
+    "max_fraction_of_block_limit": 0.00043580029159784317,
+    "block_boundedness_all": true,
+    "parity_bound": true,
+    "claim_disposition": "SUPPORTED"
+  }
+}
