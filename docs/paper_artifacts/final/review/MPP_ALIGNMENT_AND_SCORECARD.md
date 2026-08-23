@@ -6,7 +6,7 @@ Date: Sunday, August 23, 2026
 
 This assessment reconciles the manuscript-facing material with the canonical
 `publication/artifact_manifest.json` (SHA-256
-`bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`), its
+`9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`), its
 tables, figures, claim matrix, and omission ledger. It is a repository-grounded
 editorial assessment, not an independent-human review, a prior-art verdict, or
 a publication-acceptance judgment.

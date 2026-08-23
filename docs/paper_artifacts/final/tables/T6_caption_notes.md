@@ -2,7 +2,7 @@ Table 6. Paper-facing static presentation of canonical E8/T13 next-epoch simulat
 
 Origin:
 - canonical `publication/tables/T13_consensus_safety.csv` and F11;
-- canonical manifest SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`.
+- canonical manifest SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`.
 
 Units:
 - `total_active_weight_micros` is reported in the canonical simulation’s micro-weight units.

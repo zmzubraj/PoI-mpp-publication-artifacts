@@ -3,7 +3,7 @@
 ## Canonical publication-artifact status
 
 Source of truth: `publication/artifact_manifest.json`, SHA-256
-`bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c943`.
+`9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`.
 
 The canonical bundle contains result artifacts for E1, E2, and E4-E8. It is
 **not publication-ready**. The remaining non-compensating blockers are:

@@ -1,7 +1,7 @@
 {
   "artifact_root_relative_path": "..",
   "environment_hash": "09ed1e6114ff1f852b0839058fb4c20f546844446b2e23becce6d3dbe1047c1c",
-  "generator_source_closure_hash": "f93449805f8eb7ddb720e5b759df64d5f3087c595f66ad948636ab64739b1718",
+  "generator_source_closure_hash": "b4269b0f7a96ec94c6ea658299f8ec1f663c75d0903ad557eff5396b0ffbda3f",
   "inputs": [
     {
       "config_hash": null,
@@ -616,7 +616,7 @@
       "relative_path": "raw/E7_live_bundle.json",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": "POI_MPP_E7_BUNDLE_V1",
-      "sha256": "00ceb862b1fe9754799fca8e1a7eacfdd3e5e79878512389944b318499fcb632",
+      "sha256": "89572582123c7c79e80908abac86d2376d515e904c73d5f8782d0b015d37e3fe",
       "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
@@ -1096,5 +1096,5 @@
     }
   ],
   "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3",
-  "self_digest": "6fd4798af70fe2cadea855b777a00502dcf8d9812ceb017708eb5d65617b6e6f"
+  "self_digest": "41ca21599ea4beee4459b156b2f4aa07712dbe7df71ab57468815df85ba5969c"
 }

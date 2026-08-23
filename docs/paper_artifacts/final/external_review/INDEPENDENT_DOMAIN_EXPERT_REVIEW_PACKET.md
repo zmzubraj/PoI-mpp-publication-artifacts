@@ -6,7 +6,7 @@ This file is not a completed review, not a verdict, and not a signature-bearing 
 
 ## Current claim matrix boundary
 
-Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current narrative source of truth. The tracked canonical machine-readable bundle is `../../../../publication/artifact_manifest.json` (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c`). That bundle is review input only: this unsigned packet does not satisfy the independent-review or freeze gate.
+Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current narrative source of truth. The tracked canonical machine-readable bundle is `../../../../publication/artifact_manifest.json` (SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`). That bundle is review input only: this unsigned packet does not satisfy the independent-review or freeze gate.
 
 Current claim status:
 

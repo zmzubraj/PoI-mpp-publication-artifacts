@@ -38,7 +38,7 @@ The external evaluator authority must be able to do all of the following:
 
 ## Current draft request set
 
-The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `../../../../publication/artifact_manifest.json` (SHA-256 `bd882ca072602e13cc14850a44d1b769111f6b032e56901e9419a3263593c`); it records E3 as an explicit omission, not evidence.
+The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `../../../../publication/artifact_manifest.json` (SHA-256 `9c5d914d4a1eca35589bacf0a889da86adef7027a17d19612ce8ef2b49525bad`); it records E3 as an explicit omission, not evidence.
 
 | Relative path | Why it matters |
 |---|---|
