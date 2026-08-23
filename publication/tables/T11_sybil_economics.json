@@ -1,0 +1,116 @@
+[
+  {
+    "baseline_credit_micros": "707.871094",
+    "capacity_model": "CAPACITY_COMMITTED",
+    "claim_disposition": "SUPPORTED",
+    "confidence_interval_micros": [
+      "0.000000",
+      "0.000000"
+    ],
+    "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "expected_credit_micros": "707.871094",
+    "identities": 1,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "run_id": "publication-e6-simulation-v1",
+    "sample_size": 6,
+    "scenario_id": "support-capacity-committed-1",
+    "source_hashes": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1|ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d",
+    "sybil_advantage_micros": "0.000000",
+    "uncertainty": "confidence_interval_micros"
+  },
+  {
+    "baseline_credit_micros": "707.871094",
+    "capacity_model": "CAPACITY_COMMITTED",
+    "claim_disposition": "SUPPORTED",
+    "confidence_interval_micros": [
+      "0.000000",
+      "0.000000"
+    ],
+    "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "expected_credit_micros": "707.871094",
+    "identities": 64,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "run_id": "publication-e6-simulation-v1",
+    "sample_size": 6,
+    "scenario_id": "support-capacity-committed-64",
+    "source_hashes": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1|ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d",
+    "sybil_advantage_micros": "0.000000",
+    "uncertainty": "confidence_interval_micros"
+  },
+  {
+    "baseline_credit_micros": "705.849609",
+    "capacity_model": "OPERATOR_SLOT",
+    "claim_disposition": "SUPPORTED",
+    "confidence_interval_micros": [
+      "0.000000",
+      "0.000000"
+    ],
+    "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "expected_credit_micros": "705.849609",
+    "identities": 1,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "run_id": "publication-e6-simulation-v1",
+    "sample_size": 6,
+    "scenario_id": "support-operator-slot-1",
+    "source_hashes": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1|ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d",
+    "sybil_advantage_micros": "0.000000",
+    "uncertainty": "confidence_interval_micros"
+  },
+  {
+    "baseline_credit_micros": "705.849609",
+    "capacity_model": "OPERATOR_SLOT",
+    "claim_disposition": "SUPPORTED",
+    "confidence_interval_micros": [
+      "0.000000",
+      "0.000000"
+    ],
+    "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "expected_credit_micros": "705.849609",
+    "identities": 64,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "run_id": "publication-e6-simulation-v1",
+    "sample_size": 6,
+    "scenario_id": "support-operator-slot-64",
+    "source_hashes": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1|ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d",
+    "sybil_advantage_micros": "0.000000",
+    "uncertainty": "confidence_interval_micros"
+  },
+  {
+    "baseline_credit_micros": "705.849609",
+    "capacity_model": "IDENTITY_UNIFORM",
+    "claim_disposition": "SUPPORTED",
+    "confidence_interval_micros": [
+      "0.000000",
+      "0.000000"
+    ],
+    "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "expected_credit_micros": "705.849609",
+    "identities": 1,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "run_id": "publication-e6-simulation-v1",
+    "sample_size": 6,
+    "scenario_id": "negative-identity-uniform-1",
+    "source_hashes": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1|ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d",
+    "sybil_advantage_micros": "0.000000",
+    "uncertainty": "confidence_interval_micros"
+  },
+  {
+    "baseline_credit_micros": "705.849609",
+    "capacity_model": "IDENTITY_UNIFORM",
+    "claim_disposition": "SUPPORTED",
+    "confidence_interval_micros": [
+      "1908.369141",
+      "1908.369141"
+    ],
+    "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+    "expected_credit_micros": "2614.218750",
+    "identities": 64,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "run_id": "publication-e6-simulation-v1",
+    "sample_size": 6,
+    "scenario_id": "negative-identity-uniform-64",
+    "source_hashes": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1|ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d",
+    "sybil_advantage_micros": "1908.369141",
+    "uncertainty": "confidence_interval_micros"
+  }
+]

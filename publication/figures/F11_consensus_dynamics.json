@@ -1,0 +1,226 @@
+[
+  {
+    "ablation": "NONE",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.6171875,
+    "scenario_id": "support-honest-baseline",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "NONE",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-honest-baseline",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "NONE",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.6171875,
+    "scenario_id": "support-honest-baseline",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "NONE",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-honest-baseline",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "HIGH_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.7421875,
+    "scenario_id": "support-high-compute-capped",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "HIGH_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-high-compute-capped",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "HIGH_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.7421875,
+    "scenario_id": "support-high-compute-capped",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "HIGH_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-high-compute-capped",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "SYBIL_SPLIT",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.7265625,
+    "scenario_id": "support-sybil-split",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "SYBIL_SPLIT",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-sybil-split",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "SYBIL_SPLIT",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.7265625,
+    "scenario_id": "support-sybil-split",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "SYBIL_SPLIT",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-sybil-split",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "SUBSIDIZED_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.75390625,
+    "scenario_id": "support-subsidized-compute",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "SUBSIDIZED_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-subsidized-compute",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "SUBSIDIZED_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.75390625,
+    "scenario_id": "support-subsidized-compute",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "SUBSIDIZED_COMPUTE",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-subsidized-compute",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "COLLUSION",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.875,
+    "scenario_id": "support-collusion-bounded",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "COLLUSION",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.203125,
+    "scenario_id": "support-collusion-bounded",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "COLLUSION",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.875,
+    "scenario_id": "support-collusion-bounded",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "COLLUSION",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.203125,
+    "scenario_id": "support-collusion-bounded",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "CHURN",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.65625,
+    "scenario_id": "support-receipt-churn",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "CHURN",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-receipt-churn",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "CHURN",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.65625,
+    "scenario_id": "support-receipt-churn",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "CHURN",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "support-receipt-churn",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "CONCENTRATION_CAP_REMOVED",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.9296875,
+    "scenario_id": "negative-cap-removed",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "CONCENTRATION_CAP_REMOVED",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.9296875,
+    "scenario_id": "negative-cap-removed",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "CONCENTRATION_CAP_REMOVED",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.9296875,
+    "scenario_id": "negative-cap-removed",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "CONCENTRATION_CAP_REMOVED",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "negative-cap-removed",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "COLLATERAL_RICH_ZERO_CREDIT",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "boundary-zero-credit-rich",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "COLLATERAL_RICH_ZERO_CREDIT",
+    "estimand": "ATTACKER_COMMITTEE_WEIGHT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "boundary-zero-credit-rich",
+    "threshold": "GE_TWO_THIRDS"
+  },
+  {
+    "ablation": "COLLATERAL_RICH_ZERO_CREDIT",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "boundary-zero-credit-rich",
+    "threshold": "GE_ONE_THIRD"
+  },
+  {
+    "ablation": "COLLATERAL_RICH_ZERO_CREDIT",
+    "estimand": "ATTACKER_COMMITTEE_SEAT_SHARE",
+    "probability": 0.0,
+    "scenario_id": "boundary-zero-credit-rich",
+    "threshold": "GE_TWO_THIRDS"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "analysis_surface": "SUPPORTED_AUDIT_SURFACES",
+    "attack_family": "aggregate",
+    "denominator": 4,
+    "empirical_detected": 1,
+    "exact_detected": 3,
+    "lower_ci": 0.5101091635454027,
+    "overall_detection_rate": 1.0,
+    "upper_ci": 1.0
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "capacity_model": "CAPACITY_COMMITTED",
+    "identities": 1,
+    "normalized_expected_credit": 1.0,
+    "scenario_id": "support-capacity-committed-1"
+  },
+  {
+    "capacity_model": "CAPACITY_COMMITTED",
+    "identities": 64,
+    "normalized_expected_credit": 1.0,
+    "scenario_id": "support-capacity-committed-64"
+  },
+  {
+    "capacity_model": "IDENTITY_UNIFORM",
+    "identities": 1,
+    "normalized_expected_credit": 1.0,
+    "scenario_id": "negative-identity-uniform-1"
+  },
+  {
+    "capacity_model": "IDENTITY_UNIFORM",
+    "identities": 64,
+    "normalized_expected_credit": 3.703648364562599,
+    "scenario_id": "negative-identity-uniform-64"
+  },
+  {
+    "capacity_model": "OPERATOR_SLOT",
+    "identities": 1,
+    "normalized_expected_credit": 1.0,
+    "scenario_id": "support-operator-slot-1"
+  },
+  {
+    "capacity_model": "OPERATOR_SLOT",
+    "identities": 64,
+    "normalized_expected_credit": 1.0,
+    "scenario_id": "support-operator-slot-64"
+  }
+]

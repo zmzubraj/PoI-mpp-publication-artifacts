@@ -1,0 +1,18 @@
+[
+  {
+    "lower_bound": 0.038461538461538464,
+    "miss_probability": 0.038461538461538464,
+    "mode": "STATIC_WITHOUT_REPLACEMENT",
+    "observation_key": "obs-static-withheld-wo-replacement",
+    "scenario_id": "static-withheld-wo-replacement",
+    "upper_bound": 0.038461538461538464
+  },
+  {
+    "lower_bound": 0.1811918241010821,
+    "miss_probability": 0.35,
+    "mode": "CORRELATED_LOSS",
+    "observation_key": "obs-correlated-loss-corrupt",
+    "scenario_id": "correlated-loss-corrupt",
+    "upper_bound": 0.5671457233147638
+  }
+]

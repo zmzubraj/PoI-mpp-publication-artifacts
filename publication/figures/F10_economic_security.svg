@@ -1,0 +1,41 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'>
+<rect width='100%' height='100%' fill='#ffffff'/>
+<text x='60' y='35' font-family='Menlo, monospace' font-size='26' fill='#111111'>F10 Economic Security</text>
+<text x='60' y='58' font-family='Menlo, monospace' font-size='14' fill='#444444'>REPRODUCIBLE_SIMULATION | scope=E6_CONFIRMATORY_PUBLICATION_V1 | cost to target weight by identity count; disposition=SUPPORTED</text>
+<line x1='90' y1='420' x2='870' y2='420' stroke='#111111' stroke-width='2'/>
+<line x1='90' y1='60' x2='90' y2='420' stroke='#111111' stroke-width='2'/>
+<text x='480.0' y='470' text-anchor='middle' font-family='Menlo, monospace' font-size='16'>Identities</text>
+<text x='24' y='240.0' text-anchor='middle' transform='rotate(-90 24,240.0)' font-family='Menlo, monospace' font-size='16'>Cost to Target Weight Micros</text>
+<line x1='90.0' y1='420' x2='90.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='90.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>1</text>
+<line x1='870.0' y1='420' x2='870.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='870.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>64</text>
+<line x1='84' y1='420.0' x2='90' y2='420.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='424.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0</text>
+<line x1='84' y1='348.0' x2='90' y2='348.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='352.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>1833415.503515</text>
+<line x1='84' y1='276.0' x2='90' y2='276.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='280.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>3666831.00703</text>
+<line x1='84' y1='204.0' x2='90' y2='204.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='208.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>5500246.510545</text>
+<line x1='84' y1='132.0' x2='90' y2='132.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='136.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>7333662.01406</text>
+<line x1='84' y1='60.0' x2='90' y2='60.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='64.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>9167077.517575</text>
+<circle cx='90' cy='159.039301' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='60' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none' points='90,159.039301 870,60'/>
+<line x1='700' y1='95' x2='736' y2='95' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none'/>
+<text x='744' y='99' font-family='Menlo, monospace' font-size='13'>CAPACITY_COMMITTED:1/3</text>
+<circle cx='90' cy='159.16388' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='111.000682' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#000000' stroke-width='3' stroke-dasharray='8 4' points='90,159.16388 870,111.000682'/>
+<line x1='700' y1='117' x2='736' y2='117' stroke='#000000' stroke-width='3' stroke-dasharray='8 4'/>
+<text x='744' y='121' font-family='Menlo, monospace' font-size='13'>IDENTITY_UNIFORM:1/3</text>
+<circle cx='90' cy='159.16388' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='60.171859' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3' points='90,159.16388 870,60.171859'/>
+<line x1='700' y1='139' x2='736' y2='139' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3'/>
+<text x='744' y='143' font-family='Menlo, monospace' font-size='13'>OPERATOR_SLOT:1/3</text>
+<text x='60' y='510' font-family='Menlo, monospace' font-size='13'>source_hashes: 98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1,ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d</text>
+</svg>

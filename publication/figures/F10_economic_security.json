@@ -1,0 +1,44 @@
+[
+  {
+    "capacity_model": "CAPACITY_COMMITTED",
+    "estimated_cost_to_target_weight_micros": "6645130.427587",
+    "identities": 1,
+    "scenario_id": "support-capacity-committed-1",
+    "target_weight_fraction": "1/3"
+  },
+  {
+    "capacity_model": "CAPACITY_COMMITTED",
+    "estimated_cost_to_target_weight_micros": "9167077.517575",
+    "identities": 64,
+    "scenario_id": "support-capacity-committed-64",
+    "target_weight_fraction": "1/3"
+  },
+  {
+    "capacity_model": "IDENTITY_UNIFORM",
+    "estimated_cost_to_target_weight_micros": "6641958.141859",
+    "identities": 1,
+    "scenario_id": "negative-identity-uniform-1",
+    "target_weight_fraction": "1/3"
+  },
+  {
+    "capacity_model": "IDENTITY_UNIFORM",
+    "estimated_cost_to_target_weight_micros": "7868390.841071",
+    "identities": 64,
+    "scenario_id": "negative-identity-uniform-64",
+    "target_weight_fraction": "1/3"
+  },
+  {
+    "capacity_model": "OPERATOR_SLOT",
+    "estimated_cost_to_target_weight_micros": "6641958.141859",
+    "identities": 1,
+    "scenario_id": "support-operator-slot-1",
+    "target_weight_fraction": "1/3"
+  },
+  {
+    "capacity_model": "OPERATOR_SLOT",
+    "estimated_cost_to_target_weight_micros": "9162701.292082",
+    "identities": 64,
+    "scenario_id": "support-operator-slot-64",
+    "target_weight_fraction": "1/3"
+  }
+]

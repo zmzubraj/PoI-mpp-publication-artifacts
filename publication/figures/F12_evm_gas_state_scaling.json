@@ -1,0 +1,77 @@
+[
+  {
+    "batch_size": 1,
+    "gas_used": 126504,
+    "operation": "AUDIT_OPEN"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 5414,
+    "operation": "AUDIT_RECORD_DA"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 5654,
+    "operation": "AUDIT_RECORD_RESULT"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 259344,
+    "operation": "COMMIT_RESPONSE"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 104774,
+    "operation": "CREDIT_ALLOCATE"
+  },
+  {
+    "batch_size": 2,
+    "gas_used": 156656,
+    "operation": "CREDIT_ALLOCATE"
+  },
+  {
+    "batch_size": 4,
+    "gas_used": 260426,
+    "operation": "CREDIT_ALLOCATE"
+  },
+  {
+    "batch_size": 8,
+    "gas_used": 467937,
+    "operation": "CREDIT_ALLOCATE"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 94342,
+    "operation": "MODEL_REGISTER"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 5962,
+    "operation": "OPEN_CHALLENGE"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 59959,
+    "operation": "RECEIPT_ACTIVATE"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 7252,
+    "operation": "RECEIPT_MARK_CHALLENGED"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 172718,
+    "operation": "RECEIPT_MINT_PENDING"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 6964,
+    "operation": "RECEIPT_SLASH"
+  },
+  {
+    "batch_size": 1,
+    "gas_used": 121420,
+    "operation": "TASK_CREATE"
+  }
+]

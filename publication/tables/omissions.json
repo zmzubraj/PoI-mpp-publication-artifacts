@@ -1,0 +1,23 @@
+[
+  {
+    "artifact_id": "T4",
+    "disposition": "WAITING_EXTERNAL",
+    "experiment_id": "E3",
+    "origin": "",
+    "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+  },
+  {
+    "artifact_id": "T8",
+    "disposition": "WAITING_EXTERNAL",
+    "experiment_id": "E3",
+    "origin": "",
+    "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+  },
+  {
+    "artifact_id": "F7",
+    "disposition": "WAITING_EXTERNAL",
+    "experiment_id": "E3",
+    "origin": "",
+    "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+  }
+]

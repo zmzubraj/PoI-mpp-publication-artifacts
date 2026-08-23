@@ -1,0 +1,1100 @@
+{
+  "artifact_root_relative_path": "..",
+  "environment_hash": "09ed1e6114ff1f852b0839058fb4c20f546844446b2e23becce6d3dbe1047c1c",
+  "generator_source_closure_hash": "f93449805f8eb7ddb720e5b759df64d5f3087c595f66ad948636ab64739b1718",
+  "inputs": [
+    {
+      "config_hash": null,
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E1",
+      "input_role": "rows",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T6",
+        "F5"
+      ],
+      "relative_path": "results/publication/e1-real-11de165/e1_cost_rows.parquet",
+      "run_id": "run-e1-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": "POI_MPP_E1_MEASUREMENT_ROW_V2",
+      "sha256": "160f8a705ef3b9dffa3b594e091592635cf4bacfe5e7c7e2b1e4c52a52492740"
+    },
+    {
+      "config_hash": null,
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E2",
+      "input_role": "rows",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T7",
+        "F6"
+      ],
+      "relative_path": "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
+      "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": "POI_MPP_E2_RECEIPT_ROW_V1",
+      "sha256": "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d"
+    },
+    {
+      "config_hash": null,
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E2",
+      "input_role": "summary",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T7",
+        "F6"
+      ],
+      "relative_path": "results/publication/e2-real-eb866c2/e2_summary.json",
+      "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": "POI_MPP_E2_SUMMARY_V1",
+      "sha256": "a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277"
+    },
+    {
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "input_role": "metadata",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T9",
+        "F8"
+      ],
+      "relative_path": "results/publication/e4-11de165/e4_metadata.json",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": "POI_MPP_E4_PUBLICATION_METADATA_V1",
+      "sha256": "206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869"
+    },
+    {
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "input_role": "rows",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T9",
+        "F8"
+      ],
+      "relative_path": "results/publication/e4-11de165/e4_rows.json",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": "POI_MPP_E4_SCENARIO_ROW_V1",
+      "sha256": "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032"
+    },
+    {
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "input_role": "summary",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T9",
+        "F8"
+      ],
+      "relative_path": "results/publication/e4-11de165/e4_summary.json",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": "POI_MPP_E4_SUMMARY_V1",
+      "sha256": "a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73"
+    },
+    {
+      "config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+      "disposition": "SUPPORTED",
+      "experiment_id": "E5",
+      "input_role": "confirmatory_contract",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T10"
+      ],
+      "relative_path": "configs/confirmatory/e5.yaml",
+      "run_id": "publication-e5-simulation-v1",
+      "schema_version": "POI_MPP_E5_CONFIRMATORY_CONTRACT_V1",
+      "sha256": "54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d"
+    },
+    {
+      "config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+      "disposition": "SUPPORTED",
+      "experiment_id": "E5",
+      "input_role": "rows",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T10"
+      ],
+      "relative_path": "results/publication/e5-11de165/e5_rows.json",
+      "run_id": "publication-e5-simulation-v1",
+      "schema_version": "POI_MPP_E5_SCENARIO_ROW_V1",
+      "sha256": "1ded94adbbd965cc21c246f40be6367c9a33fb586a6c770f4787f75365259e44"
+    },
+    {
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "input_role": "confirmatory_contract",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T11",
+        "F9",
+        "F10"
+      ],
+      "relative_path": "configs/confirmatory/e6.yaml",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": "POI_MPP_E6_CONFIRMATORY_CONTRACT_V1",
+      "sha256": "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+    },
+    {
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "input_role": "rows",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T11",
+        "F9",
+        "F10"
+      ],
+      "relative_path": "results/publication/e6-11de165/e6_rows.json",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": "POI_MPP_E6_SCENARIO_ROW_V1",
+      "sha256": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1"
+    },
+    {
+      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "disposition": "SUPPORTED",
+      "experiment_id": "E7",
+      "input_role": "run_config",
+      "origin": "FOUNDRY_MEASUREMENT",
+      "paper_artifact_ids": [
+        "T12",
+        "F12"
+      ],
+      "relative_path": "configs/publication_foundry/e7.run.yaml",
+      "run_id": "publication-e7-foundry-v1",
+      "schema_version": "POI_MPP_RUN_CONFIG_V1",
+      "sha256": "cc80e38f12373cc990ed8a8cac1c1a8c9c41c27f120d34335320b3c2efe3296e"
+    },
+    {
+      "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E8",
+      "input_role": "confirmatory_contract",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T13",
+        "F11"
+      ],
+      "relative_path": "configs/confirmatory/e8.yaml",
+      "run_id": "run-e8-publication-v1",
+      "schema_version": "POI_MPP_E8_CONFIRMATORY_CONTRACT_V1",
+      "sha256": "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+    },
+    {
+      "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E8",
+      "input_role": "rows",
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "paper_artifact_ids": [
+        "T13",
+        "F11"
+      ],
+      "relative_path": "results/publication/e8-11de165/e8_publication_artifact.json",
+      "run_id": "run-e8-publication-v1",
+      "schema_version": "POI_MPP_E8_SCENARIO_ROW_V1",
+      "sha256": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7"
+    }
+  ],
+  "omissions": [
+    {
+      "artifact_id": "T4",
+      "disposition": "WAITING_EXTERNAL",
+      "experiment_id": "E3",
+      "origin": "",
+      "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+    },
+    {
+      "artifact_id": "T8",
+      "disposition": "WAITING_EXTERNAL",
+      "experiment_id": "E3",
+      "origin": "",
+      "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+    },
+    {
+      "artifact_id": "F7",
+      "disposition": "WAITING_EXTERNAL",
+      "experiment_id": "E3",
+      "origin": "",
+      "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
+    }
+  ],
+  "outputs": [
+    {
+      "artifact_id": "F10",
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "derivation_edge": "E6->F10:json",
+      "derived_from_input_paths": [
+        "results/publication/e6-11de165/e6_rows.json",
+        "configs/confirmatory/e6.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F10_economic_security:json",
+      "relative_path": "figures/F10_economic_security.json",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": null,
+      "sha256": "26dd73849b889e1f0553411240a9c4f3fc5d66ba283c4f0060ef46528a3b8233",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1",
+        "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+      ]
+    },
+    {
+      "artifact_id": "F10",
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "derivation_edge": "E6->F10:svg",
+      "derived_from_input_paths": [
+        "results/publication/e6-11de165/e6_rows.json",
+        "configs/confirmatory/e6.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F10_economic_security:svg",
+      "relative_path": "figures/F10_economic_security.svg",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": null,
+      "sha256": "b9e8026a6f99645f70ab65dde5de82cb6e62f5f686634e9c2aab9e6121883c61",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1",
+        "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+      ]
+    },
+    {
+      "artifact_id": "F11",
+      "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
+      "derivation_edge": "E8->F11:json",
+      "derived_from_input_paths": [
+        "results/publication/e8-11de165/e8_publication_artifact.json",
+        "configs/confirmatory/e8.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E8",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F11_consensus_dynamics:json",
+      "relative_path": "figures/F11_consensus_dynamics.json",
+      "run_id": "run-e8-publication-v1",
+      "schema_version": null,
+      "sha256": "3002605571a577c10d3a8cf23a376d07dff92bdc0f4e3ed1d19ed9376d9a5457",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
+        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+      ]
+    },
+    {
+      "artifact_id": "F11",
+      "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
+      "derivation_edge": "E8->F11:svg",
+      "derived_from_input_paths": [
+        "results/publication/e8-11de165/e8_publication_artifact.json",
+        "configs/confirmatory/e8.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E8",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F11_consensus_dynamics:svg",
+      "relative_path": "figures/F11_consensus_dynamics.svg",
+      "run_id": "run-e8-publication-v1",
+      "schema_version": null,
+      "sha256": "0b73e4d8fecd5090e662835d56fdfa202a83a018afb2cc5ec37e6caf20c60ba1",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
+        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+      ]
+    },
+    {
+      "artifact_id": "F12",
+      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "derivation_edge": "E7->F12:json",
+      "derived_from_input_paths": [
+        "configs/publication_foundry/e7.run.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E7",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "FOUNDRY_MEASUREMENT",
+      "output_id": "figures:F12_evm_gas_state_scaling:json",
+      "relative_path": "figures/F12_evm_gas_state_scaling.json",
+      "run_id": "publication-e7-foundry-v1",
+      "schema_version": null,
+      "sha256": "223c99ce6e1290a39eeb8c8a0f422c245c74f1d5a9330a8412e0bc4697857266",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
+        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
+        "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
+      ]
+    },
+    {
+      "artifact_id": "F12",
+      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "derivation_edge": "E7->F12:svg",
+      "derived_from_input_paths": [
+        "configs/publication_foundry/e7.run.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E7",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "FOUNDRY_MEASUREMENT",
+      "output_id": "figures:F12_evm_gas_state_scaling:svg",
+      "relative_path": "figures/F12_evm_gas_state_scaling.svg",
+      "run_id": "publication-e7-foundry-v1",
+      "schema_version": null,
+      "sha256": "8d709fba726445793bd46966a0098f3d3629fe9754287735c19814f717a4e6d0",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
+        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
+        "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
+      ]
+    },
+    {
+      "artifact_id": "F5",
+      "config_hash": null,
+      "derivation_edge": "E1->F5:json",
+      "derived_from_input_paths": [
+        "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E1",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "figures:F5_single_pass_cost:json",
+      "relative_path": "figures/F5_single_pass_cost.json",
+      "run_id": "run-e1-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "d99d73619eebd66a6672d2c7173d88d9549336e285af45e3c3a1ab9daa44f6f5",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "160f8a705ef3b9dffa3b594e091592635cf4bacfe5e7c7e2b1e4c52a52492740"
+      ]
+    },
+    {
+      "artifact_id": "F5",
+      "config_hash": null,
+      "derivation_edge": "E1->F5:svg",
+      "derived_from_input_paths": [
+        "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E1",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "figures:F5_single_pass_cost:svg",
+      "relative_path": "figures/F5_single_pass_cost.svg",
+      "run_id": "run-e1-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "6f9bb88f3d13740eb5f1d093410bd9c89ec09d0a4a121ccab4084996e32c60bb",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "160f8a705ef3b9dffa3b594e091592635cf4bacfe5e7c7e2b1e4c52a52492740"
+      ]
+    },
+    {
+      "artifact_id": "F6",
+      "config_hash": null,
+      "derivation_edge": "E2->F6:json",
+      "derived_from_input_paths": [
+        "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
+        "results/publication/e2-real-eb866c2/e2_summary.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E2",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "figures:F6_audit_soundness:json",
+      "relative_path": "figures/F6_audit_soundness.json",
+      "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "174e7317458039c9da6b9cc835ca6b4aaca506074691df0a5cb3f1ad7446e4c2",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d",
+        "a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277"
+      ]
+    },
+    {
+      "artifact_id": "F6",
+      "config_hash": null,
+      "derivation_edge": "E2->F6:svg",
+      "derived_from_input_paths": [
+        "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
+        "results/publication/e2-real-eb866c2/e2_summary.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E2",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "figures:F6_audit_soundness:svg",
+      "relative_path": "figures/F6_audit_soundness.svg",
+      "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "41f84ab461515ca46725c18c888f240cfb8eba5af752d49ef0091dd03534fcd1",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d",
+        "a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277"
+      ]
+    },
+    {
+      "artifact_id": "F7",
+      "config_hash": null,
+      "derivation_edge": "E3->F7:svg",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "WAITING_EXTERNAL",
+      "experiment_id": "E3",
+      "kind": "figures",
+      "omission_reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+      "origin": "",
+      "output_id": "figures:F7_semantic_verification_quality:svg",
+      "relative_path": "figures/F7_semantic_verification_quality.svg",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "ce0c772b7718b344805afd02ffcbc6e8e01064a6f2f1725de669e5c86ac5b87a",
+      "source_closure_hash": null,
+      "source_hashes": []
+    },
+    {
+      "artifact_id": "F8",
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "derivation_edge": "E4->F8:json",
+      "derived_from_input_paths": [
+        "results/publication/e4-11de165/e4_rows.json",
+        "results/publication/e4-11de165/e4_summary.json",
+        "results/publication/e4-11de165/e4_metadata.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F8_da_withholding:json",
+      "relative_path": "figures/F8_da_withholding.json",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": null,
+      "sha256": "149463ba3480df8920b72eea17ed437fb48163ea5cbc3f065c9d7ed5c3aec371",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032",
+        "a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73",
+        "206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869"
+      ]
+    },
+    {
+      "artifact_id": "F8",
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "derivation_edge": "E4->F8:svg",
+      "derived_from_input_paths": [
+        "results/publication/e4-11de165/e4_rows.json",
+        "results/publication/e4-11de165/e4_summary.json",
+        "results/publication/e4-11de165/e4_metadata.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F8_da_withholding:svg",
+      "relative_path": "figures/F8_da_withholding.svg",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": null,
+      "sha256": "2fd179de4919f26ce4f1a56b5977ce5bea8c25335405b1404ce13a456d9fe7c3",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032",
+        "a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73",
+        "206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869"
+      ]
+    },
+    {
+      "artifact_id": "F9",
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "derivation_edge": "E6->F9:json",
+      "derived_from_input_paths": [
+        "results/publication/e6-11de165/e6_rows.json",
+        "configs/confirmatory/e6.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F9_sybil_advantage:json",
+      "relative_path": "figures/F9_sybil_advantage.json",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": null,
+      "sha256": "d2c20a620fbe0bfa833de90822f6d42516c7252f2ffec400828994de9e8cf724",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1",
+        "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+      ]
+    },
+    {
+      "artifact_id": "F9",
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "derivation_edge": "E6->F9:svg",
+      "derived_from_input_paths": [
+        "results/publication/e6-11de165/e6_rows.json",
+        "configs/confirmatory/e6.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "kind": "figures",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "figures:F9_sybil_advantage:svg",
+      "relative_path": "figures/F9_sybil_advantage.svg",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": null,
+      "sha256": "d08adbe6d0a23f82c6c708e8f5deaccef7405fc261b7887755e810c2ac06c862",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1",
+        "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+      ]
+    },
+    {
+      "artifact_id": "RAW_E7_LIVE_BUNDLE",
+      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "derivation_edge": "E7->RAW_E7_LIVE_BUNDLE:json",
+      "derived_from_input_paths": [
+        "configs/publication_foundry/e7.run.yaml"
+      ],
+      "derives_to_artifact_ids": [
+        "T12",
+        "F12"
+      ],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E7",
+      "kind": "raw",
+      "omission_reason": null,
+      "origin": "FOUNDRY_MEASUREMENT",
+      "output_id": "raw:E7_live_bundle:json",
+      "relative_path": "raw/E7_live_bundle.json",
+      "run_id": "publication-e7-foundry-v1",
+      "schema_version": "POI_MPP_E7_BUNDLE_V1",
+      "sha256": "00ceb862b1fe9754799fca8e1a7eacfdd3e5e79878512389944b318499fcb632",
+      "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+      "source_hashes": [
+        "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
+        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
+        "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
+      ]
+    },
+    {
+      "artifact_id": "T10",
+      "config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+      "derivation_edge": "E5->T10:csv",
+      "derived_from_input_paths": [
+        "results/publication/e5-11de165/e5_rows.json",
+        "configs/confirmatory/e5.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E5",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T10_watcher_dispute_economics:csv",
+      "relative_path": "tables/T10_watcher_dispute_economics.csv",
+      "run_id": "publication-e5-simulation-v1",
+      "schema_version": null,
+      "sha256": "f75d170172c398768570d17c40b452322eb07ab527f46947dcba99121ec1b87f",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "1ded94adbbd965cc21c246f40be6367c9a33fb586a6c770f4787f75365259e44",
+        "54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d"
+      ]
+    },
+    {
+      "artifact_id": "T10",
+      "config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+      "derivation_edge": "E5->T10:json",
+      "derived_from_input_paths": [
+        "results/publication/e5-11de165/e5_rows.json",
+        "configs/confirmatory/e5.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E5",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T10_watcher_dispute_economics:json",
+      "relative_path": "tables/T10_watcher_dispute_economics.json",
+      "run_id": "publication-e5-simulation-v1",
+      "schema_version": null,
+      "sha256": "94b38b6f008e0dfb6d185bcea09392b4c39327e2c9eb88e148b92362709a4a91",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "1ded94adbbd965cc21c246f40be6367c9a33fb586a6c770f4787f75365259e44",
+        "54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d"
+      ]
+    },
+    {
+      "artifact_id": "T11",
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "derivation_edge": "E6->T11:csv",
+      "derived_from_input_paths": [
+        "results/publication/e6-11de165/e6_rows.json",
+        "configs/confirmatory/e6.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T11_sybil_economics:csv",
+      "relative_path": "tables/T11_sybil_economics.csv",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": null,
+      "sha256": "dbebe81a5ab166f2cf16546a2c4c99ffba40a042f8e0d5f8f3c3a5ff8ca1d582",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1",
+        "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+      ]
+    },
+    {
+      "artifact_id": "T11",
+      "config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+      "derivation_edge": "E6->T11:json",
+      "derived_from_input_paths": [
+        "results/publication/e6-11de165/e6_rows.json",
+        "configs/confirmatory/e6.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E6",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T11_sybil_economics:json",
+      "relative_path": "tables/T11_sybil_economics.json",
+      "run_id": "publication-e6-simulation-v1",
+      "schema_version": null,
+      "sha256": "256ea69a46c6306da21055877f341839a2a8619e8a7f0aa52af4597addc8d67a",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1",
+        "ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d"
+      ]
+    },
+    {
+      "artifact_id": "T12",
+      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "derivation_edge": "E7->T12:csv",
+      "derived_from_input_paths": [
+        "configs/publication_foundry/e7.run.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E7",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "FOUNDRY_MEASUREMENT",
+      "output_id": "tables:T12_evm_boundedness:csv",
+      "relative_path": "tables/T12_evm_boundedness.csv",
+      "run_id": "publication-e7-foundry-v1",
+      "schema_version": null,
+      "sha256": "0cbaf25fc81c7adec976011d06e7bd54d855f68ad8979691bcd5ad1b6421005e",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
+        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
+        "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
+      ]
+    },
+    {
+      "artifact_id": "T12",
+      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "derivation_edge": "E7->T12:json",
+      "derived_from_input_paths": [
+        "configs/publication_foundry/e7.run.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "SUPPORTED",
+      "experiment_id": "E7",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "FOUNDRY_MEASUREMENT",
+      "output_id": "tables:T12_evm_boundedness:json",
+      "relative_path": "tables/T12_evm_boundedness.json",
+      "run_id": "publication-e7-foundry-v1",
+      "schema_version": null,
+      "sha256": "edad608961acb3658cefce918a0ef84e2b284833fa8796835246cc7cf82e7e3b",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
+        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
+        "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
+      ]
+    },
+    {
+      "artifact_id": "T13",
+      "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
+      "derivation_edge": "E8->T13:csv",
+      "derived_from_input_paths": [
+        "results/publication/e8-11de165/e8_publication_artifact.json",
+        "configs/confirmatory/e8.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E8",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T13_consensus_safety:csv",
+      "relative_path": "tables/T13_consensus_safety.csv",
+      "run_id": "run-e8-publication-v1",
+      "schema_version": null,
+      "sha256": "2bf4a408ad873b446e99b028b8b5a2c2b4791f1fa61041c6337d4107982e8606",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
+        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+      ]
+    },
+    {
+      "artifact_id": "T13",
+      "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
+      "derivation_edge": "E8->T13:json",
+      "derived_from_input_paths": [
+        "results/publication/e8-11de165/e8_publication_artifact.json",
+        "configs/confirmatory/e8.yaml"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E8",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T13_consensus_safety:json",
+      "relative_path": "tables/T13_consensus_safety.json",
+      "run_id": "run-e8-publication-v1",
+      "schema_version": null,
+      "sha256": "56f878a702c22b87b5056ae5ba082159b9a333896c370bad679b3a35db40f8cf",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
+        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+      ]
+    },
+    {
+      "artifact_id": "T4",
+      "config_hash": null,
+      "derivation_edge": "E3->T4:json",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "WAITING_EXTERNAL",
+      "experiment_id": "E3",
+      "kind": "tables",
+      "omission_reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+      "origin": "",
+      "output_id": "tables:T4_status:json",
+      "relative_path": "tables/T4_status.json",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "50a40d6ae4fa169e85a6aa6fb1ccac2c5a4950af5504304264ee454b7f951edc",
+      "source_closure_hash": null,
+      "source_hashes": []
+    },
+    {
+      "artifact_id": "T6",
+      "config_hash": null,
+      "derivation_edge": "E1->T6:csv",
+      "derived_from_input_paths": [
+        "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E1",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "tables:T6_single_pass_cost:csv",
+      "relative_path": "tables/T6_single_pass_cost.csv",
+      "run_id": "run-e1-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "71ad9aa4452c1fe0ffa6eabc562b732e52720a991eb94eb96a3312760b302976",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "160f8a705ef3b9dffa3b594e091592635cf4bacfe5e7c7e2b1e4c52a52492740"
+      ]
+    },
+    {
+      "artifact_id": "T6",
+      "config_hash": null,
+      "derivation_edge": "E1->T6:json",
+      "derived_from_input_paths": [
+        "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E1",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "tables:T6_single_pass_cost:json",
+      "relative_path": "tables/T6_single_pass_cost.json",
+      "run_id": "run-e1-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "a66f55961213514ac6d38932163ec2438b9cae6779db8056e7266856da5baa62",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "160f8a705ef3b9dffa3b594e091592635cf4bacfe5e7c7e2b1e4c52a52492740"
+      ]
+    },
+    {
+      "artifact_id": "T7",
+      "config_hash": null,
+      "derivation_edge": "E2->T7:csv",
+      "derived_from_input_paths": [
+        "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
+        "results/publication/e2-real-eb866c2/e2_summary.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E2",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "tables:T7_execution_audit_security:csv",
+      "relative_path": "tables/T7_execution_audit_security.csv",
+      "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "4dd96e132c8508422a51db9aaea7eb033d87452e7692a239e31cd48f2d2e536a",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d",
+        "a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277"
+      ]
+    },
+    {
+      "artifact_id": "T7",
+      "config_hash": null,
+      "derivation_edge": "E2->T7:json",
+      "derived_from_input_paths": [
+        "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
+        "results/publication/e2-real-eb866c2/e2_summary.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E2",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "tables:T7_execution_audit_security:json",
+      "relative_path": "tables/T7_execution_audit_security.json",
+      "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+      "schema_version": null,
+      "sha256": "1d8c4999e80b2b62cda0b7d01af5e4bdb476758d3db1ff14b9f28991da582bef",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d",
+        "a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277"
+      ]
+    },
+    {
+      "artifact_id": "T8",
+      "config_hash": null,
+      "derivation_edge": "E3->T8:json",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "WAITING_EXTERNAL",
+      "experiment_id": "E3",
+      "kind": "tables",
+      "omission_reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+      "origin": "",
+      "output_id": "tables:T8_status:json",
+      "relative_path": "tables/T8_status.json",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "b9b23945db963565f69389d2113b1b27f03d15949323cc5ea9f941459d2695eb",
+      "source_closure_hash": null,
+      "source_hashes": []
+    },
+    {
+      "artifact_id": "T9",
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "derivation_edge": "E4->T9:csv",
+      "derived_from_input_paths": [
+        "results/publication/e4-11de165/e4_rows.json",
+        "results/publication/e4-11de165/e4_summary.json",
+        "results/publication/e4-11de165/e4_metadata.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T9_data_availability:csv",
+      "relative_path": "tables/T9_data_availability.csv",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": null,
+      "sha256": "83c007111da7d0f3628515985588a7c65b109b4c905de8b2de02d2dae3a7cf7a",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032",
+        "a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73",
+        "206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869"
+      ]
+    },
+    {
+      "artifact_id": "T9",
+      "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+      "derivation_edge": "E4->T9:json",
+      "derived_from_input_paths": [
+        "results/publication/e4-11de165/e4_rows.json",
+        "results/publication/e4-11de165/e4_summary.json",
+        "results/publication/e4-11de165/e4_metadata.json"
+      ],
+      "derives_to_artifact_ids": [],
+      "disposition": "INCONCLUSIVE",
+      "experiment_id": "E4",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "REPRODUCIBLE_SIMULATION",
+      "output_id": "tables:T9_data_availability:json",
+      "relative_path": "tables/T9_data_availability.json",
+      "run_id": "publication-e4-simulation-v1",
+      "schema_version": null,
+      "sha256": "c7a1527c0f8cdb72e5798c442e121e8a1b6431a70a91c3fc6d65282fbc694e2f",
+      "source_closure_hash": null,
+      "source_hashes": [
+        "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032",
+        "a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73",
+        "206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869"
+      ]
+    },
+    {
+      "artifact_id": "CLAIM_MATRIX",
+      "config_hash": null,
+      "derivation_edge": "REPORT->CLAIM_MATRIX:csv",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "",
+      "experiment_id": "REPORT",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "",
+      "output_id": "tables:claim_matrix:csv",
+      "relative_path": "tables/claim_matrix.csv",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "bd6516f7f60fcc16cfd3467b9729a7e83ccb2dc202be4f854da2729413c98f0c",
+      "source_closure_hash": null,
+      "source_hashes": []
+    },
+    {
+      "artifact_id": "CLAIM_MATRIX",
+      "config_hash": null,
+      "derivation_edge": "REPORT->CLAIM_MATRIX:json",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "",
+      "experiment_id": "REPORT",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "",
+      "output_id": "tables:claim_matrix:json",
+      "relative_path": "tables/claim_matrix.json",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "781f874ba9befe6241e22a71be0780209499d3655f873012b672037ce8cb8b60",
+      "source_closure_hash": null,
+      "source_hashes": []
+    },
+    {
+      "artifact_id": "OMISSION_LEDGER",
+      "config_hash": null,
+      "derivation_edge": "REPORT->OMISSION_LEDGER:csv",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "",
+      "experiment_id": "REPORT",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "",
+      "output_id": "tables:omissions:csv",
+      "relative_path": "tables/omissions.csv",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "4919584b2db95e017dc3bf479fa167f55b70e362a9f5d18de18a04b24da900ec",
+      "source_closure_hash": null,
+      "source_hashes": []
+    },
+    {
+      "artifact_id": "OMISSION_LEDGER",
+      "config_hash": null,
+      "derivation_edge": "REPORT->OMISSION_LEDGER:json",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "",
+      "experiment_id": "REPORT",
+      "kind": "tables",
+      "omission_reason": null,
+      "origin": "",
+      "output_id": "tables:omissions:json",
+      "relative_path": "tables/omissions.json",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "cdf8370b3eaeeedcdaa0e0343bd2c78f47472aaab3a91128b4d3ff49b7fc4732",
+      "source_closure_hash": null,
+      "source_hashes": []
+    }
+  ],
+  "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V3",
+  "self_digest": "6fd4798af70fe2cadea855b777a00502dcf8d9812ceb017708eb5d65617b6e6f"
+}

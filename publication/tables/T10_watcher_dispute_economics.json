@@ -1,0 +1,40 @@
+[
+  {
+    "assumption_label": "INDEPENDENT_WATCHERS_DECLARED",
+    "audit_cost_micros": 10000,
+    "challenge_bond_micros": 100000,
+    "challenge_probability": 0.67578125,
+    "claim_disposition": "SUPPORTED",
+    "config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+    "fraud_value_micros": 2000000,
+    "maturity_probability": 0.414306640625,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "reward_micros": 250000,
+    "run_id": "publication-e5-simulation-v1",
+    "sample_size": 2,
+    "scenario_id": "publication-independent-baseline",
+    "source_hashes": "1ded94adbbd965cc21c246f40be6367c9a33fb586a6c770f4787f75365259e44|54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d",
+    "uncertainty": "invalid_maturity_interval",
+    "watcher_expected_utility_micros": "34808.959961",
+    "watchers": 4
+  },
+  {
+    "assumption_label": "BONDED_AUDITOR_BACKSTOP_DECLARED",
+    "audit_cost_micros": 10000,
+    "challenge_bond_micros": 100000,
+    "challenge_probability": 0.945556640625,
+    "claim_disposition": "SUPPORTED",
+    "config_hash": "a0f830852c8808d4fbd5599802b709cb07e452661d0dedd9b9b4225fd6ec3454",
+    "fraud_value_micros": 2000000,
+    "maturity_probability": 0.059326171875,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "reward_micros": 250000,
+    "run_id": "publication-e5-simulation-v1",
+    "sample_size": 2,
+    "scenario_id": "publication-shared-backstop",
+    "source_hashes": "1ded94adbbd965cc21c246f40be6367c9a33fb586a6c770f4787f75365259e44|54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d",
+    "uncertainty": "invalid_maturity_interval",
+    "watcher_expected_utility_micros": "17810.668945",
+    "watchers": 4
+  }
+]

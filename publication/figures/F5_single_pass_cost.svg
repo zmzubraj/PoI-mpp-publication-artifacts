@@ -1,0 +1,41 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'>
+<rect width='100%' height='100%' fill='#ffffff'/>
+<text x='60' y='35' font-family='Menlo, monospace' font-size='26' fill='#111111'>F5 Single-pass Cost</text>
+<text x='60' y='58' font-family='Menlo, monospace' font-size='14' fill='#444444'>REAL_MODEL_EXECUTION | scope=E1_REAL_MODEL_PUBLICATION_V1 | paired pilot wall-clock timings; disposition=INCONCLUSIVE</text>
+<line x1='90' y1='420' x2='870' y2='420' stroke='#111111' stroke-width='2'/>
+<line x1='90' y1='60' x2='90' y2='420' stroke='#111111' stroke-width='2'/>
+<text x='480.0' y='470' text-anchor='middle' font-family='Menlo, monospace' font-size='16'>Pair ID</text>
+<text x='24' y='240.0' text-anchor='middle' transform='rotate(-90 24,240.0)' font-family='Menlo, monospace' font-size='16'>Measured ms</text>
+<line x1='90.0' y1='420' x2='90.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='90.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>pair-0000</text>
+<line x1='870.0' y1='420' x2='870.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='870.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>pair-0001</text>
+<line x1='84' y1='420.0' x2='90' y2='420.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='424.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0</text>
+<line x1='84' y1='348.0' x2='90' y2='348.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='352.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>1069.936975</text>
+<line x1='84' y1='276.0' x2='90' y2='276.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='280.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>2139.87395</text>
+<line x1='84' y1='204.0' x2='90' y2='204.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='208.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>3209.810925</text>
+<line x1='84' y1='132.0' x2='90' y2='132.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='136.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>4279.7479</text>
+<line x1='84' y1='60.0' x2='90' y2='60.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='64.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>5349.684875</text>
+<circle cx='90' cy='244.785121' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='234.664445' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none' points='90,244.785121 870,234.664445'/>
+<line x1='700' y1='95' x2='736' y2='95' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none'/>
+<text x='744' y='99' font-family='Menlo, monospace' font-size='13'>MPP_SINGLE_PASS</text>
+<circle cx='90' cy='252.227858' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='245.528335' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#000000' stroke-width='3' stroke-dasharray='8 4' points='90,252.227858 870,245.528335'/>
+<line x1='700' y1='117' x2='736' y2='117' stroke='#000000' stroke-width='3' stroke-dasharray='8 4'/>
+<text x='744' y='121' font-family='Menlo, monospace' font-size='13'>NATIVE_SINGLE</text>
+<circle cx='90' cy='80.526407' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='60' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3' points='90,80.526407 870,60'/>
+<line x1='700' y1='139' x2='736' y2='139' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3'/>
+<text x='744' y='143' font-family='Menlo, monospace' font-size='13'>TWO_RUN_BASELINE</text>
+<text x='60' y='510' font-family='Menlo, monospace' font-size='13'>source_hashes: 160f8a705ef3b9dffa3b594e091592635cf4bacfe5e7c7e2b1e4c52a52492740</text>
+</svg>

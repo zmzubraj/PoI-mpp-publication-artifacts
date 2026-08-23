@@ -1,0 +1,82 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'>
+<rect width='100%' height='100%' fill='#ffffff'/>
+<text x='60' y='35' font-family='Menlo, monospace' font-size='26' fill='#111111'>F11 Consensus Dynamics</text>
+<text x='60' y='58' font-family='Menlo, monospace' font-size='14' fill='#444444'>REPRODUCIBLE_SIMULATION next-epoch probabilities</text>
+<line x1='90' y1='420' x2='870' y2='420' stroke='#111111' stroke-width='2'/>
+<line x1='90' y1='60' x2='90' y2='420' stroke='#111111' stroke-width='2'/>
+<text x='480.0' y='470' text-anchor='middle' font-family='Menlo, monospace' font-size='16'>Scenario</text>
+<text x='24' y='240.0' text-anchor='middle' transform='rotate(-90 24,240.0)' font-family='Menlo, monospace' font-size='16'>Probability</text>
+<line x1='90.0' y1='420' x2='90.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='90.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>support-honest-baseline</text>
+<line x1='201.42857142857144' y1='420' x2='201.42857142857144' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='201.42857142857144' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>support-high-compute-capped</text>
+<line x1='312.8571428571429' y1='420' x2='312.8571428571429' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='312.8571428571429' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>support-sybil-split</text>
+<line x1='424.2857142857143' y1='420' x2='424.2857142857143' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='424.2857142857143' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>support-subsidized-compute</text>
+<line x1='535.7142857142858' y1='420' x2='535.7142857142858' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='535.7142857142858' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>support-collusion-bounded</text>
+<line x1='647.1428571428571' y1='420' x2='647.1428571428571' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='647.1428571428571' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>support-receipt-churn</text>
+<line x1='758.5714285714286' y1='420' x2='758.5714285714286' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='758.5714285714286' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>negative-cap-removed</text>
+<line x1='870.0' y1='420' x2='870.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='870.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>boundary-zero-credit-rich</text>
+<line x1='84' y1='420.0' x2='90' y2='420.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='424.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0</text>
+<line x1='84' y1='348.0' x2='90' y2='348.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='352.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0.185938</text>
+<line x1='84' y1='276.0' x2='90' y2='276.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='280.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0.371875</text>
+<line x1='84' y1='204.0' x2='90' y2='204.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='208.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0.557813</text>
+<line x1='84' y1='132.0' x2='90' y2='132.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='136.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0.74375</text>
+<line x1='84' y1='60.0' x2='90' y2='60.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='64.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0.929688</text>
+<circle cx='90' cy='181.008403' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='201.428571' cy='132.605042' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='312.857143' cy='138.655462' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='424.285714' cy='128.067227' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='535.714286' cy='81.176471' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='647.142857' cy='165.882353' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='758.571429' cy='60' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='420' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none' points='90,181.008403 201.428571,132.605042 312.857143,138.655462 424.285714,128.067227 535.714286,81.176471 647.142857,165.882353 758.571429,60 870,420'/>
+<line x1='700' y1='95' x2='736' y2='95' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none'/>
+<text x='744' y='99' font-family='Menlo, monospace' font-size='13'>ATTACKER_COMMITTEE_SEAT_SHARE:GE_ONE_THIRD</text>
+<circle cx='90' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='201.428571' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='312.857143' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='424.285714' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='535.714286' cy='341.344538' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='647.142857' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='758.571429' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='420' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#000000' stroke-width='3' stroke-dasharray='8 4' points='90,420 201.428571,420 312.857143,420 424.285714,420 535.714286,341.344538 647.142857,420 758.571429,420 870,420'/>
+<line x1='700' y1='117' x2='736' y2='117' stroke='#000000' stroke-width='3' stroke-dasharray='8 4'/>
+<text x='744' y='121' font-family='Menlo, monospace' font-size='13'>ATTACKER_COMMITTEE_SEAT_SHARE:GE_TWO_THIRDS</text>
+<circle cx='90' cy='181.008403' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='201.428571' cy='132.605042' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='312.857143' cy='138.655462' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='424.285714' cy='128.067227' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='535.714286' cy='81.176471' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='647.142857' cy='165.882353' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='758.571429' cy='60' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='420' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3' points='90,181.008403 201.428571,132.605042 312.857143,138.655462 424.285714,128.067227 535.714286,81.176471 647.142857,165.882353 758.571429,60 870,420'/>
+<line x1='700' y1='139' x2='736' y2='139' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3'/>
+<text x='744' y='143' font-family='Menlo, monospace' font-size='13'>ATTACKER_COMMITTEE_WEIGHT_SHARE:GE_ONE_THIRD</text>
+<circle cx='90' cy='420' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='201.428571' cy='420' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='312.857143' cy='420' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='424.285714' cy='420' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='535.714286' cy='341.344538' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='647.142857' cy='420' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='758.571429' cy='60' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='420' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3' points='90,420 201.428571,420 312.857143,420 424.285714,420 535.714286,341.344538 647.142857,420 758.571429,60 870,420'/>
+<line x1='700' y1='161' x2='736' y2='161' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3'/>
+<text x='744' y='165' font-family='Menlo, monospace' font-size='13'>ATTACKER_COMMITTEE_WEIGHT_SHARE:GE_TWO_THIRDS</text>
+<text x='60' y='510' font-family='Menlo, monospace' font-size='13'>source_hashes: 406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7,5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd</text>
+</svg>

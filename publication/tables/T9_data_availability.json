@@ -1,0 +1,52 @@
+[
+  {
+    "assumption_label": "CORRELATED_LOSS_DECLARED",
+    "claim_disposition": "INCONCLUSIVE",
+    "claim_target": "ATTACK_DETECTION",
+    "confidence_interval": [
+      0.1811918241010821,
+      0.5671457233147638
+    ],
+    "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+    "denominator": 20,
+    "expected_outcome": "CORRUPT",
+    "expected_outcome_detected": true,
+    "miss_probability": 0.35,
+    "mode": "CORRELATED_LOSS",
+    "observation_key": "obs-correlated-loss-corrupt",
+    "observed_attack_detected": true,
+    "observed_availability_success": false,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "reconstruction_status": "CORRUPT",
+    "run_id": "publication-e4-simulation-v1",
+    "sample_size": 2,
+    "scenario_id": "correlated-loss-corrupt",
+    "source_hashes": "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032|a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73|206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869",
+    "uncertainty": "observed_and_exact_miss_probability"
+  },
+  {
+    "assumption_label": "STATIC_WITHOUT_REPLACEMENT_HYPERGEOMETRIC",
+    "claim_disposition": "INCONCLUSIVE",
+    "claim_target": "ATTACK_DETECTION",
+    "confidence_interval": [
+      0.038461538461538464,
+      0.038461538461538464
+    ],
+    "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
+    "denominator": 1,
+    "expected_outcome": "WITHHELD",
+    "expected_outcome_detected": true,
+    "miss_probability": 0.038461538461538464,
+    "mode": "STATIC_WITHOUT_REPLACEMENT",
+    "observation_key": "obs-static-withheld-wo-replacement",
+    "observed_attack_detected": true,
+    "observed_availability_success": false,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "reconstruction_status": "WITHHELD",
+    "run_id": "publication-e4-simulation-v1",
+    "sample_size": 2,
+    "scenario_id": "static-withheld-wo-replacement",
+    "source_hashes": "79adc77c62047af65d0bd861d757311b5a8fdac3286f92c3795e99b3f6480032|a72fa9b4c15cb9b14d4bebb0cd8d67d585e160902426a3059367c8a5e792bb73|206a992c99bd6b18fbe0a49b6830fcab0a179b4693b14bc3083bef380cd85869",
+    "uncertainty": "observed_and_exact_miss_probability"
+  }
+]

@@ -1,0 +1,548 @@
+[
+  {
+    "abstained": false,
+    "accepted": true,
+    "analysis_surface": "EXACT_MATCH",
+    "assurance_class": "EXACT_MATCH",
+    "attack_family": null,
+    "attack_manifest": null,
+    "attack_seed": null,
+    "audit_rate": 0.05,
+    "audit_result": {
+      "accepted": true,
+      "assurance_class": "EXACT_MATCH",
+      "atol": null,
+      "challenge_vectors": [],
+      "dimensions": [
+        64
+      ],
+      "disposition": "ACCEPTED",
+      "evidence_origin": "REAL_MODEL_EXECUTION",
+      "max_abs_error": null,
+      "max_rel_error": null,
+      "modulus": null,
+      "residual_risk": [
+        "exact equality only; no tolerance or probabilistic bound applies"
+      ],
+      "rounds": 0,
+      "rtol": null,
+      "seed": null,
+      "soundness_error_bound": null
+    },
+    "claim_disposition": "INCONCLUSIVE",
+    "config_hash": "",
+    "detected": false,
+    "evidence_root": "0xade29dbbb1c824d20da5a0e6c4622f4fd4b2c1128a272582c5014c77a0d5e73c",
+    "experiment_id": "E2",
+    "false_positive": false,
+    "freivalds_rounds": 8,
+    "is_attacked": false,
+    "nullifier": "0xf6f07c4ddd8ca3cc3ad10ecc162a7db654ed8c03298dc4c665e1385740703a7f",
+    "observation_key": null,
+    "observed_target_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "origin": "REAL_MODEL_EXECUTION",
+    "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+    "original_target_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "peer_receipt_id": null,
+    "receipt_id": "receipt-real-e2-0001",
+    "replay_validation": "NOT_APPLICABLE",
+    "residual_risk": [
+      "exact equality only; no tolerance or probabilistic bound applies"
+    ],
+    "response_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "row_hash": "0xb0d642476ad866f44f14bc095db71df99f1038b4d24a4bb299483b6b910d58da",
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "sample_size": 5,
+    "schema_version": "POI_MPP_E2_RECEIPT_ROW_V1",
+    "source_hashes": "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d|a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277",
+    "task_id": 22,
+    "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7",
+    "uncertainty": "wilson_from_supported_audit_surfaces"
+  },
+  {
+    "abstained": false,
+    "accepted": false,
+    "analysis_surface": "EXACT_MATCH",
+    "assurance_class": "EXACT_MATCH",
+    "attack_family": "WEIGHT_CORRUPTION",
+    "attack_manifest": {
+      "analysis_surface": "EXACT_MATCH",
+      "attacked_target_hash": "0x661ba5ff8fb31b3553273472cd0583b951ce1009b0ed0d4081129c1ac11377e4",
+      "family": "WEIGHT_CORRUPTION",
+      "location": "weights.root",
+      "numeric_mode": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+      "original_target_hash": "0x661ba5ff8fb31b3553273472cd0583b951ce1309b0ed0d4081129c1ac11377e4",
+      "parameters": [],
+      "replay_proof": {
+        "attack_instance_id": "0x89194d9ff5b4fce9153e0009399babd8a1e3c0618f06699f9ad43e3e0766a27a",
+        "attacked_material": {
+          "weight_root": "0x661ba5ff8fb31b3553273472cd0583b951ce1009b0ed0d4081129c1ac11377e4"
+        },
+        "original_material": {
+          "weight_root": "0x661ba5ff8fb31b3553273472cd0583b951ce1309b0ed0d4081129c1ac11377e4"
+        },
+        "peer_material": null,
+        "proof_hash": "0x4c369be5ec3db6b4ed1da060d1d11c229814bdc84f05e88e5bf075fe31f33cff",
+        "schema_version": "POI_MPP_E2_ATTACK_REPLAY_PROOF_V1",
+        "seed_sensitive": true
+      },
+      "schema_version": "POI_MPP_E2_ATTACK_MANIFEST_V1",
+      "seed": 11
+    },
+    "attack_seed": 11,
+    "audit_rate": 0.05,
+    "audit_result": {
+      "accepted": false,
+      "assurance_class": "EXACT_MATCH",
+      "atol": null,
+      "challenge_vectors": [],
+      "dimensions": [
+        64
+      ],
+      "disposition": "REJECTED",
+      "evidence_origin": "REAL_MODEL_EXECUTION",
+      "max_abs_error": null,
+      "max_rel_error": null,
+      "modulus": null,
+      "residual_risk": [
+        "exact mismatch observed; reject and inspect corruption or serialization drift"
+      ],
+      "rounds": 0,
+      "rtol": null,
+      "seed": null,
+      "soundness_error_bound": null
+    },
+    "claim_disposition": "INCONCLUSIVE",
+    "config_hash": "",
+    "detected": true,
+    "evidence_root": "0xade29dbbb1c824d20da5a0e6c4622f4fd4b2c1128a272582c5014c77a0d5e73c",
+    "experiment_id": "E2",
+    "false_positive": false,
+    "freivalds_rounds": 8,
+    "is_attacked": true,
+    "nullifier": "0xf6f07c4ddd8ca3cc3ad10ecc162a7db654ed8c03298dc4c665e1385740703a7f",
+    "observation_key": "WEIGHT_CORRUPTION|11|0x661ba5ff8fb31b3553273472cd0583b951ce1309b0ed0d4081129c1ac11377e4|",
+    "observed_target_hash": "0x661ba5ff8fb31b3553273472cd0583b951ce1009b0ed0d4081129c1ac11377e4",
+    "origin": "REAL_MODEL_EXECUTION",
+    "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+    "original_target_hash": "0x661ba5ff8fb31b3553273472cd0583b951ce1309b0ed0d4081129c1ac11377e4",
+    "peer_receipt_id": null,
+    "receipt_id": "receipt-real-e2-0001-weight-attack",
+    "replay_validation": "NOT_APPLICABLE",
+    "residual_risk": [
+      "exact mismatch observed; reject and inspect corruption or serialization drift"
+    ],
+    "response_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "row_hash": "0xb3c4078cec4462e97cfb789feda05f649b566a20b1105e64d43b5744c2611601",
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "sample_size": 5,
+    "schema_version": "POI_MPP_E2_RECEIPT_ROW_V1",
+    "source_hashes": "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d|a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277",
+    "task_id": 22,
+    "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7",
+    "uncertainty": "wilson_from_supported_audit_surfaces"
+  },
+  {
+    "abstained": false,
+    "accepted": false,
+    "analysis_surface": "EXACT_MATCH",
+    "assurance_class": "EXACT_MATCH",
+    "attack_family": "TRACE_NODE_MUTATION",
+    "attack_manifest": {
+      "analysis_surface": "EXACT_MATCH",
+      "attacked_target_hash": "0x3bf8d0591aa4aed10c3db3e506a7e61223f1a8f66f41a7d3a4205fbfec1157d7",
+      "family": "TRACE_NODE_MUTATION",
+      "location": "trace.nodes[0]",
+      "numeric_mode": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+      "original_target_hash": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7",
+      "parameters": [],
+      "replay_proof": {
+        "attack_instance_id": "0x56b641ec2de2dca827fb3eb92c6036d8c24d8b873e3acc17106d7c1c2201bc4b",
+        "attacked_material": {
+          "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e61223f1a8f66f41a7d3a4205fbfec1157d7"
+        },
+        "original_material": {
+          "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7"
+        },
+        "peer_material": null,
+        "proof_hash": "0xfc42bc0f8ee843d98ad8acf6157c763a1ce076dbf9c0632f012ceb8116671cbf",
+        "schema_version": "POI_MPP_E2_ATTACK_REPLAY_PROOF_V1",
+        "seed_sensitive": true
+      },
+      "schema_version": "POI_MPP_E2_ATTACK_MANIFEST_V1",
+      "seed": 13
+    },
+    "attack_seed": 13,
+    "audit_rate": 0.1,
+    "audit_result": {
+      "accepted": false,
+      "assurance_class": "EXACT_MATCH",
+      "atol": null,
+      "challenge_vectors": [],
+      "dimensions": [
+        64
+      ],
+      "disposition": "REJECTED",
+      "evidence_origin": "REAL_MODEL_EXECUTION",
+      "max_abs_error": null,
+      "max_rel_error": null,
+      "modulus": null,
+      "residual_risk": [
+        "exact mismatch observed; reject and inspect corruption or serialization drift"
+      ],
+      "rounds": 0,
+      "rtol": null,
+      "seed": null,
+      "soundness_error_bound": null
+    },
+    "claim_disposition": "INCONCLUSIVE",
+    "config_hash": "",
+    "detected": true,
+    "evidence_root": "0xade29dbbb1c824d20da5a0e6c4622f4fd4b2c1128a272582c5014c77a0d5e73c",
+    "experiment_id": "E2",
+    "false_positive": false,
+    "freivalds_rounds": 8,
+    "is_attacked": true,
+    "nullifier": "0xf6f07c4ddd8ca3cc3ad10ecc162a7db654ed8c03298dc4c665e1385740703a7f",
+    "observation_key": "TRACE_NODE_MUTATION|13|0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7|",
+    "observed_target_hash": "0x3bf8d0591aa4aed10c3db3e506a7e61223f1a8f66f41a7d3a4205fbfec1157d7",
+    "origin": "REAL_MODEL_EXECUTION",
+    "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+    "original_target_hash": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7",
+    "peer_receipt_id": null,
+    "receipt_id": "receipt-real-e2-0001-trace-attack",
+    "replay_validation": "NOT_APPLICABLE",
+    "residual_risk": [
+      "exact mismatch observed; reject and inspect corruption or serialization drift"
+    ],
+    "response_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "row_hash": "0x4ff61ff20fae1564e907b2e226d17b5d78cefafe1ae46d8b424aecaa65e8d972",
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "sample_size": 5,
+    "schema_version": "POI_MPP_E2_RECEIPT_ROW_V1",
+    "source_hashes": "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d|a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277",
+    "task_id": 22,
+    "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e61223f1a8f66f41a7d3a4205fbfec1157d7",
+    "uncertainty": "wilson_from_supported_audit_surfaces"
+  },
+  {
+    "abstained": false,
+    "accepted": false,
+    "analysis_surface": "EXACT_FIELD_SOUNDNESS",
+    "assurance_class": "EXACT_FIELD_SOUNDNESS",
+    "attack_family": "TENSOR_PRODUCT_CORRUPTION",
+    "attack_manifest": {
+      "analysis_surface": "EXACT_FIELD_SOUNDNESS",
+      "attacked_target_hash": "0x6d97e617b0d1761565ca711bb1f4503803982dfe7101ac10b94a24199b8cc081",
+      "family": "TENSOR_PRODUCT_CORRUPTION",
+      "location": "field_product",
+      "numeric_mode": "EXACT_FIELD",
+      "origin": "REAL_MODEL_EXECUTION",
+      "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+      "original_target_hash": "0x9a07f94f7b767093c975ca03423db85de7d3b5a4fca3d2b6bcfe7b6c7caa41b6",
+      "parameters": [
+        {
+          "key": "numeric_mode",
+          "value": "EXACT_FIELD"
+        }
+      ],
+      "replay_proof": {
+        "attack_instance_id": "0x6eaf551c7ed7be895c3613d763e05e1b92597b148bb42e135456c99ffcd2b1f4",
+        "attacked_material": {
+          "field_matrix_c": [
+            [
+              5654,
+              2147480911,
+              1868,
+              2147481070
+            ]
+          ]
+        },
+        "original_material": {
+          "field_matrix_c": [
+            [
+              5654,
+              2147480911,
+              1867,
+              2147481070
+            ]
+          ]
+        },
+        "peer_material": null,
+        "proof_hash": "0x8e5b8629a96d63edf3d0b909f08afcf3efa66fdcf54be13e50377665ee87c51a",
+        "schema_version": "POI_MPP_E2_ATTACK_REPLAY_PROOF_V1",
+        "seed_sensitive": true
+      },
+      "schema_version": "POI_MPP_E2_ATTACK_MANIFEST_V1",
+      "seed": 17
+    },
+    "attack_seed": 17,
+    "audit_rate": 0.05,
+    "audit_result": {
+      "accepted": false,
+      "assurance_class": "EXACT_FIELD_SOUNDNESS",
+      "atol": null,
+      "challenge_vectors": [
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ]
+      ],
+      "dimensions": [
+        1,
+        4,
+        4
+      ],
+      "disposition": "REJECTED",
+      "evidence_origin": "REAL_MODEL_EXECUTION",
+      "max_abs_error": null,
+      "max_rel_error": null,
+      "modulus": 2147483647,
+      "residual_risk": [
+        "declared modulus path relies on caller-declared exact modular semantics",
+        "binary nonzero Freivalds challenges provide at most 2^-k error under declared exact arithmetic",
+        "field audit rejected the proposed product"
+      ],
+      "rounds": 8,
+      "rtol": null,
+      "seed": 17,
+      "soundness_error_bound": 0.00390625
+    },
+    "claim_disposition": "INCONCLUSIVE",
+    "config_hash": "",
+    "detected": true,
+    "evidence_root": "0xade29dbbb1c824d20da5a0e6c4622f4fd4b2c1128a272582c5014c77a0d5e73c",
+    "experiment_id": "E2",
+    "false_positive": false,
+    "freivalds_rounds": 8,
+    "is_attacked": true,
+    "nullifier": "0xf6f07c4ddd8ca3cc3ad10ecc162a7db654ed8c03298dc4c665e1385740703a7f",
+    "observation_key": "TENSOR_PRODUCT_CORRUPTION|17|0x9a07f94f7b767093c975ca03423db85de7d3b5a4fca3d2b6bcfe7b6c7caa41b6|",
+    "observed_target_hash": "0x6d97e617b0d1761565ca711bb1f4503803982dfe7101ac10b94a24199b8cc081",
+    "origin": "REAL_MODEL_EXECUTION",
+    "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+    "original_target_hash": "0x9a07f94f7b767093c975ca03423db85de7d3b5a4fca3d2b6bcfe7b6c7caa41b6",
+    "peer_receipt_id": null,
+    "receipt_id": "receipt-real-e2-0001-tensor-field-attack",
+    "replay_validation": "NOT_APPLICABLE",
+    "residual_risk": [
+      "declared modulus path relies on caller-declared exact modular semantics",
+      "binary nonzero Freivalds challenges provide at most 2^-k error under declared exact arithmetic",
+      "field audit rejected the proposed product"
+    ],
+    "response_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "row_hash": "0xe907f462c06e15f9901af53953e876baf3930faa0f098c264d79cc91ac7fb463",
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "sample_size": 5,
+    "schema_version": "POI_MPP_E2_RECEIPT_ROW_V1",
+    "source_hashes": "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d|a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277",
+    "task_id": 22,
+    "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7",
+    "uncertainty": "wilson_from_supported_audit_surfaces"
+  },
+  {
+    "abstained": false,
+    "accepted": false,
+    "analysis_surface": "EMPIRICAL_FLOAT_APPROXIMATION",
+    "assurance_class": "EMPIRICAL_FLOAT_APPROXIMATION",
+    "attack_family": "TENSOR_PRODUCT_CORRUPTION",
+    "attack_manifest": {
+      "analysis_surface": "EMPIRICAL_FLOAT_APPROXIMATION",
+      "attacked_target_hash": "0xcc01e93e1cf11afc2d629add790cb6ed0660a7975a50eda6bceb9cfe158fde84",
+      "family": "TENSOR_PRODUCT_CORRUPTION",
+      "location": "float_product",
+      "numeric_mode": "EMPIRICAL_FLOAT",
+      "origin": "REAL_MODEL_EXECUTION",
+      "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+      "original_target_hash": "0x880e8ae3b7bf1ac70e61a2ea4eb4e6f80f24075f4597da537a4d501d7ad39a21",
+      "parameters": [
+        {
+          "key": "numeric_mode",
+          "value": "EMPIRICAL_FLOAT"
+        }
+      ],
+      "replay_proof": {
+        "attack_instance_id": "0xa34581de325e75e763065db7f3e90408436b6d74da23c07e5b7554dcb4332983",
+        "attacked_material": {
+          "float_matrix_c": [
+            [
+              0.005646437406539917,
+              -0.002676546573638916,
+              0.0019324719905853271,
+              1.1681936405582185
+            ]
+          ]
+        },
+        "original_material": {
+          "float_matrix_c": [
+            [
+              0.005646437406539917,
+              -0.002676546573638916,
+              0.0019324719905853271,
+              -0.0024898499250411987
+            ]
+          ]
+        },
+        "peer_material": null,
+        "proof_hash": "0xe26b671db755d630d2e7320e6b8f81da07b7e22c7351ac1aeb11fc00b5291e1c",
+        "schema_version": "POI_MPP_E2_ATTACK_REPLAY_PROOF_V1",
+        "seed_sensitive": true
+      },
+      "schema_version": "POI_MPP_E2_ATTACK_MANIFEST_V1",
+      "seed": 19
+    },
+    "attack_seed": 19,
+    "audit_rate": 0.1,
+    "audit_result": {
+      "accepted": false,
+      "assurance_class": "EMPIRICAL_FLOAT_APPROXIMATION",
+      "atol": 1e-09,
+      "challenge_vectors": [
+        [
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ]
+      ],
+      "dimensions": [
+        1,
+        4,
+        4
+      ],
+      "disposition": "REJECTED",
+      "evidence_origin": "REAL_MODEL_EXECUTION",
+      "max_abs_error": 1.1706834904832597,
+      "max_rel_error": 1.0021313674707657,
+      "modulus": null,
+      "residual_risk": [
+        "empirical floating-point audit rejected the proposed product",
+        "floating-point checks do not provide exact field soundness"
+      ],
+      "rounds": 8,
+      "rtol": 1e-06,
+      "seed": 19,
+      "soundness_error_bound": null
+    },
+    "claim_disposition": "INCONCLUSIVE",
+    "config_hash": "",
+    "detected": true,
+    "evidence_root": "0xade29dbbb1c824d20da5a0e6c4622f4fd4b2c1128a272582c5014c77a0d5e73c",
+    "experiment_id": "E2",
+    "false_positive": false,
+    "freivalds_rounds": 8,
+    "is_attacked": true,
+    "nullifier": "0xf6f07c4ddd8ca3cc3ad10ecc162a7db654ed8c03298dc4c665e1385740703a7f",
+    "observation_key": "TENSOR_PRODUCT_CORRUPTION|19|0x880e8ae3b7bf1ac70e61a2ea4eb4e6f80f24075f4597da537a4d501d7ad39a21|",
+    "observed_target_hash": "0xcc01e93e1cf11afc2d629add790cb6ed0660a7975a50eda6bceb9cfe158fde84",
+    "origin": "REAL_MODEL_EXECUTION",
+    "original_commitment": "0x04d9fd744b4553ac1a0fbe840db63aed760f773825d0db043906b44cd22698c4",
+    "original_target_hash": "0x880e8ae3b7bf1ac70e61a2ea4eb4e6f80f24075f4597da537a4d501d7ad39a21",
+    "peer_receipt_id": null,
+    "receipt_id": "receipt-real-e2-0001-tensor-float-attack",
+    "replay_validation": "NOT_APPLICABLE",
+    "residual_risk": [
+      "empirical floating-point audit rejected the proposed product",
+      "floating-point checks do not provide exact field soundness"
+    ],
+    "response_hash": "0x231803bade467eb1e8a1b33fef272d5f4a658f37bbae9ca93a9fdd8709b6142e",
+    "row_hash": "0xf9a31814ddc77305f98989e6246992c97867b52ebd333f9a8fa1da525414c8a7",
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "sample_size": 5,
+    "schema_version": "POI_MPP_E2_RECEIPT_ROW_V1",
+    "source_hashes": "04ca1b7bc0250776918bbcff4424f4f3cc5d5093aca245873192e15a5a694d9d|a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277",
+    "task_id": 22,
+    "trace_root": "0x3bf8d0591aa4aed10c3db3e506a7e6122362a8f66f41a7d3a4205fbfec1157d7",
+    "uncertainty": "wilson_from_supported_audit_surfaces"
+  }
+]

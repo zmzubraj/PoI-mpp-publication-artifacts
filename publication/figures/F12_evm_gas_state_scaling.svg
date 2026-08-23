@@ -1,0 +1,81 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540' viewBox='0 0 960 540'>
+<rect width='100%' height='100%' fill='#ffffff'/>
+<text x='60' y='35' font-family='Menlo, monospace' font-size='26' fill='#111111'>F12 EVM Gas and State Scaling</text>
+<text x='60' y='58' font-family='Menlo, monospace' font-size='14' fill='#444444'>FOUNDRY_MEASUREMENT local boundedness</text>
+<line x1='90' y1='420' x2='870' y2='420' stroke='#111111' stroke-width='2'/>
+<line x1='90' y1='60' x2='90' y2='420' stroke='#111111' stroke-width='2'/>
+<text x='480.0' y='470' text-anchor='middle' font-family='Menlo, monospace' font-size='16'>Batch Size</text>
+<text x='24' y='240.0' text-anchor='middle' transform='rotate(-90 24,240.0)' font-family='Menlo, monospace' font-size='16'>Gas Used</text>
+<line x1='90.0' y1='420' x2='90.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='90.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>1</text>
+<line x1='350.0' y1='420' x2='350.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='350.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>2</text>
+<line x1='610.0' y1='420' x2='610.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='610.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>4</text>
+<line x1='870.0' y1='420' x2='870.0' y2='426' stroke='#111111' stroke-width='1'/>
+<text x='870.0' y='444' text-anchor='middle' font-family='Menlo, monospace' font-size='12'>8</text>
+<line x1='84' y1='420.0' x2='90' y2='420.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='424.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>0</text>
+<line x1='84' y1='348.0' x2='90' y2='348.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='352.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>93587.4</text>
+<line x1='84' y1='276.0' x2='90' y2='276.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='280.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>187174.8</text>
+<line x1='84' y1='204.0' x2='90' y2='204.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='208.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>280762.2</text>
+<line x1='84' y1='132.0' x2='90' y2='132.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='136.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>374349.6</text>
+<line x1='84' y1='60.0' x2='90' y2='60.0' stroke='#111111' stroke-width='1'/>
+<text x='80' y='64.0' text-anchor='end' font-family='Menlo, monospace' font-size='12'>467937</text>
+<circle cx='90' cy='322.676129' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none' points='90,322.676129'/>
+<line x1='700' y1='95' x2='736' y2='95' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none'/>
+<text x='744' y='99' font-family='Menlo, monospace' font-size='13'>AUDIT_OPEN</text>
+<circle cx='90' cy='415.834824' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#000000' stroke-width='3' stroke-dasharray='8 4' points='90,415.834824'/>
+<line x1='700' y1='117' x2='736' y2='117' stroke='#000000' stroke-width='3' stroke-dasharray='8 4'/>
+<text x='744' y='121' font-family='Menlo, monospace' font-size='13'>AUDIT_RECORD_DA</text>
+<circle cx='90' cy='415.650184' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3' points='90,415.650184'/>
+<line x1='700' y1='139' x2='736' y2='139' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3'/>
+<text x='744' y='143' font-family='Menlo, monospace' font-size='13'>AUDIT_RECORD_RESULT</text>
+<circle cx='90' cy='220.477757' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3' points='90,220.477757'/>
+<line x1='700' y1='161' x2='736' y2='161' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3'/>
+<text x='744' y='165' font-family='Menlo, monospace' font-size='13'>COMMIT_RESPONSE</text>
+<circle cx='90' cy='339.393765' r='4' fill='#66a61e' stroke='#111111' stroke-width='1'/>
+<circle cx='350' cy='299.479161' r='4' fill='#66a61e' stroke='#111111' stroke-width='1'/>
+<circle cx='610' cy='219.645337' r='4' fill='#66a61e' stroke='#111111' stroke-width='1'/>
+<circle cx='870' cy='60' r='4' fill='#66a61e' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#66a61e' stroke-width='3' stroke-dasharray='2 5' points='90,339.393765 350,299.479161 610,219.645337 870,60'/>
+<line x1='700' y1='183' x2='736' y2='183' stroke='#66a61e' stroke-width='3' stroke-dasharray='2 5'/>
+<text x='744' y='187' font-family='Menlo, monospace' font-size='13'>CREDIT_ALLOCATE</text>
+<circle cx='90' cy='347.41946' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none' points='90,347.41946'/>
+<line x1='700' y1='205' x2='736' y2='205' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none'/>
+<text x='744' y='209' font-family='Menlo, monospace' font-size='13'>MODEL_REGISTER</text>
+<circle cx='90' cy='415.413229' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#000000' stroke-width='3' stroke-dasharray='8 4' points='90,415.413229'/>
+<line x1='700' y1='227' x2='736' y2='227' stroke='#000000' stroke-width='3' stroke-dasharray='8 4'/>
+<text x='744' y='231' font-family='Menlo, monospace' font-size='13'>OPEN_CHALLENGE</text>
+<circle cx='90' cy='373.871483' r='4' fill='#d95f02' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3' points='90,373.871483'/>
+<line x1='700' y1='249' x2='736' y2='249' stroke='#d95f02' stroke-width='3' stroke-dasharray='3 3'/>
+<text x='744' y='253' font-family='Menlo, monospace' font-size='13'>RECEIPT_ACTIVATE</text>
+<circle cx='90' cy='414.420787' r='4' fill='#7570b3' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3' points='90,414.420787'/>
+<line x1='700' y1='271' x2='736' y2='271' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3'/>
+<text x='744' y='275' font-family='Menlo, monospace' font-size='13'>RECEIPT_MARK_CHALLENGED</text>
+<circle cx='90' cy='287.122113' r='4' fill='#66a61e' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#66a61e' stroke-width='3' stroke-dasharray='2 5' points='90,287.122113'/>
+<line x1='700' y1='293' x2='736' y2='293' stroke='#66a61e' stroke-width='3' stroke-dasharray='2 5'/>
+<text x='744' y='297' font-family='Menlo, monospace' font-size='13'>RECEIPT_MINT_PENDING</text>
+<circle cx='90' cy='414.642356' r='4' fill='#1f77b4' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none' points='90,414.642356'/>
+<line x1='700' y1='315' x2='736' y2='315' stroke='#1f77b4' stroke-width='3' stroke-dasharray='none'/>
+<text x='744' y='319' font-family='Menlo, monospace' font-size='13'>RECEIPT_SLASH</text>
+<circle cx='90' cy='326.587425' r='4' fill='#000000' stroke='#111111' stroke-width='1'/>
+<polyline fill='none' stroke='#000000' stroke-width='3' stroke-dasharray='8 4' points='90,326.587425'/>
+<line x1='700' y1='337' x2='736' y2='337' stroke='#000000' stroke-width='3' stroke-dasharray='8 4'/>
+<text x='744' y='341' font-family='Menlo, monospace' font-size='13'>TASK_CREATE</text>
+<text x='60' y='510' font-family='Menlo, monospace' font-size='13'>source_hashes: c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4,dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a,4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f,9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4,922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58</text>
+</svg>
