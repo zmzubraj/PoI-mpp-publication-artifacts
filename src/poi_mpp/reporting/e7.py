@@ -17,6 +17,7 @@ from poi_mpp.experiments.e7_evm import (
     E7ParityAttachment,
     PUBLICATION_EVIDENCE_AUTHORIZED,
     _path_hash,
+    assert_cli_authority_boundary,
     collect_foundry_measurements,
     current_e7_parity_source_closure_hash,
     default_measurement_contract,
@@ -259,6 +260,7 @@ def collect_and_summarize_e7_publication(
     contract: E7MeasurementContract | None = None,
     timeout: int = 120,
 ) -> E7PublicationResult:
+    assert_cli_authority_boundary(run_config)
     measurement_contract = E7MeasurementContract.model_validate(
         (default_measurement_contract() if contract is None else contract).model_dump(mode="json")
     )

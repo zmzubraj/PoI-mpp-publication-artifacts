@@ -1,0 +1,13 @@
+schema_version: POI_MPP_RUN_CONFIG_V1
+schema_hash: "ffd649cd76380d0e190d4f7b992242c5e47a858046f0980b432f38fbf87b7c08"
+run_id: publication-e7-foundry-v1
+experiment_id: E7
+origin: FOUNDRY_MEASUREMENT
+authorization_scope: PUBLICATION_EVIDENCE_AUTHORIZED
+model_hash: "bae9f75908e96aed2046785048281f60e7a3b02988e6033941caa83a6b098a7a"
+dataset_hash: "434ddd830d500edd11de4b1c8c13ead9874d90e5f7cd6c000a08e71a4518e54d"
+parent_hashes: []
+data_availability:
+  total_shards: 16
+  samples: 8
+  replacement: false

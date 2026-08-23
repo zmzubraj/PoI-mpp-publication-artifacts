@@ -41,6 +41,14 @@ def _contracts_root() -> Path:
     return Path(__file__).resolve().parents[2] / "contracts"
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _publication_run_config_path() -> Path:
+    return _repo_root() / "configs" / "publication_foundry" / "e7.run.yaml"
+
+
 def _measurement(operation: str, batch_size: int, gas_used: int, changed_slot_count: int) -> dict[str, object]:
     return {
         "operation": operation,
@@ -309,14 +317,50 @@ def test_current_parity_source_closure_hash_changes_on_source_drift(tmp_path: Pa
     assert current_e7_parity_source_closure_hash(root) != current_e7_parity_source_closure_hash(shadow_root)
 
 
+def test_tracked_publication_run_config_binds_default_measurement_and_parity_inputs():
+    from poi_mpp.evidence.config import load_run_config
+    from poi_mpp.experiments.e7_evm import (
+        assert_cli_authority_boundary,
+        default_measurement_contract,
+        e7_publication_dataset_hash,
+        e7_publication_model_hash,
+    )
+
+    run_config = load_run_config(_publication_run_config_path())
+    contract = default_measurement_contract()
+
+    assert run_config.experiment_id == "E7"
+    assert run_config.origin is EvidenceOrigin.FOUNDRY_MEASUREMENT
+    assert run_config.authorization_scope == "PUBLICATION_EVIDENCE_AUTHORIZED"
+    assert run_config.model_hash == e7_publication_model_hash(contract)
+    assert run_config.dataset_hash == e7_publication_dataset_hash(
+        contract=contract,
+        repo_root=_repo_root(),
+    )
+    assert_cli_authority_boundary(run_config)
+
+
+@pytest.mark.parametrize("field", ["model_hash", "dataset_hash"])
+def test_e7_cli_authority_boundary_rejects_tampered_publication_input_hash(field: str):
+    from poi_mpp.evidence.config import load_run_config
+    from poi_mpp.experiments.e7_evm import AuthorityBoundaryError, assert_cli_authority_boundary
+
+    run_config = load_run_config(_publication_run_config_path())
+    tampered = run_config.model_copy(update={field: "0" * 64})
+
+    with pytest.raises(AuthorityBoundaryError, match=field):
+        assert_cli_authority_boundary(tampered)
+
+
 @pytest.mark.skipif(not (_contracts_root() / "foundry.toml").is_file(), reason="contracts workspace unavailable")
 def test_collect_and_summarize_publication_runs_live_boundary(tmp_path: Path):
+    from poi_mpp.evidence.config import load_run_config
     from poi_mpp.experiments.e7_evm import current_e7_parity_source_closure_hash
     from poi_mpp.reporting.e7 import collect_and_summarize_e7_publication
 
     result = collect_and_summarize_e7_publication(
         contracts_root=_contracts_root(),
-        run_config=_run_config(run_id="run-e7-live-publication"),
+        run_config=load_run_config(_publication_run_config_path()),
         bundle_output_path=tmp_path / "bundle.json",
     )
 

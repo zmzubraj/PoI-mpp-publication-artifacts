@@ -23,6 +23,7 @@ if str(SRC_ROOT) not in sys.path:
 from poi_mpp.evidence import UNVERSIONED_BLOCKED, approved_schema_hash, collect_environment
 from poi_mpp.evidence.models import EvidenceOrigin
 from poi_mpp.experiments.e8_consensus import default_e8_publication_plan_path, load_and_run_e8_publication
+from poi_mpp.experiments.e7_evm import e7_publication_dataset_hash, e7_publication_model_hash
 from poi_mpp.reporting.manifest import PublicationReportManifestModel, validate_existing_manifest
 from verify_bundle import VERIFY_REPORT_SCHEMA, verify_bundle
 
@@ -278,8 +279,8 @@ def _report_spec(
             "experiment_id": "E7",
             "origin": EvidenceOrigin.FOUNDRY_MEASUREMENT.value,
             "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
-            "model_hash": "5" * 64,
-            "dataset_hash": "6" * 64,
+            "model_hash": e7_publication_model_hash(),
+            "dataset_hash": e7_publication_dataset_hash(repo_root=REPO_ROOT),
             "parent_hashes": [],
             "data_availability": {
                 "total_shards": 16,

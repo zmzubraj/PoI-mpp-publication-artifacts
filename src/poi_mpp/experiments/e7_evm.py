@@ -824,6 +824,18 @@ def default_measurement_contract() -> E7MeasurementContract:
     )
 
 
+def e7_publication_model_hash(
+    contract: E7MeasurementContract | None = None,
+) -> str:
+    """Bind the exact E7 measurement contract used by the local collector."""
+
+    resolved_contract = default_measurement_contract() if contract is None else contract
+    return digest(
+        "E7_PUBLICATION_MODEL_HASH",
+        resolved_contract.model_dump(mode="json"),
+    )
+
+
 def load_default_parity_attachment(repo_root: str | Path | None = None) -> E7ParityAttachment:
     root = Path(repo_root) if repo_root is not None else _ROOT
     vectors = root / "tests" / "fixtures" / "protocol_vectors.json"
@@ -852,6 +864,40 @@ def load_default_parity_attachment(repo_root: str | Path | None = None) -> E7Par
         protocol_vectors_hash=_path_hash(vectors),
         task8_report_path=str(report.resolve()),
         task8_report_hash=_path_hash(report),
+    )
+
+
+def e7_publication_dataset_hash(
+    *,
+    contract: E7MeasurementContract | None = None,
+    repo_root: str | Path | None = None,
+) -> str:
+    """Bind expected measurements and the current Python/Solidity parity closure.
+
+    Only stable semantic identities and content hashes enter this digest.  Local
+    absolute paths in the parity attachment are deliberately excluded so the
+    publication configuration remains replayable in another checkout.
+    """
+
+    resolved_contract = default_measurement_contract() if contract is None else contract
+    attachment = load_default_parity_attachment(repo_root)
+    return digest(
+        "E7_PUBLICATION_DATASET_HASH",
+        {
+            "schema_version": "POI_MPP_E7_PUBLICATION_DATASET_BINDING_V1",
+            "measurement_contract_hash": e7_publication_model_hash(resolved_contract),
+            "expected_measurements": [
+                item.model_dump(mode="json")
+                for item in resolved_contract.expected_measurements
+            ],
+            "parity_attachment": {
+                "schema_version": attachment.schema_version,
+                "protocol_vectors_hash": attachment.protocol_vectors_hash,
+                "task8_report_hash": attachment.task8_report_hash,
+                "expected_witness_contract": attachment.expected_witness_contract,
+            },
+            "parity_source_closure_hash": current_e7_parity_source_closure_hash(repo_root),
+        },
     )
 
 
@@ -1104,6 +1150,16 @@ def assert_cli_authority_boundary(run_config: RunConfig) -> None:
     if run_config.authorization_scope != PUBLICATION_EVIDENCE_AUTHORIZED:
         raise AuthorityBoundaryError(
             f"E7 collection wrapper requires {PUBLICATION_EVIDENCE_AUTHORIZED} authorization_scope"
+        )
+    expected_model_hash = e7_publication_model_hash()
+    if run_config.model_hash != expected_model_hash:
+        raise AuthorityBoundaryError(
+            "run_config.model_hash must bind the default E7 measurement contract"
+        )
+    expected_dataset_hash = e7_publication_dataset_hash(repo_root=_ROOT)
+    if run_config.dataset_hash != expected_dataset_hash:
+        raise AuthorityBoundaryError(
+            "run_config.dataset_hash must bind the expected measurements and current parity closure"
         )
 
 

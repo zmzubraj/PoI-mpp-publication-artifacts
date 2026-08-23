@@ -17,6 +17,8 @@ VERIFY_BUNDLE = REPO_ROOT / "scripts" / "verify_bundle.py"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 import verify_bundle as verify_module  # noqa: E402
+import reproduce as reproduce_module  # noqa: E402
+from poi_mpp.experiments.e7_evm import e7_publication_dataset_hash, e7_publication_model_hash  # noqa: E402
 from poi_mpp.reporting import manifest as reporting_manifest  # noqa: E402
 
 
@@ -57,6 +59,30 @@ def _write_bytes(path: Path, data: bytes) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     return path
+
+
+def test_full_replay_spec_uses_canonical_e7_input_bindings(tmp_path: Path) -> None:
+    context = reproduce_module.RunContext(
+        mode="full",
+        run_id="test-full-replay",
+        head_revision="a" * 40,
+        effective_code_revision="a" * 40,
+        git_status_fingerprint="b" * 64,
+        tracked_dirty_paths=(),
+        package_lock_hash=None,
+    )
+
+    reproduce_module._report_spec(
+        tmp_path,
+        context,
+        full_mode=True,
+        e8_rows_relative_path=None,
+        e8_contract_relative_path=None,
+    )
+
+    config = _read_json(tmp_path / "inputs" / "e7_run_config.json")
+    assert config["model_hash"] == e7_publication_model_hash()
+    assert config["dataset_hash"] == e7_publication_dataset_hash(repo_root=REPO_ROOT)
 
 
 def _make_publication_manifest(candidate_root: Path, output_paths: list[tuple[str, str, str]]) -> None:
