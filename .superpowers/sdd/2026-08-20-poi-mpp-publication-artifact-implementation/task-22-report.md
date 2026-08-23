@@ -2,6 +2,11 @@
 
 **Status:** DONE_WITH_CONCERNS
 
+Software-plan status and publication status are intentionally separate:
+
+- Task 22 implementation and final verification are complete.
+- The publication bundle itself remains `INCOMPLETE` on Sunday, August 23, 2026 because the external evidence/review gates are still absent.
+
 ## Scope
 
 - Added `scripts/reproduce.py` as the Task 22 candidate replay and freeze-stage entrypoint.
@@ -95,11 +100,11 @@ The final clean Sunday, August 23, 2026 candidate root and verification-report d
 
 `C7` remains tied to the live local Foundry boundary; `C8` remains `INCONCLUSIVE`; no frozen sentinel is created.
 
-Final committed-tree replay on Sunday, August 23, 2026:
+Final committed-tree replay on Sunday, August 23, 2026 at HEAD `6309d43`:
 
-- candidate root: `results/tmp/candidates/task22-741d9fb3f4e8d00f/`
-- verification report: `results/tmp/candidates/task22-741d9fb3f4e8d00f/verification_report.json`
-- verification report SHA-256: `80ae07314f4ba040a76bf3bf3b11d97ab06d5bfbd96c44a7b96356d191724672`
+- candidate root: `results/tmp/candidates/task22-6db4d0caff40edf5/`
+- verification report: `results/tmp/candidates/task22-6db4d0caff40edf5/verification_report.json`
+- verification report SHA-256: `dc4914fb40a70fdca5251d8e1667be2ea32ac850a70ef07a52f05f3a4dcbb2d8`
 - completeness: `INCOMPLETE`
 - direct verifier claims:
   - `C7=SUPPORTED`
@@ -137,7 +142,13 @@ Broader verification after the hardening pass:
 $ ./.venv/bin/python -m pytest -q
 PASS
 
+$ forge test -q
+PASS
+
 $ ./.venv/bin/python -m compileall -q src tests experiments scripts
+PASS
+
+$ bash -n scripts/run_all.sh
 PASS
 
 $ git diff --check
@@ -153,7 +164,7 @@ INCOMPLETE by design; candidate written, no frozen bundle, no sentinel
 $ ./.venv/bin/python scripts/reproduce.py
 INCOMPLETE by design; candidate written, no frozen bundle, no sentinel
 
-$ ./.venv/bin/python scripts/verify_bundle.py --bundle-root results/tmp/candidates/task22-741d9fb3f4e8d00f
+$ ./.venv/bin/python scripts/verify_bundle.py --bundle-root results/tmp/candidates/task22-6db4d0caff40edf5
 INCOMPLETE by design; direct verifier agrees, `C7=SUPPORTED`, `C8=INCONCLUSIVE`, no sentinel
 
 $ forge test -q
@@ -190,3 +201,4 @@ That wave specifically covered:
 - During active tracked edits, `scripts/reproduce.py` still records `UNVERSIONED_BLOCKED` exactly as intended; the final handoff reruns reproduction from a clean committed tree so runtime outputs alone do not trigger that blocker.
 - E8 is now a production-owned canonical simulation surface for Task 22 replay, but it still cannot upgrade the bundle beyond `INCOMPLETE` because the remaining blockers are evidence-authority and independent-review gaps, not E8 mechanics.
 - A future complete freeze still requires an externally authenticated manual scientific review record; AI output, self-review, or user approval cannot satisfy that gate.
+- Final whole-plan/whole-branch verification is PASS at HEAD `6309d43`; that PASS certifies the Task 22 software surface, not publication-bundle completeness.
