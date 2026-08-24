@@ -211,6 +211,19 @@ def test_e8_inconclusive_is_preserved_and_labeled(tmp_path: Path):
     assert t4_status["reason"] == "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
 
 
+def test_e8_claim_matrix_uses_frozen_c8_identifier(tmp_path: Path):
+    spec = _valid_e8_spec(tmp_path)
+    build_publication_report(spec)
+
+    claim_rows = json.loads((Path(spec.output_root) / "tables" / "claim_matrix.json").read_text(encoding="utf-8"))
+    e8_rows = [row for row in claim_rows if row["experiment_id"] == "E8"]
+
+    assert len(e8_rows) == 1
+    assert e8_rows[0]["artifact_id"] == "T13"
+    assert e8_rows[0]["claim_id"] == "C8"
+    assert all(row["claim_id"] != "C13" for row in claim_rows)
+
+
 def test_generated_svg_includes_source_hash_caption(tmp_path: Path):
     spec = _valid_e8_spec(tmp_path)
     build_publication_report(spec)

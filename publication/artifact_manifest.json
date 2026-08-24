@@ -616,7 +616,7 @@
       "relative_path": "raw/E7_live_bundle.json",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": "POI_MPP_E7_BUNDLE_V1",
-      "sha256": "00ae1ef910e22f82582813547f3bd2eb29c3542934d8701e4efd04205980439e",
+      "sha256": "38d5895acfddc907a9b3d17d586533345af3c593a40be96eb11bcf2f8a21a873",
       "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
@@ -1033,7 +1033,7 @@
       "relative_path": "tables/claim_matrix.csv",
       "run_id": null,
       "schema_version": null,
-      "sha256": "bd6516f7f60fcc16cfd3467b9729a7e83ccb2dc202be4f854da2729413c98f0c",
+      "sha256": "1dc5fd1ea270bacf1fd38efb892385edb80c01d081c021a0f51037a414239ebc",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1052,7 +1052,7 @@
       "relative_path": "tables/claim_matrix.json",
       "run_id": null,
       "schema_version": null,
-      "sha256": "781f874ba9befe6241e22a71be0780209499d3655f873012b672037ce8cb8b60",
+      "sha256": "7b4f18633847c850fafd330124b455d99be939a77428d77d43454a0d534f6965",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1096,5 +1096,5 @@
     }
   ],
   "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4",
-  "self_digest": "23d2d6df0a6f7d259192322e3ea30ee3430e77e4f80cd579ff49a461c285a299"
+  "self_digest": "c621ccacb6a0a0bf86083fecf99be775df9ca9a37e6c80580c2a3c3f3c721e0d"
 }

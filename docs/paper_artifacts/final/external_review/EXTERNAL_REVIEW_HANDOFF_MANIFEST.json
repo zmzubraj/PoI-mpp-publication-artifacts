@@ -1,0 +1,453 @@
+{
+  "authority_boundary": "This manifest binds review inputs only; it does not create evaluator authority, independent review, a signature, or publication readiness.",
+  "canonical_publication_manifest_sha256": "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf",
+  "external_gates": {
+    "e3_semantic_evaluator_authority": "WAITING_EXTERNAL",
+    "independent_domain_expert_review": "WAITING_EXTERNAL",
+    "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE"
+  },
+  "review_input_count": 73,
+  "review_inputs": [
+    {
+      "path": "docs/EXPERIMENT_ARTIFACT_MATRIX.md",
+      "role": "CLAIM_AND_ARTIFACT_MAPPING",
+      "sha256": "bb9747bf4ee88b59e27fca49ba803187721e1795381918fd1fa8694b77a9195e",
+      "size_bytes": 766
+    },
+    {
+      "path": "docs/MAIN_RESULTS_TARGETS.md",
+      "role": "CLAIM_AND_ARTIFACT_MAPPING",
+      "sha256": "15b979f1e6cf533eb5a58fc342194b8d1bcebcf6ec0b7464f3e0349649ac4567",
+      "size_bytes": 3375
+    },
+    {
+      "path": "docs/PAPER_ARTIFACT_MAP.md",
+      "role": "CLAIM_AND_ARTIFACT_MAPPING",
+      "sha256": "1fdc412cb6846e2cda3fb0bd0f0c8f96418144be99158a0896807b3c605215b5",
+      "size_bytes": 5227
+    },
+    {
+      "path": "docs/algorithms/A1_SPAI.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "6c3cca1f2daf5ea7dde4cf45443b52d1d57e22ad779fe89c9eef97d53b013a99",
+      "size_bytes": 1320
+    },
+    {
+      "path": "docs/algorithms/A2_AuditCompiler.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "e48c2d73395dfe00a350cafa10d5ccf566329575271ae87807ea4b247b9f1009",
+      "size_bytes": 938
+    },
+    {
+      "path": "docs/algorithms/A3_VerifySPAIEvent.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "4d69b4bb27ec4de547a178e9d6ecc93a76fd31f56656166d443135b0a336527e",
+      "size_bytes": 918
+    },
+    {
+      "path": "docs/algorithms/A4_PoI_Credit.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "9e209423852fc74bc06af04667eaa78f540c1bd8f54afb1a5629e2e3f8967443",
+      "size_bytes": 622
+    },
+    {
+      "path": "docs/algorithms/A5_Optimistic_Dispute.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "861b146c9ce8650ada5a5ecd4914006c9470c2c5ffc7b94d8f8d26941c9bb383",
+      "size_bytes": 794
+    },
+    {
+      "path": "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx",
+      "role": "RENDERED_MANUSCRIPT_DELIVERABLE",
+      "sha256": "55ae7609a70e5786c691d509be7762292f8422666cb7c75f0b955cb01ac3e8b3",
+      "size_bytes": 514267
+    },
+    {
+      "path": "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.pdf",
+      "role": "RENDERED_MANUSCRIPT_DELIVERABLE",
+      "sha256": "a429f5ded71928e704422f31f23ced6b4403981a290d6c15597beda3a73b1f93",
+      "size_bytes": 801241
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "035593ed2dc13287291981a7bfd25ec2ed0ddfa2067e9a3ebda1b533096dcc33",
+      "size_bytes": 5120
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "fd597f5cc3728df3de9d4656f2ad3ccd6d0cd75b63f8249c9aa0f87a15a3e444",
+      "size_bytes": 6279
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/README.md",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "9f6ecbbd2b4a6500be3724ba12b2ff05840d1093db925f306b0d685e1cfabc12",
+      "size_bytes": 3718
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/independent_domain_expert_review_record.schema.json",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "0326c5582ee7b7a8c747ce4de26d6e8835202b4af41bfd78ba20fccdb712489c",
+      "size_bytes": 4034
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "449a712489363ae15b403e1c27a7ea1b0d1753f3272bb9a39806bc854e506ef7",
+      "size_bytes": 3016
+    },
+    {
+      "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
+      "role": "MANUSCRIPT_SOURCE_OR_CITATION_AUDIT",
+      "sha256": "e27a55c113b96b51cebd6450872d49426a81c3642f5e510d384466b1c2de4bfc",
+      "size_bytes": 27999
+    },
+    {
+      "path": "docs/paper_artifacts/final/manuscript/REFERENCES_AUDIT.md",
+      "role": "MANUSCRIPT_SOURCE_OR_CITATION_AUDIT",
+      "sha256": "0c75ab96cf310061c89fd82b038b1a82a8496c04ed5bd92c4db15740b76163db",
+      "size_bytes": 6388
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/MPP_ALIGNMENT_AND_SCORECARD.md",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "d9220d3475a9c9583f060cedca2848c27823a8d4ee125b3aba860e20439e70b8",
+      "size_bytes": 5949
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/MPP_ALIGNMENT_EXPLANATION_BN.md",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "f708b8b26b73d76dd950e95244616842c495f4cca46a75f0ee6ddf8d907d9b6f",
+      "size_bytes": 14112
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "c39184f3f28474a9e0781422f2dbb8e995e325a8e87854cc5a5a12733c32f900",
+      "size_bytes": 4633
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "2de9cef3979d3d0cbec7f831a50386e56f8322dfc95bc7ecfd4bcb22244b08ed",
+      "size_bytes": 21723
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/README.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "669958a2ac96e1bba8ed8ce18a30c8212e6711cc042b87ad855d61a4a5a43160",
+      "size_bytes": 1578
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T1_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "237e37d5f39f6e1cf046c031402ee87658b02ac155c94898039573a16b2cffe7",
+      "size_bytes": 340
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T1_protocol_objects_and_invariants.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "1d4d8d78661241425f4d2efe09b08aa1dafb164c1605ba95accda2b4dcafbe4b",
+      "size_bytes": 1695
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T1_protocol_objects_and_invariants.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "6ae40ab2d145a3f57b31e8af14829bc9a1af6588b173097891752b4f24065695",
+      "size_bytes": 1819
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T2_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "b5cd25e96017bf6a4eecaa33101bb01710e09e1a5723fa65aefbffd758789ed9",
+      "size_bytes": 386
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T2_evidence_origin_rules.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "a49169d342fd1afe9d769766769d3d2ae58238cf10bc57cc66ec0444cd56b875",
+      "size_bytes": 1575
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T2_evidence_origin_rules.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "96716c1c442719d661262dbcf953ba3a28f85af353b4e506f5eb0d6e8b02ecb9",
+      "size_bytes": 1647
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T3_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "9cac225832f7fa33f328e9aa32611be4b8854fda16999fef7397b83323aba678",
+      "size_bytes": 292
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T3_mpp_scope_and_deferred_scope.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "2559f10004898d97e0188b91b057e4a4ba37c66d9db26dc48ef6deec35735b88",
+      "size_bytes": 2004
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T3_mpp_scope_and_deferred_scope.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "2e0245f3bd89f94f20104bed2fff3e3a19e10cc0becf57e3f342d04c777e8d2c",
+      "size_bytes": 2156
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T4_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "b8042949a17ca9d3fb86aea7ad1ea9db881fdc013e33a8a8d76baebbb9df1253",
+      "size_bytes": 455
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "54c9ec59141235f810c6d0bf4c81bbd38566645e2a9f95aa2edde6b001a77cae",
+      "size_bytes": 3422
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "d2f4860bcef28358b3f299d62ac1e85a95e8ef2fd5851172610e3a3d8459c679",
+      "size_bytes": 3730
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T5_c7_evm_boundedness_current_surface.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "e38884d0da5c4a478f4bfee328e424cf598abb5a46a0916651ba77fc9ac07c00",
+      "size_bytes": 2202
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T5_c7_evm_boundedness_current_surface.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "af99a7c385dcbce60162259baf84d11f73918429e0684410ed78ed30147166cb",
+      "size_bytes": 2591
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T5_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "c89529e386a8c29f1f8ec9bbeeda701afff22ae901d897874a0511d35376d831",
+      "size_bytes": 990
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T6_c8_next_epoch_simulation_current_surface.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "61b72c56d338b768903752e04a26b366a144c199b6855e27938ff0aa4578f173",
+      "size_bytes": 1786
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T6_c8_next_epoch_simulation_current_surface.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "9770f72645be254089a6063f81c874903116d25470b542295d950f36626627e0",
+      "size_bytes": 2261
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T6_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "3d848056a1b386e99939228770ca56fb764539355177996ff1e231dc90d81b74",
+      "size_bytes": 843
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T7_caption_notes.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "9a3be1bb2b5edcc6d90762bdb128ad6f3a57a1907bd09a05d3e6cdfed537d640",
+      "size_bytes": 424
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.csv",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "64466eec2bc8be9968ec60cf5856e1a01bd44103b3a54cb3fe296581ca199f73",
+      "size_bytes": 1539
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md",
+      "role": "EDITABLE_MANUSCRIPT_TABLE",
+      "sha256": "366162b35463077577a7a5f02b2837e8e14cfd8a71ca00e4315ba5e9648bd377",
+      "size_bytes": 1723
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/A_final_paper_algorithms.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "0f25243344c83791b2e96eabc9f54667423cda744d4abd05a269371ed1b24045",
+      "size_bytes": 6699
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F1_caption.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "18602224b35a75ee331e9fca0600ebec81a6d1b83bc11490befeb1f546b01635",
+      "size_bytes": 502
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F1_single_pass_end_to_end.mmd",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "2ebe8afeec3abd1cd7dd0cebdbc29636b0a86bfdf021bb36a20236013d9c7b13",
+      "size_bytes": 1193
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F2_caption.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "30bd479e3f60dd4e2964261ed4a729e3311214702366aa715b5ecb32802df8de",
+      "size_bytes": 523
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F2_execution_assurance_lanes.mmd",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "7337a1c97a402b97517e0814092b34b0a601c09b94d14f66613b17ea2b3aa51d",
+      "size_bytes": 857
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F3_caption.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "73c6eb2ae89ccdcf95480f24f5e192fb6d5b01f076a3548d89f7c76a654c4534",
+      "size_bytes": 528
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F3_semantic_verification_pipeline.mmd",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "c7b8f7f4d0f2f5cd5e3fb543f6f32a4f5d0b1484da5b780c6489766133fed16b",
+      "size_bytes": 896
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F4_caption.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "b164ae1c3aa0cc94c3cbade624d8c698491ee859fc92b4ebec42f4780647b725",
+      "size_bytes": 529
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F4_complete_architecture.mmd",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "cbecd96a916167e6465c191fd541474302c1194e7bb838a28d6eed8fec265821",
+      "size_bytes": 666
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F5_caption.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "f53cc2bfafe7f53a050067f62e4a114e29c3d7669cfba44afa40f284c2f2296b",
+      "size_bytes": 475
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F5_single_pass_cost_logic.mmd",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "1b814c02cc91cedfe92a9b630b50164bc979af93320f1739c4e272a01dd6e60d",
+      "size_bytes": 592
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F6_caption.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "ed8fac5095e0e35104f23991d77589c37ed502497c7d33188f895a050b4cce35",
+      "size_bytes": 469
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/F6_evm_boundary_and_state.mmd",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "d4be1b69550711567d93ff5ac98b136757b51ae97845183672be8128751cfa47",
+      "size_bytes": 974
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/README.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "d7a673f17aeb68fbafc3bad4565f98168dda58b5fc3451c79e2f30d6795498e8",
+      "size_bytes": 1032
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/F1_single_pass_end_to_end.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "cbda301171ad36cd0c73f53927f1f36b88940bc8525bb9fbb56228082a73043f",
+      "size_bytes": 74776
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/F2_execution_assurance_lanes.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "52a38c33790fed76c3d67587c2d8ec57b34f6220a8fdb77fcba8f9ab11e7b17f",
+      "size_bytes": 68029
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/F3_semantic_verification_pipeline.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "9f303943cb257bd2faac512cf7a416c7a400cd323fc11d6525e423c92af9b4cc",
+      "size_bytes": 16095
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/F4_complete_architecture.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "3d8f5db5460655d4da490cb3cbbfbd040adf1c5bb4f160832d466360155bc6f6",
+      "size_bytes": 59232
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F10_economic_security.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "9f138f405f5d382f668ef71aef775ac53f539b44066b7eb47420fba73eeffadc",
+      "size_bytes": 82928
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F12_evm_gas_state_scaling.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "cdcc750619def7116db0dc527d6c5151dde9660fd073df3bc7b900874096a5e7",
+      "size_bytes": 96472
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F5_single_pass_cost.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "dcc0f5810974f04c3c8d413660400526e15b17c36d988246d4c090a948e7bdae",
+      "size_bytes": 49583
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F6_audit_soundness.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "83e33635660f209a6a414b7d9992b3fef3ed1316fc241fc52ed30fb53e203035",
+      "size_bytes": 44473
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F9_sybil_advantage.png",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "2ddf7a3f7d64a297eee633ebb0ad719be15c17a705d80f20e580d914a695e950",
+      "size_bytes": 67407
+    },
+    {
+      "path": "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/README.md",
+      "role": "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE",
+      "sha256": "e14fd647bab931828a3f019e11a099b1db749dfc4f1ca6253fa3b12db98dd9c3",
+      "size_bytes": 697
+    },
+    {
+      "path": "publication/artifact_manifest.json",
+      "role": "CANONICAL_PUBLICATION_EVIDENCE_INDEX",
+      "sha256": "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf",
+      "size_bytes": 42901
+    },
+    {
+      "path": "publication/tables/claim_matrix.json",
+      "role": "CANONICAL_PUBLICATION_EVIDENCE_INDEX",
+      "sha256": "7b4f18633847c850fafd330124b455d99be939a77428d77d43454a0d534f6965",
+      "size_bytes": 6860
+    },
+    {
+      "path": "publication/tables/omissions.json",
+      "role": "CANONICAL_PUBLICATION_EVIDENCE_INDEX",
+      "sha256": "cdf8370b3eaeeedcdaa0e0343bd2c78f47472aaab3a91128b4d3ff49b7fc4732",
+      "size_bytes": 516
+    },
+    {
+      "path": "scripts/build_external_review_handoff.py",
+      "role": "REPRODUCIBILITY_GENERATOR",
+      "sha256": "04dc1b318034c5d203ade2953b50bc3b406f12fc2d748d258d71411968e7281b",
+      "size_bytes": 8225
+    },
+    {
+      "path": "scripts/build_paper_docx.js",
+      "role": "REPRODUCIBILITY_GENERATOR",
+      "sha256": "6063cbf9bc73c41972cff6bdc865f439b7aacc0020676a02366d66f656c6548b",
+      "size_bytes": 14638
+    },
+    {
+      "path": "scripts/build_paper_figures.py",
+      "role": "REPRODUCIBILITY_GENERATOR",
+      "sha256": "1ed3939a77fe2968c9a4ab909c2d90a9b8437ce53e885cd9fbd0d9e46aa0725e",
+      "size_bytes": 7247
+    }
+  ],
+  "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
+  "self_digest": "6901826ab6920e7cb28a6b89496b775b5251a9fda31e8c144e19bf77d50adf5f",
+  "status": "UNSIGNED_REVIEW_INPUT_ONLY"
+}

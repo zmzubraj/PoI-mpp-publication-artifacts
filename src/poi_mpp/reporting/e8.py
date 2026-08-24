@@ -462,7 +462,7 @@ def summarize_e8_rows(
         ):
             claim_disposition = "SUPPORTED"
     return E8Summary(
-        claim_id="C13",
+        claim_id="C8",
         denominator=len(canonical_rows),
         scenario_count=len(canonical_rows),
         support_row_count=support_row_count,
