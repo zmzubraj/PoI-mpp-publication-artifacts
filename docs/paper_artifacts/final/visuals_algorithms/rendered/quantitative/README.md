@@ -4,10 +4,14 @@ The paper-used PNG derivatives are generated deterministically from canonical `p
 
 - `F5_single_pass_cost.png`
 - `F6_audit_soundness.png`
+- `F8_da_withholding.png`
 - `F9_sybil_advantage.png`
 - `F10_economic_security.png`
+- `F11_consensus_dynamics.png`
 - `F12_evm_gas_state_scaling.png`
 
 They are presentation derivatives only. The canonical JSON/SVG evidence and hashes under `publication/` remain authoritative.
 
-`F8_da_withholding.png` and `F11_consensus_dynamics.png` are supplemental raster conversions of canonical inconclusive figures. They are not emitted by the paper-figure builder and are not embedded in the evidence-bound manuscript.
+F8 and F11 remain explicitly inconclusive simulation figures. Their inclusion in
+the manuscript exposes negative and boundary evidence; it does not promote the
+underlying simulations into real execution or production evidence.

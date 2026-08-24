@@ -12,7 +12,7 @@ We evaluate a deliberately narrow Minimum Publishable Prototype (MPP) using a 1.
 
 The expensive part of modern AI serving is the model execution itself. A PoI system that requires a second large-model generation for every accepted response, or a full proof of all tensor operations for the common path, inherits an immediate structural cost barrier. The systems question addressed here is whether useful AI responses can be made auditable without paying either of those costs on the normal path.
 
-The proposed answer is Single-Pass Auditable Intelligence (SPAI): one committed response, one model execution, one set of committed execution and semantic audit surfaces, one post-commit randomized audit process, and one maturity rule that converts only successfully audited events into bounded protocol authority. The architectural goal is not to claim novelty for optimistic fraud proofs [1,2], algebraic matrix checks [6], remote attestation [3,4,7], data-availability sampling [13], zero-knowledge machine-learning verification [9,10], or weighted Byzantine fault tolerance [14] in isolation. The architectural claim is narrower: these components can be composed into a complete PoI path that avoids two common-path cost barriers while preserving explicit failure states and assurance tiers.
+The proposed answer is Single-Pass Auditable Intelligence (SPAI): one committed response, one model execution, one set of committed execution and semantic audit surfaces, one post-commit randomized audit process, and one maturity rule that converts only successfully audited events into bounded protocol authority. The architectural goal is not to claim novelty for optimistic fraud proofs [1,2], algebraic matrix checks [6], remote attestation [3,4,7], data-availability sampling [11], zero-knowledge machine-learning verification [9,10], or weighted Byzantine fault tolerance [12] in isolation. The architectural claim is narrower: these components can be composed into a complete PoI path that avoids two common-path cost barriers while preserving explicit failure states and assurance tiers.
 
 CommitLLM [5] is the closest implementation-level predecessor identified in the present bounded review. It likewise commits open-weight LLM inference artifacts, opens trace material only under challenge, and uses exact and Freivalds-style audit checks without requiring a proof for every response. opML [1] independently establishes a closely related optimistic fraud-proof route for on-chain machine learning. Consequently, this manuscript does not claim a new primitive for committed LLM execution or optimistic dispute. Its provisional differentiator is the wider protocol composition that links execution and semantic evidence, retention and challenge state, non-transferable receipt maturity, task-budgeted credit, and bounded next-epoch consensus weight. That composition-level novelty remains subject to a reproducible strongest-prior-art search and independent challenge.
 
@@ -277,6 +277,8 @@ watcher/dispute-economic simulation scenarios and has no figure. E6 (T11, F9,
 F10) is `SUPPORTED` only for its declared Sybil/task-budget simulation
 scenarios. Neither E5 nor E6 supplies production or open-network evidence.
 
+![Figure 8. E4 declared data-availability playback. The two scenario values and interval bounds are reproducible simulation outputs, not executed reconstruction or production DA evidence. The experiment remains INCONCLUSIVE.](../visuals_algorithms/rendered/quantitative/F8_da_withholding.png)
+
 ![Figure 9. E6 identity-splitting simulation. Capacity-committed and operator-slot rules remain normalized at one across the frozen one- and 64-identity scenarios; the intentionally identity-uniform negative control increases to 3.704. This is simulation evidence only.](../visuals_algorithms/rendered/quantitative/F9_sybil_advantage.png)
 
 ![Figure 10. E6 modeled cost to one-third target weight under the frozen scenarios. Values are reproducible simulation outputs, not market prices, field measurements, or a production attack-cost guarantee.](../visuals_algorithms/rendered/quantitative/F10_economic_security.png)
@@ -294,6 +296,8 @@ economics, production throughput, or production consensus performance.
 E8 (T13, F11) contains 10 `INCONCLUSIVE` reproducible-simulation rows. It may
 describe modeled receipt-to-weight dynamics, but it is not demonstrated
 consensus security.
+
+![Figure 11. E8 modeled next-epoch attacker-weight thresholds across the frozen simulation scenarios. Probabilities are reproducible simulation outputs; they do not establish live-network or production consensus security, and E8 remains INCONCLUSIVE.](../visuals_algorithms/rendered/quantitative/F11_consensus_dynamics.png)
 
 ## 7. Discussion
 
@@ -383,12 +387,6 @@ The bundle is intentionally not frozen for submission. E3 external evaluator aut
 
 [10] Z. Peng, C. Zhao, T. Wang, G. Liao, Z. Lin, Y. Liu, B. Cao, L. Shi, Q. Yang, and S. Zhang. “A Survey of Zero-Knowledge Proof Based Verifiable Machine Learning.” *Artificial Intelligence Review* 59, 157 (2026).
 
-[11] Hearth. “A Verified-Inference Layer-1 Secured by Proof of Inference.” Source-carried draft whitepaper reference, July 2026. Grey literature; stable official primary source not verified in this manuscript pass.
+[11] M. Yu, S. Sahraei, S. Li, S. Avestimehr, S. Kannan, and P. Viswanath. “Coded Merkle Tree: Solving Data Availability Attacks in Blockchains.” In *Financial Cryptography and Data Security (FC 2020)*, LNCS 12059, pp. 114-134, 2020.
 
-[12] Ambient. “Litepaper: Proof of Logits & Verified Inference,” together with official product documentation describing “machine intelligence as currency,” accessed August 23, 2026. Grey literature.
-
-[13] M. Yu, S. Sahraei, S. Li, S. Avestimehr, S. Kannan, and P. Viswanath. “Coded Merkle Tree: Solving Data Availability Attacks in Blockchains.” In *Financial Cryptography and Data Security (FC 2020)*, LNCS 12059, pp. 114-134, 2020.
-
-[14] M. Yin, D. Malkhi, M. K. Reiter, G. G. Gueta, and I. Abraham. “HotStuff: BFT Consensus with Linearity and Responsiveness.” In *Proceedings of the 2019 ACM Symposium on Principles of Distributed Computing (PODC 2019)*, pp. 347-356, 2019.
-
-[15] Ethereum.org. “Node Architecture” and “Consensus Mechanisms,” accessed August 23, 2026.
+[12] M. Yin, D. Malkhi, M. K. Reiter, G. G. Gueta, and I. Abraham. “HotStuff: BFT Consensus with Linearity and Responsiveness.” In *Proceedings of the 2019 ACM Symposium on Principles of Distributed Computing (PODC 2019)*, pp. 347-356, 2019.

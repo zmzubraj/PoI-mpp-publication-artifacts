@@ -31,6 +31,8 @@ DEFAULT_OUTPUT = (
 
 EXACT_INPUTS = (
     "Makefile",
+    "package.json",
+    "package-lock.json",
     "publication/artifact_manifest.json",
     "publication/tables/claim_matrix.json",
     "publication/tables/omissions.json",
@@ -49,6 +51,8 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
     "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
     "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip",
+    "docs/paper_artifacts/final/external_review/E3_MISSING_ARTIFACTS_TRACKER.md",
+    "docs/paper_artifacts/final/external_review/E3_STALE_SIGNATURE_HANDOFF_NOTE.md",
     "docs/paper_artifacts/final/external_review/INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md",
     "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
     "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
@@ -78,8 +82,10 @@ GLOB_INPUTS = (
     "docs/paper_artifacts/final/visuals_algorithms/rendered/F[1-4]_*.png",
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F5_*.png",
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F6_*.png",
+    "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F8_*.png",
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F9_*.png",
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F10_*.png",
+    "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F11_*.png",
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F12_*.png",
 )
 

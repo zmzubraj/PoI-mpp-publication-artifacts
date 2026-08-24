@@ -80,7 +80,6 @@ function manuscriptImage(imageReference, caption) {
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      keepNext: true,
       spacing: { after: 180 },
       children: [new TextRun({ text: caption, italics: true, size: 18, color: "3E4D53" })],
     }),
@@ -103,7 +102,6 @@ function inlineRuns(text, base = {}) {
         text: part.slice(1, -1),
         font: "Courier New",
         color: "1F4E5F",
-        shading: { type: ShadingType.CLEAR, fill: "E9F2F4" },
       });
     }
     const match = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);

@@ -8,7 +8,7 @@ import sys
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_paper_figure_builder_emits_five_valid_png_derivatives(tmp_path: Path) -> None:
+def test_paper_figure_builder_emits_all_seven_valid_png_derivatives(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
@@ -23,8 +23,10 @@ def test_paper_figure_builder_emits_five_valid_png_derivatives(tmp_path: Path) -
     expected = {
         "F5_single_pass_cost.png",
         "F6_audit_soundness.png",
+        "F8_da_withholding.png",
         "F9_sybil_advantage.png",
         "F10_economic_security.png",
+        "F11_consensus_dynamics.png",
         "F12_evm_gas_state_scaling.png",
     }
     assert {path.name for path in tmp_path.iterdir()} == expected

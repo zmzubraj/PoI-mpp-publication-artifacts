@@ -281,53 +281,52 @@ def _report_spec(
     input_root = staging_root / "inputs"
     input_root.mkdir(parents=True, exist_ok=True)
     sources: dict[str, dict[str, str]] = {}
-    if full_mode:
-        raw = json.loads(PUBLICATION_REPORT_SPEC.read_text(encoding="utf-8"))
-        if not isinstance(raw, dict) or not isinstance(raw.get("sources"), dict):
-            raise ValueError("configs/publication_report.json must remain a JSON object with a sources mapping")
-        for experiment_id, source_payload in raw["sources"].items():
-            if not isinstance(source_payload, dict):
-                raise ValueError(f"publication_report source for {experiment_id} must be a mapping")
-            staged_source: dict[str, str] = {}
-            for key, value in source_payload.items():
-                if key == "timeout_seconds":
-                    staged_source[key] = str(int(value))
-                    continue
-                if key == "contracts_root":
-                    contracts_root = Path(value)
-                    if not contracts_root.is_absolute():
-                        contracts_root = (REPO_ROOT / contracts_root).resolve()
-                    staged_source[key] = str(contracts_root)
-                    continue
-                if (
-                    experiment_id == "E8"
-                    and key == "rows_path"
-                    and e8_rows_relative_path is not None
-                ):
-                    staged_source[key] = _artifact_root_relative(e8_rows_relative_path)
-                    continue
-                if (
-                    experiment_id == "E8"
-                    and key == "contract_path"
-                    and e8_contract_relative_path is not None
-                ):
-                    staged_source[key] = _artifact_root_relative(e8_contract_relative_path)
-                    continue
-                if not isinstance(value, str) or not value.strip():
-                    raise ValueError(f"publication_report source {experiment_id}.{key} must be a non-blank string")
-                source_path = Path(value)
-                if not source_path.is_absolute():
-                    source_path = (REPO_ROOT / source_path).resolve()
-                if not source_path.is_file():
-                    raise ValueError(f"publication_report source {experiment_id}.{key} is missing: {source_path}")
-                staged_relative = PurePosixPath(value)
-                if experiment_id == "E7" and key == "run_config_path":
-                    staged_relative = PurePosixPath("e7_run_config.yaml")
-                staged_path = input_root / staged_relative
-                staged_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(source_path, staged_path)
-                staged_source[key] = _artifact_root_relative(str(staged_path.relative_to(staging_root)))
-            sources[experiment_id] = staged_source
+    raw = json.loads(PUBLICATION_REPORT_SPEC.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or not isinstance(raw.get("sources"), dict):
+        raise ValueError("configs/publication_report.json must remain a JSON object with a sources mapping")
+    for experiment_id, source_payload in raw["sources"].items():
+        if not isinstance(source_payload, dict):
+            raise ValueError(f"publication_report source for {experiment_id} must be a mapping")
+        staged_source: dict[str, str] = {}
+        for key, value in source_payload.items():
+            if key == "timeout_seconds":
+                staged_source[key] = str(int(value))
+                continue
+            if key == "contracts_root":
+                contracts_root = Path(value)
+                if not contracts_root.is_absolute():
+                    contracts_root = (REPO_ROOT / contracts_root).resolve()
+                staged_source[key] = str(contracts_root)
+                continue
+            if (
+                experiment_id == "E8"
+                and key == "rows_path"
+                and e8_rows_relative_path is not None
+            ):
+                staged_source[key] = _artifact_root_relative(e8_rows_relative_path)
+                continue
+            if (
+                experiment_id == "E8"
+                and key == "contract_path"
+                and e8_contract_relative_path is not None
+            ):
+                staged_source[key] = _artifact_root_relative(e8_contract_relative_path)
+                continue
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"publication_report source {experiment_id}.{key} must be a non-blank string")
+            source_path = Path(value)
+            if not source_path.is_absolute():
+                source_path = (REPO_ROOT / source_path).resolve()
+            if not source_path.is_file():
+                raise ValueError(f"publication_report source {experiment_id}.{key} is missing: {source_path}")
+            staged_relative = PurePosixPath(value)
+            if experiment_id == "E7" and key == "run_config_path":
+                staged_relative = PurePosixPath("e7_run_config.yaml")
+            staged_path = input_root / staged_relative
+            staged_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source_path, staged_path)
+            staged_source[key] = _artifact_root_relative(str(staged_path.relative_to(staging_root)))
+        sources[experiment_id] = staged_source
     if e8_rows_relative_path is not None and e8_contract_relative_path is not None:
         if full_mode:
             sources.setdefault("E8", {})
@@ -696,7 +695,7 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
         report_spec_relative_path="inputs/report_spec.json",
         task21_config_relative_path="inputs/task21_local_config.json",
         task21_blocker_relative_path=str(task21_result_path.relative_to(staging_root)),
-        e7_run_config_relative_path="inputs/e7_run_config.yaml" if full_mode else None,
+        e7_run_config_relative_path="inputs/e7_run_config.yaml" if "E7" in experiments else None,
         e8_rows_relative_path=e8_rows_relative_path,
         e8_contract_relative_path=e8_contract_relative_path,
         review_handoff_manifest_relative_path=review_handoff_manifest_relative_path,

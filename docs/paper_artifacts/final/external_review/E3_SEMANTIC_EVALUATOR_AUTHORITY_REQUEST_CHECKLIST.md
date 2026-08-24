@@ -47,20 +47,34 @@ The pre-execution record always contains `result_attestation_status=NOT_INCLUDED
 
 ## Deterministic pre-execution request set
 
-The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `../../../../publication/artifact_manifest.json` (SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`); it records E3 as an explicit omission, not evidence.
+The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `publication/artifact_manifest.json` (SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`); it records E3 as an explicit omission, not evidence.
 
-| Relative path | Why it matters |
+All paths below are relative to the repository root and are the exact contents of `REQUEST_INPUTS` in `scripts/build_e3_authority_request.py`. The authoritative request selection is generated, not copied from this list — confirm with `build_e3_authority_request.py --check`.
+
+| Repository-relative path | Why it matters |
 |---|---|
-| `../../../../../Makefile` | fail-closed authorized E3 invocation and external-input handoff |
-| `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` | current manuscript claim boundary |
-| `../../../EXPERIMENT_PLAN.md` | experiment intent and E3 role |
-| `../../../EXPERIMENT_ARTIFACT_MATRIX.md` | E3 to artifact mapping |
-| `../../../PAPER_ARTIFACT_MAP.md` | paper artifact closure rules |
-| `../../../MAIN_RESULTS_TARGETS.md` | current blockers and claim rule |
-| `../tables/T4_experiment_design_and_current_status.md` | current E3 design/status summary |
-| `../tables/T7_limitations_and_nonclaims.md` | explicit non-claims and review limits |
-| `../../../../publication/artifact_manifest.json` | canonical artifact closure and E3 omission status |
-| `../../../../publication/tables/omissions.json` | explicit `T4`, `T8`, and `F7` waiting-external records |
+| `Makefile` | fail-closed authorized E3 invocation and external-input handoff |
+| `configs/confirmatory/e3.schema.yaml` | confirmatory configuration schema authorizes what E3 evidence shapes are valid |
+| `docs/EXPERIMENT_PLAN.md` | experiment intent and E3 role |
+| `docs/EXPERIMENT_ARTIFACT_MATRIX.md` | E3 to artifact mapping |
+| `docs/MAIN_RESULTS_TARGETS.md` | current blockers and claim rule |
+| `docs/PAPER_ARTIFACT_MAP.md` | paper artifact closure rules |
+| `docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md` | this request checklist document |
+| `docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json` | schema for the future post-execution result attestation |
+| `docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json` | schema for this V2 authority record |
+| `docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md` | current manuscript claim boundary |
+| `docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md` | current E3 design/status summary |
+| `docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md` | explicit non-claims and review limits |
+| `experiments/e3_semantic_eval.py` | authorized E3 runner (real execution entry point) |
+| `publication/artifact_manifest.json` | canonical artifact closure and E3 omission status |
+| `publication/tables/claim_matrix.json` | claim C3 status and required evidence |
+| `publication/tables/omissions.json` | explicit `T4`, `T8`, and `F7` waiting-external records |
+| `scripts/build_e3_authority_package.py` | deterministic package builder (review for reproducibility) |
+| `scripts/build_e3_authority_request.py` | canonical request manifest generator (`REQUEST_INPUTS` definition) |
+| `scripts/verify_e3_authority.py` | pre-execution authority verifier (fail-closed) |
+| `scripts/verify_e3_result_attestation.py` | post-execution attestation verifier (review for completeness) |
+| `src/poi_mpp/experiments/e3_semantic.py` | `VerifiedE3AuthorityGrant` + frame-inspection capability gate |
+| `src/poi_mpp/reporting/e3_artifacts.py` | deterministic T4/T8/F7/RAW_E3_EXECUTION export paths |
 
 The authoritative request selection is generated, not copied from this prose:
 

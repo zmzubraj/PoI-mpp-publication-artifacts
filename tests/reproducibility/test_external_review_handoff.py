@@ -51,6 +51,10 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json" in paths
     assert "scripts/build_e3_authority_package.py" in paths
     assert "scripts/verify_e3_result_attestation.py" in paths
+    assert "package.json" in paths
+    assert "package-lock.json" in paths
+    assert "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F8_da_withholding.png" in paths
+    assert "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F11_consensus_dynamics.png" in paths
     assert "configs/confirmatory/e3.schema.yaml" in paths
     assert "experiments/e3_semantic_eval.py" in paths
     assert "src/poi_mpp/experiments/e3_semantic.py" in paths
@@ -84,3 +88,20 @@ def test_external_review_handoff_check_rejects_stale_manifest(tmp_path: Path) ->
     )
     assert completed.returncode != 0
     assert "stale or non-canonical" in completed.stderr
+
+
+def test_e3_stale_signature_note_binds_current_request_and_extracted_verification() -> None:
+    note = (
+        REPO_ROOT
+        / "docs/paper_artifacts/final/external_review/E3_STALE_SIGNATURE_HANDOFF_NOTE.md"
+    ).read_text(encoding="utf-8")
+    request_manifest = (
+        REPO_ROOT
+        / "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json"
+    )
+    request_sha256 = hashlib.sha256(request_manifest.read_bytes()).hexdigest()
+
+    assert f"`reviewed_request_manifest.sha256`: `{request_sha256}`" in note
+    assert "cd _verify" in note
+    assert "../.venv/bin/python scripts/build_e3_authority_request.py --check" in note
+    assert "../.venv/bin/python scripts/build_e3_authority_package.py --check" in note

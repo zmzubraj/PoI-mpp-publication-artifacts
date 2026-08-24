@@ -1,0 +1,10 @@
+{
+  "name": "poi-mpp-publication-exports",
+  "private": true,
+  "scripts": {
+    "build:paper-docx": "node scripts/build_paper_docx.js"
+  },
+  "dependencies": {
+    "docx": "9.6.1"
+  }
+}

@@ -1,23 +1,23 @@
 # References Audit
 
-Date: Sunday, August 23, 2026
+Date: Monday, August 24, 2026
 
 Scope:
 
-- This audit covers the 15 references carried from the source paper into `POI_SUBMISSION_MANUSCRIPT.md`.
+- This audit covers the 12 references retained in `POI_SUBMISSION_MANUSCRIPT.md` after unused or unresolved source-carried entries were removed.
 - The goal of this pass was bibliographic normalization and primary- or official-source verification where possible.
 - No new scientific claim was introduced from the reference pass.
 - References are still used as architectural lineage and background, not as substitutes for repository evidence.
 
 ## Overall audit summary
 
-- total carried references reviewed: `15`
-- normalized against a primary or official source: `14`
-- unresolved / not stably verified against an official primary source: `1`
+- total retained references reviewed: `12`
+- normalized against a primary or official source: `12`
+- unresolved retained references: `0`
 - peer-reviewed conference or journal papers: `4`
 - arXiv preprints: `4`
-- official protocol, vendor, or project documentation: `5`
-- explicitly grey literature (project repo, litepaper, or draft whitepaper): `3`
+- official protocol, vendor, or project documentation: `4`
+- explicitly grey literature among retained references: `1`
 
 ## Per-reference audit
 
@@ -33,18 +33,19 @@ Scope:
 | `[8]` | Ribeiro Alves et al., `EigenAI: Deterministic Inference, Verifiable Results`, arXiv:2602.00182 (2026) | arXiv preprint | `https://arxiv.org/abs/2602.00182` | verified | source-carried title/authors/year matched |
 | `[9]` | Qu et al., `zkGPT: An Efficient Non-interactive Zero-knowledge Proof Framework for LLM Inference`, USENIX Security 25 | conference paper | `https://www.usenix.org/conference/usenixsecurity25/presentation/qu-zkgpt` | verified | official conference page located |
 | `[10]` | Peng et al., `A Survey of Zero-Knowledge Proof Based Verifiable Machine Learning`, *Artificial Intelligence Review* 59, 157 (2026) | journal article | `https://doi.org/10.1007/s10462-026-11557-y` | verified | normalized to version of record |
-| `[11]` | `Hearth: A Verified-Inference Layer-1 Secured by Proof of Inference` | draft whitepaper / grey literature | no stable official primary source located in this pass | unresolved | keep as source-carried grey literature only; do not strengthen |
-| `[12]` | Ambient, `Litepaper: Proof of Logits & Verified Inference`, plus official product site describing `machine intelligence as currency` | litepaper / official site / grey literature | `https://ambient.xyz/litepaper/` and `https://ambient.xyz/` | verified | official project pages located; keep labeled grey literature |
-| `[13]` | Yu et al., `Coded Merkle Tree: Solving Data Availability Attacks in Blockchains`, FC 2020, LNCS 12059 | conference chapter | `https://doi.org/10.1007/978-3-030-51280-4_8` | verified | normalized to canonical Springer record |
-| `[14]` | Yin et al., `HotStuff: BFT Consensus with Linearity and Responsiveness`, PODC 2019 | conference paper | `https://doi.org/10.1145/3293611.3331591` | verified | normalized to canonical ACM DOI |
-| `[15]` | Ethereum.org, `Node Architecture` and `Consensus Mechanisms` | official documentation | `https://ethereum.org/developers/docs/nodes-and-clients/node-architecture/` and `https://ethereum.org/developers/docs/consensus-mechanisms/` | verified | official docs; web content may drift over time |
+| `[11]` | Yu et al., `Coded Merkle Tree: Solving Data Availability Attacks in Blockchains`, FC 2020, LNCS 12059 | conference chapter | `https://doi.org/10.1007/978-3-030-51280-4_8` | verified | normalized to canonical Springer record |
+| `[12]` | Yin et al., `HotStuff: BFT Consensus with Linearity and Responsiveness`, PODC 2019 | conference paper | `https://doi.org/10.1145/3293611.3331591` | verified | normalized to canonical ACM DOI |
+
+The unresolved Hearth item and unused Ambient and Ethereum web references were
+removed from the manuscript rather than carried into a submission-facing
+bibliography without an in-text claim or stable primary-source need.
 
 ## Normalization decisions
 
 1. Source-carried references with incomplete bibliographic form were normalized only up to what the primary or official source supported.
 2. Grey literature remains explicitly labeled as grey literature even when an official project page or repository was found.
-3. The unresolved `Hearth` reference was not upgraded into a stronger citation because a stable official primary source for that exact carried title was not confirmed in this pass.
-4. The manuscript keeps web documentation references as access-dated sources because they are living documents.
+3. The unresolved `Hearth` item and unused Ambient and Ethereum web references were removed rather than retained without a stable primary-source need or an in-text claim.
+4. Retained web documentation references remain access-dated because they are living documents.
 
 ## Manuscript-use constraints enforced
 
@@ -65,7 +66,7 @@ The manuscript does not use them as proof of:
 
 ## Residual risks
 
-1. Three carried references are grey literature, and one of them (`Hearth`) remains unresolved as a stable primary source.
-2. Official documentation pages can drift after August 23, 2026.
+1. One retained reference is grey literature and is not treated as independent empirical evidence.
+2. Official documentation pages can drift after August 24, 2026.
 3. This audit normalizes citations and source status; it does not constitute a novelty search or literature-scope closure.
 4. If the manuscript moves to formal submission, the bibliography should still receive venue-specific style formatting and final DOI/access-date QA.

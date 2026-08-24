@@ -5,10 +5,23 @@ import socket
 from pathlib import Path
 
 from poi_mpp.orchestration import run_mpp as orchestration
-from poi_mpp.orchestration.run_mpp import LocalMPPConfig, RealPathBlocker, SyntheticDisposition, run_local_mpp
+from poi_mpp.orchestration.run_mpp import (
+    LocalMPPConfig,
+    RealPathBlocker,
+    SyntheticDisposition,
+    load_local_mpp_config,
+    run_local_mpp,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_canonical_local_real_config_is_loadable_and_hashes_remain_strings() -> None:
+    config = load_local_mpp_config(ROOT / "configs" / "e2e" / "local.yaml")
+
+    assert config.run_config.model_hash == "f9ff3b28cce44e9cbbddf5211b98025f2511a51a0114c18983ec99b3d124ccf6"
+    assert config.run_config.dataset_hash == "2" * 64
 
 
 def _free_port() -> int:

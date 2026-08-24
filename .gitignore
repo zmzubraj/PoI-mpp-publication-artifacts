@@ -11,6 +11,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+node_modules/
 
 # Local model caches. Authoritative model manifests remain tracked.
 .cache/

@@ -112,6 +112,35 @@ def test_full_replay_spec_prefers_authoritative_e8_inputs_without_duplicate_cano
     assert not (tmp_path / "inputs" / "results" / "publication" / "e8-11de165" / "e8_publication_artifact.json").exists()
 
 
+def test_candidate_only_replay_spec_preserves_canonical_publication_inputs(tmp_path: Path) -> None:
+    context = reproduce_module.RunContext(
+        mode="candidate-only",
+        run_id="test-candidate-only-replay",
+        head_revision="a" * 40,
+        effective_code_revision="a" * 40,
+        git_status_fingerprint="b" * 64,
+        tracked_dirty_paths=(),
+        package_lock_hash=None,
+    )
+
+    spec = reproduce_module._report_spec(
+        tmp_path,
+        context,
+        full_mode=False,
+        e8_rows_relative_path="inputs/e8_publication_artifact.json",
+        e8_contract_relative_path="inputs/configs/confirmatory/e8.yaml",
+    )
+
+    assert set(spec["sources"]) == {"E1", "E2", "E4", "E5", "E6", "E7", "E8"}
+    assert spec["sources"]["E1"]["rows_path"] == "results/publication/e1-real-11de165/e1_cost_rows.parquet"
+    assert spec["sources"]["E2"]["summary_path"] == "results/publication/e2-real-eb866c2/e2_summary.json"
+    assert spec["sources"]["E5"]["rows_path"] == "results/publication/e5-11de165/e5_rows.json"
+    assert spec["sources"]["E7"]["run_config_path"] == "e7_run_config.yaml"
+    assert spec["sources"]["E8"]["rows_path"] == "e8_publication_artifact.json"
+    assert spec["sources"]["E8"]["contract_path"] == "configs/confirmatory/e8.yaml"
+    assert not (tmp_path / "inputs" / "results" / "publication" / "e8-11de165" / "e8_publication_artifact.json").exists()
+
+
 def _make_publication_manifest(candidate_root: Path, output_paths: list[tuple[str, str, str]]) -> None:
     publication_root = candidate_root / "publication"
     artifact_root = candidate_root / "inputs"
@@ -711,6 +740,7 @@ def test_reproduce_candidate_only_integrates_production_e8_as_inconclusive() -> 
     payload, candidate_root = _run_candidate_only_reproduce()
     manifest = _read_json(candidate_root / "manifest.json")
     claims = _read_json(candidate_root / "claim_support_matrix.json")["claims"]
+    assert manifest["authoritative_inputs"]["e7_run_config_relative_path"] == "inputs/e7_run_config.yaml"
     assert manifest["authoritative_inputs"]["e8_rows_relative_path"] == "inputs/e8_publication_artifact.json"
     assert manifest["authoritative_inputs"]["e8_contract_relative_path"] == "inputs/configs/confirmatory/e8.yaml"
     assert manifest["experiments"]["E8"]["status"] == "COMPLETE"
