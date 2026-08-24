@@ -1,0 +1,106 @@
+{
+  "allowed_authority_decisions": [
+    "APPROVED",
+    "LIMITED_SCOPE"
+  ],
+  "authority_boundary": "This unsigned manifest requests external pre-execution scope authorization for E3 only. It grants no authority and contains no evaluator identity, decision, signature, or result.",
+  "current_e3_status": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+  "post_execution_boundary": "Generated E3 evidence can only be bound by a separate post-execution result attestation created after authorized execution; this request cannot attest to future artifacts.",
+  "request_input_count": 14,
+  "request_inputs": [
+    {
+      "path": "docs/EXPERIMENT_ARTIFACT_MATRIX.md",
+      "sha256": "bb9747bf4ee88b59e27fca49ba803187721e1795381918fd1fa8694b77a9195e",
+      "size_bytes": 766
+    },
+    {
+      "path": "docs/EXPERIMENT_PLAN.md",
+      "sha256": "ea1a0446aef548d865e72db240f489f5e289c9409535ba17d63540b2d3fabd64",
+      "size_bytes": 1669
+    },
+    {
+      "path": "docs/MAIN_RESULTS_TARGETS.md",
+      "sha256": "316c9e23ab7dec0b9d9138b53ac6a54e3d1698decf852ec1830b37ddea37c653",
+      "size_bytes": 3375
+    },
+    {
+      "path": "docs/PAPER_ARTIFACT_MAP.md",
+      "sha256": "1fdc412cb6846e2cda3fb0bd0f0c8f96418144be99158a0896807b3c605215b5",
+      "size_bytes": 5227
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
+      "sha256": "ef44c1481dab8746ee10d446140b63d742e40a46feec44b446847f901d0fd850",
+      "size_bytes": 7323
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
+      "sha256": "788e3ac08ceda9468814dce2013fe85efe00440eb6cd87e81ecd9d0489509140",
+      "size_bytes": 3498
+    },
+    {
+      "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
+      "sha256": "f569d27bbe59f7d15a303e1fe8e48beaefc44cab0ca69dba85d7fabf6be5d32a",
+      "size_bytes": 27999
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
+      "sha256": "d2f4860bcef28358b3f299d62ac1e85a95e8ef2fd5851172610e3a3d8459c679",
+      "size_bytes": 3730
+    },
+    {
+      "path": "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md",
+      "sha256": "366162b35463077577a7a5f02b2837e8e14cfd8a71ca00e4315ba5e9648bd377",
+      "size_bytes": 1723
+    },
+    {
+      "path": "publication/artifact_manifest.json",
+      "sha256": "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf",
+      "size_bytes": 42901
+    },
+    {
+      "path": "publication/tables/claim_matrix.json",
+      "sha256": "7b4f18633847c850fafd330124b455d99be939a77428d77d43454a0d534f6965",
+      "size_bytes": 6860
+    },
+    {
+      "path": "publication/tables/omissions.json",
+      "sha256": "cdf8370b3eaeeedcdaa0e0343bd2c78f47472aaab3a91128b4d3ff49b7fc4732",
+      "size_bytes": 516
+    },
+    {
+      "path": "scripts/build_e3_authority_request.py",
+      "sha256": "7e0262dfc03da139793f1781c46b36fd4a3162ab372f8253b6677bc52adcd558",
+      "size_bytes": 5744
+    },
+    {
+      "path": "scripts/verify_e3_authority.py",
+      "sha256": "6e92a2443d9fcdae3a4e9043fa4f4c51bb2c49b6646ad52991f27cbc0c7c5227",
+      "size_bytes": 11123
+    }
+  ],
+  "requested_scope": {
+    "artifact_scope": [
+      "F7",
+      "RAW_E3_EXECUTION",
+      "T4",
+      "T8"
+    ],
+    "claim_id": "C3",
+    "evidence_origin": "REAL_MODEL_EXECUTION",
+    "experiment_id": "E3",
+    "metric_scope": [
+      "ABSTAIN",
+      "FAR",
+      "FRR",
+      "calibration",
+      "coverage"
+    ],
+    "task_class": "GROUNDED_SEMANTIC_ASSURANCE"
+  },
+  "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
+  "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
+  "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
+  "self_digest": "5ba13661ed4729e03f4a62620efe561a185e7399c4170e9fa514f41c56ab08ca",
+  "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
+}

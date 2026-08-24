@@ -88,6 +88,30 @@ def test_full_replay_spec_uses_canonical_e7_input_bindings(tmp_path: Path) -> No
     assert config["dataset_hash"] == e7_publication_dataset_hash(repo_root=REPO_ROOT)
 
 
+def test_full_replay_spec_prefers_authoritative_e8_inputs_without_duplicate_canonical_copy(tmp_path: Path) -> None:
+    context = reproduce_module.RunContext(
+        mode="full",
+        run_id="test-full-replay-e8",
+        head_revision="a" * 40,
+        effective_code_revision="a" * 40,
+        git_status_fingerprint="b" * 64,
+        tracked_dirty_paths=(),
+        package_lock_hash=None,
+    )
+
+    spec = reproduce_module._report_spec(
+        tmp_path,
+        context,
+        full_mode=True,
+        e8_rows_relative_path="inputs/e8_publication_artifact.json",
+        e8_contract_relative_path="inputs/configs/confirmatory/e8.yaml",
+    )
+
+    assert spec["sources"]["E8"]["rows_path"] == "e8_publication_artifact.json"
+    assert spec["sources"]["E8"]["contract_path"] == "configs/confirmatory/e8.yaml"
+    assert not (tmp_path / "inputs" / "results" / "publication" / "e8-11de165" / "e8_publication_artifact.json").exists()
+
+
 def _make_publication_manifest(candidate_root: Path, output_paths: list[tuple[str, str, str]]) -> None:
     publication_root = candidate_root / "publication"
     artifact_root = candidate_root / "inputs"

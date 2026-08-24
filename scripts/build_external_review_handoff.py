@@ -46,6 +46,7 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
     "docs/paper_artifacts/final/external_review/README.md",
     "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
+    "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
     "docs/paper_artifacts/final/external_review/INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md",
     "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
     "docs/paper_artifacts/final/external_review/independent_domain_expert_review_record.schema.json",
@@ -54,7 +55,9 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/README.md",
     "scripts/build_paper_docx.js",
     "scripts/build_paper_figures.py",
+    "scripts/build_e3_authority_request.py",
     "scripts/build_external_review_handoff.py",
+    "scripts/verify_e3_authority.py",
 )
 
 GLOB_INPUTS = (

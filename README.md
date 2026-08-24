@@ -71,7 +71,7 @@ Run:
 make reproduce
 ```
 
-Current expected outcome on Sunday, August 23, 2026:
+Current expected outcome on Monday, August 24, 2026:
 
 - `scripts/reproduce.py` writes a typed candidate bundle under `results/tmp/candidates/<run_id>/`
 - the candidate manifest/report state is `CANDIDATE_VERIFIED`
@@ -81,11 +81,13 @@ Current expected outcome on Sunday, August 23, 2026:
 
 Current expected blockers:
 
-- `E1`-`E6` do not have authorized executed publication artifacts in this workspace
-- `E8` is now rebuilt from the production publication replay (`REPRODUCIBLE_SIMULATION`) and cleanly regenerates `T13` / `F11` with `C8=INCONCLUSIVE`, but that does not remove the wider completeness blockers
-- Task 21 real replay remains blocked at `WAITING_LOCAL_MODEL_ARTIFACT` and then `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`
-- accountable manual scientific/rendered review is absent
-- no trusted external reviewer signature is present for manual scientific review
+- the hash-pinned local Qwen2.5 1.5B artifact is present and the local-model gate is closed
+- `E1` and `E2` have canonical `REAL_MODEL_EXECUTION` artifacts, but both claims remain `INCONCLUSIVE`
+- `E3` remains `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`; its `T4`, `T8`, and `F7` confirmatory artifacts are absent
+- `E4` has canonical reproducible-simulation evidence and remains `INCONCLUSIVE`
+- `E5` and `E6` are supported only within their declared reproducible-simulation scopes
+- `E8` is rebuilt from the production publication replay (`REPRODUCIBLE_SIMULATION`) and regenerates `T13` / `F11` with `C8=INCONCLUSIVE`
+- accountable independent domain-expert review, its trusted external signature, and the final freeze sentinel are absent
 
 Tracked or non-runtime unversioned changes still block freezing when they exist, but ignored runtime outputs under `results/` no longer poison the Task 22 run id by themselves.
 

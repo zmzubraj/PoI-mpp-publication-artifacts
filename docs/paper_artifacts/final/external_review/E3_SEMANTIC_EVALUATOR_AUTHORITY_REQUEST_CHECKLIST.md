@@ -1,6 +1,6 @@
 # E3 semantic evaluator authority request checklist
 
-Purpose: obtain accountable external evaluator authority for the E3 confirmatory path only.
+Purpose: obtain accountable external evaluator authority for the E3 confirmatory path only, without treating permission to execute as evidence that execution succeeded.
 
 This file is an unsigned request checklist. It is not an authority record and not an approval.
 
@@ -36,7 +36,16 @@ The external evaluator authority must be able to do all of the following:
 - bind any authorization to exact artifact hashes and execution scope;
 - sign the resulting authority record outside the bundle.
 
-## Current draft request set
+## Two separate external records
+
+The lifecycle has two non-interchangeable external records:
+
+1. **Pre-execution scope authorization.** The evaluator reviews the deterministic `E3_AUTHORITY_REQUEST_MANIFEST.json`, chooses `APPROVED` or `LIMITED_SCOPE`, records privacy limits, and signs the exact authority record. This is the only record validated by `scripts/verify_e3_authority.py`.
+2. **Post-execution result attestation.** After an authorized real E3 run exists, a separate future attestation may bind the generated raw bundle, `T4`, `T8`, and `F7`. It must not be created, pre-signed, or implied during pre-execution authorization.
+
+The pre-execution record always contains `result_attestation_status=NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION`. It cannot certify C3, any metric, or any future artifact.
+
+## Deterministic pre-execution request set
 
 The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `../../../../publication/artifact_manifest.json` (SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`); it records E3 as an explicit omission, not evidence.
 
@@ -52,28 +61,35 @@ The following tracked source set and canonical manifest should be shown to the e
 | `../../../../publication/artifact_manifest.json` | canonical artifact closure and E3 omission status |
 | `../../../../publication/tables/omissions.json` | explicit `T4`, `T8`, and `F7` waiting-external records |
 
-The authority handoff must bind every listed artifact to its exact SHA-256 value. Any separately required freeze-level `verification_report.json` and `claim_support_matrix.json` must be generated and bound without treating this request checklist as authority.
+The authoritative request selection is generated, not copied from this prose:
 
-## Future bind set once E3 artifacts exist
+```text
+./.venv/bin/python scripts/build_e3_authority_request.py
+./.venv/bin/python scripts/build_e3_authority_request.py --check
+```
 
-An actual authority decision for confirmatory E3 publication use should also bind the future generated artifacts when they exist:
+`E3_AUTHORITY_REQUEST_MANIFEST.json` binds every selected artifact to its exact SHA-256 value and byte length, includes a canonical E3-only scope digest, and includes its own self-digest. It remains unsigned request material. Any separately required freeze-level `verification_report.json` and `claim_support_matrix.json` must be generated and bound without treating this request or an authority record as result evidence.
+
+## Separate future post-execution bind set
+
+A later result attestation, created only after authorized execution, should bind the generated artifacts when they exist:
 
 - `publication/tables/T4_dataset_composition.status.json`
 - `publication/tables/T8_semantic_verification.csv`
 - `publication/figures/F7_semantic_verification_quality.svg`
 - any raw E3 execution bundle or evaluator-side artifact designated by the execution contract
 
-These artifacts are not currently present as authorized confirmatory publication evidence in the current candidate.
+These artifacts are not currently present as authorized confirmatory publication evidence in the current candidate. They are deliberately excluded from the pre-execution authority record because their hashes do not yet exist.
 
 ## Checklist for the requesting side
 
 - [ ] confirm that the requested scope is E3 only, not a blanket authorization for all claims
 - [ ] confirm that the authority is external to the producing chain
-- [ ] generate and provide the full canonical hash-bound request set derived from the draft inputs above
+- [ ] generate and verify the canonical `E3_AUTHORITY_REQUEST_MANIFEST.json`
 - [ ] provide the exact E3 capability request without upgrading current claim status
 - [ ] provide privacy and confidentiality handling expectations
 - [ ] state that `C3` is currently `WAITING_EXTERNAL` with no authorized confirmatory evidence
-- [ ] state that any future approval must bind exact artifact hashes
+- [ ] state that pre-execution approval binds the request manifest, while later result attestation must separately bind exact generated-artifact hashes
 - [ ] state that no AI output or producer self-attestation can substitute for the authority decision
 
 ## Checklist for the future external authority record
@@ -84,13 +100,25 @@ The future externally completed authority record should include all of the follo
 - authority organization or accountable basis
 - expertise scope relevant to grounded semantic evaluation
 - authorized task class and limits
-- reviewed hash set
+- reviewed request-manifest path, SHA-256, and self-digest
 - decision scope
 - date in strict ISO format
-- external signature reference
-- note that the signature and any allowed-signers registry live outside the bundle
+- explicit `APPROVED` or `LIMITED_SCOPE` decision
+- explicit `NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION` result-attestation status
+- external detached-signature reference
+- note that the detached signature and allowed-signers registry live outside the repository and bundle
 
-Use `semantic_evaluator_authority_record.schema.json` for machine validation of a future completed record.
+Use `semantic_evaluator_authority_record.schema.json` for the future completed record, then verify its exact bytes with:
+
+```text
+./.venv/bin/python scripts/verify_e3_authority.py \
+  --request-manifest docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json \
+  --authority-record /external/path/e3_authority_record.json \
+  --allowed-signers /external/path/allowed_signers \
+  --signature /external/path/e3_authority_record.json.sig
+```
+
+The last three paths are examples only. No identity, authority record, key, allowed-signers file, or signature is supplied by this repository.
 
 ## Non-claims
 
@@ -101,4 +129,5 @@ This checklist does not:
 - certify C3;
 - satisfy the freeze gate;
 - create a detached signature;
-- create an allowed-signers registry.
+- create an allowed-signers registry;
+- attest to post-execution results or authorize automatic E3 execution.

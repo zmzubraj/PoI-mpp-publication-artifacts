@@ -299,6 +299,20 @@ def _report_spec(
                         contracts_root = (REPO_ROOT / contracts_root).resolve()
                     staged_source[key] = str(contracts_root)
                     continue
+                if (
+                    experiment_id == "E8"
+                    and key == "rows_path"
+                    and e8_rows_relative_path is not None
+                ):
+                    staged_source[key] = _artifact_root_relative(e8_rows_relative_path)
+                    continue
+                if (
+                    experiment_id == "E8"
+                    and key == "contract_path"
+                    and e8_contract_relative_path is not None
+                ):
+                    staged_source[key] = _artifact_root_relative(e8_contract_relative_path)
+                    continue
                 if not isinstance(value, str) or not value.strip():
                     raise ValueError(f"publication_report source {experiment_id}.{key} must be a non-blank string")
                 source_path = Path(value)
