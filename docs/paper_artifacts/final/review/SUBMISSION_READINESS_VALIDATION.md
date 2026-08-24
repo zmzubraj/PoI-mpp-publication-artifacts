@@ -3,15 +3,15 @@
 ## Audit record
 
 - Manuscript or project: *Complete Proof of Intelligence Consensus Architecture*
-- Version/date: repository manuscript and evidence bundle inspected on 2026-08-24
+- Version/date: repository manuscript and evidence bundle inspected on 2026-08-25
 - Authorization: the user authorized local model, experiment, artifact, and manuscript work; that authorization does not create external evaluator authority or independent review
 - Confidentiality and processing: local-only repository inspection; no unpublished material was uploaded to an external service in this audit
 - Field and study type: blockchain/AI systems architecture with real-model pilots, local EVM measurements, and reproducible simulations
 - Maturity: narrow MPP prototype with heterogeneous internal evidence
-- Target venue and article type: undecided; the current document is a venue-neutral evidence-bound systems manuscript
-- Venue requirements checked: none, because no target venue or article type is selected
+- Target venue and article type: undecided; the dated venue portfolio recommends *Blockchain: Research and Applications* / full length research paper, pending accountable-author selection
+- Venue requirements checked: official author/scope pages for *Blockchain: Research and Applications*, IEEE TDSC regular papers, and IEEE OJ-CS research articles were inspected on 2026-08-25; no template is authoritative until a venue is selected and the rules are refreshed
 - Materials reviewed: manuscript Markdown/DOCX/PDF, canonical publication manifest, claim matrix, omission ledger, E1-E8 tables and figures, algorithm and Mermaid sources, replay/freeze code, external-review request schemas
-- Materials unavailable: E3 external-authority record, authorized E3 confirmatory result, independently signed domain-expert review, allowed-signers registry, detached review signature, frozen bundle sentinel, venue instructions, venue reporting checklist, author/CRediT/declaration approvals
+- Materials unavailable: E3 external-authority record, authorized E3 confirmatory result, independently signed domain-expert review, allowed-signers registry, detached review signature, frozen bundle sentinel, selected-venue template and completed checklist, author/CRediT/declaration approvals
 - Reviewer role: AI developmental audit only; not an independent human or editorial decision
 
 ## Contribution map
@@ -45,7 +45,7 @@
 | External semantic-evaluator authority | no accountable external identity, decision, or detached signature | `MISSING_EXTERNAL` | completed externally signed E3 authority record bound to exact handoff hashes |
 | Signed independent domain-expert review | unsigned schema and request packet only | `MISSING_EXTERNAL` | real reviewer identity, independence basis, completed checks, reviewed hashes, detached signature, and trusted allowed-signers file |
 | Publication freeze sentinel | absent by design while external gates are open | `BLOCKED` | clean versioned candidate, complete E3, authenticated review, verifier pass, then sentinel generation |
-| Submission-ready venue package | no selected venue/article type or verified current instructions | `MISSING_DECISION_AND_EXTERNAL_APPROVAL` | accountable author selects venue; apply current template/checklist and perform final human PDF/portal review |
+| Submission-ready venue package | dated three-venue portfolio and official requirements snapshot exist, but no venue/article type is selected | `PARTIAL_DECISION_PACKAGE_ONLY` | accountable author selects venue; refresh and apply its current template/checklist and perform final human PDF/portal review |
 
 ## Critical gate ledger
 
@@ -66,7 +66,7 @@
 | KQ-13 | Are real-world and production claims supported? | `FAIL` | no field, mainnet, production DA, production dispute VM, or production consensus evaluation | production/general deployment claims are inadmissible | keep as future work or collect matching external evidence |
 | KQ-14 | Are ethics, conflicts, authorship, funding, and AI-use declarations complete? | `UNKNOWN` | no accountable author/CRediT/declaration package was available | venue package cannot be finalized | accountable authors complete and approve declarations under venue policy |
 | KQ-15 | Has a qualified independent human reviewed the complete package? | `FAIL` | only unsigned request templates exist | submission freeze is blocked | obtain authenticated independent domain-expert review |
-| KQ-16 | Are current venue rules and reporting requirements satisfied? | `UNKNOWN` | target venue and article type are undecided | “submission-ready” cannot be established | select venue and verify its current official instructions |
+| KQ-16 | Are current venue rules and reporting requirements satisfied? | `PARTIAL` | official rules for three candidates were checked on 2026-08-25; selection, template application, and checklist remain open | “submission-ready” cannot be established | accountable author selects venue, then refresh and apply that venue's exact rules |
 | KQ-17 | Is the complete uploaded package inspected? | `FAIL` | no submission portal package exists | final formatting/anonymity/file checks cannot occur | build venue package and perform accountable human portal preview |
 
 ## Fatal flaws and stop conditions
@@ -154,7 +154,7 @@ The evidence-origin rules are strong, but authorship, conflicts, funding, AI-use
 | P1 | execute authorized E3 protocol | producer under external scope plus evaluator | raw real execution, provenance, T4/T8/F7, uncertainty and abstention reporting | artifact manifest and claim matrix validate without E3 omission | authority gate | substantial | yes |
 | P1 | close strongest-prior-art case | search owner plus independent challenger | reproducible queries, screening, chaining, novelty matrix, contradiction ledger | independent challenge reconciled | search access | substantial | no experimental data |
 | P1 | strengthen or narrow C1/C2 | methods owner | counterbalanced E1 and broader E2, or permanently narrowed claims | prespecified gates and independent reproduction pass | compute and design freeze | substantial | yes |
-| P1 | select target venue/article type | accountable authors | dated venue decision and official requirements | template/checklist contract frozen | author decision | small | no |
+| P1 | select target venue/article type from the dated portfolio | accountable authors | signed or otherwise accountable venue/article-type decision | selected template/checklist contract frozen after a current-rule refresh | author decision | small | no |
 | P2 | preserve the closed retained-reference audit | citation owner | 12 retained references normalized with no unresolved retained item | reference audit and manuscript bibliography remain consistent | manuscript changes | small | no |
 | P2 | complete declarations and AI-use statement | accountable authors | authorship, CRediT, funding, conflicts, ethics/N/A, data/code, AI disclosure | venue checklist and author approvals complete | venue selection | medium | no |
 | P2 | investigate live E7 reporting duration | engineering owner | bounded test log and root-cause result | both live tests finish within declared timeout | local Foundry | small-medium | no |
@@ -167,7 +167,7 @@ The evidence-origin rules are strong, but authorship, conflicts, funding, AI-use
 - ethics/legal/privacy: required if E3 prompts, labels, evaluator notes, or proprietary evidence carry restrictions
 - independent reproduction: not yet demonstrated by an external team
 - image/plagiarism tools: no authoritative clearance performed
-- journal/editor clarification: target venue undecided
+- journal/editor clarification: three candidate routes are documented, but accountable-author venue selection remains undecided
 - accountable authors: must approve authorship, declarations, AI disclosure, final PDF, and submission portal
 
 ## Re-audit history
@@ -176,3 +176,4 @@ The evidence-origin rules are strong, but authorship, conflicts, funding, AI-use
 |---|---|---|---|---|
 | 2026-08-24 | evidence-bound manuscript, deterministic quantitative derivatives, current manifest, replay and external-review templates | full critical-gate set | local model/replay and artifact handoff improved; readiness remains `NOT_READY` | E3 authority/evidence, independent signed review, venue package, freeze sentinel |
 | 2026-08-24 | citation cleanup, seven canonical quantitative figures, pinned DOCX dependency, candidate-only replay correction | KQ-10, KQ-11, KQ-12 and delivery checks | retained citations have no unresolved item; delivery and replay evidence improved; readiness remains `NOT_READY` | E3 authority/evidence, independent signed review, venue package, freeze sentinel |
+| 2026-08-25 | official three-venue portfolio and accountable-author decision package | KQ-16 and venue-package requirement | venue-rule knowledge moved from `UNKNOWN` to `PARTIAL`; readiness remains `NOT_READY` | accountable venue selection, E3 authority/evidence, independent signed review, declarations, template/checklist, freeze sentinel |

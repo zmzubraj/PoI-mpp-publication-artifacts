@@ -31,7 +31,7 @@ bcfe954cd9ec3b550595505a50242a83d977cb559f27fe49dca5d36d7895dbba
 After the authorized-runner commit (`a5e3ad4`) and the export-path additions, the `REQUEST_INPUTS` set grew to **22 files**. The checklist prose was also updated to list all 22 inputs. The canonical manifest was regenerated and now hashes to:
 
 ```
-a252355a0927ec50d9bd6b20f807d2402faa574014efaeb4c4902016e5ec3529
+10d44a05f8407583011f405013a10e7c9647144c3e295e571e86035492c82133
 ```
 
 ## What you must provide now
@@ -41,8 +41,8 @@ Please re-review the **latest package** and produce a new **V2 authority record*
 ### Latest package
 
 - Path: `docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip`
-- SHA-256: `a93ce4aecb7c83857f03cb0b0316f209b6acad2d1859a36b898ef4e6ba587530`
-- Contains the canonical manifest whose `self_digest` is `a641ad94ae46a12093a83906c6aaeb6b2b849bef14779203cbf784ea678980e6`
+- SHA-256: `3937851b04dcbbf3c4463692f1b1086416edc4998b1d25b83f7ca777f7c143f2`
+- Contains the canonical manifest whose `self_digest` is `1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a`
 
 The zip contains:
 
@@ -76,8 +76,8 @@ The record follows `semantic_evaluator_authority_record.schema.json` and must in
 - `authorized_scope.privacy_scope`: your stated privacy limits
 - `authorized_scope.request_scope_digest`: must match the manifest's `requested_scope_digest`
 - `reviewed_request_manifest.path`: `E3_AUTHORITY_REQUEST_MANIFEST.json`
-- `reviewed_request_manifest.sha256`: `a252355a0927ec50d9bd6b20f807d2402faa574014efaeb4c4902016e5ec3529`
-- `reviewed_request_manifest.self_digest`: `a641ad94ae46a12093a83906c6aaeb6b2b849bef14779203cbf784ea678980e6`
+- `reviewed_request_manifest.sha256`: `10d44a05f8407583011f405013a10e7c9647144c3e295e571e86035492c82133`
+- `reviewed_request_manifest.self_digest`: `1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a`
 - `decision`: `APPROVED` or `LIMITED_SCOPE`
 - `decision_notes`
 - `authorization_date`: strict ISO `YYYY-MM-DD`
@@ -113,7 +113,7 @@ Expected output on success:
   "status": "VERIFIED_EXTERNAL_PRE_EXECUTION_AUTHORITY",
   "decision": "<APPROVED|LIMITED_SCOPE>",
   "authority_identity": "...",
-  "request_manifest_self_digest": "a641ad94ae46a12093a83906c6aaeb6b2b849bef14779203cbf784ea678980e6",
+  "request_manifest_self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION"
 }
 ```

@@ -8,6 +8,8 @@ Auditing a useful AI response should not require a mandatory second full model e
 
 We evaluate a deliberately narrow Minimum Publishable Prototype (MPP) using a 1.5B open-weight model, local Foundry measurements, and reproducible experiments E1-E8. The current evidence is mixed and non-compensating. E1 and E2 are inconclusive real-model pilots; E4 and E8 are inconclusive simulations; E5 and E6 support only their frozen simulation scenarios; E7 supports local EVM boundedness; and E3 remains evidence-absent pending external evaluator authority. The strongest measured result is local Foundry boundedness: 15 operations or batch observations, a maximum observed gas value of 467,937, and a maximum configured-block-limit fraction of 0.0004358003. These results support feasibility of the narrow artifact-oriented MPP, not production consensus security, general semantic verification, or frontier-scale deployment.
 
+**Keywords:** proof of intelligence, verifiable AI inference, blockchain consensus, optimistic verification, evidence provenance, smart contracts
+
 ## 1. Introduction
 
 The expensive part of modern AI serving is the model execution itself. A PoI system that requires a second large-model generation for every accepted response, or a full proof of all tensor operations for the common path, inherits an immediate structural cost barrier. The systems question addressed here is whether useful AI responses can be made auditable without paying either of those costs on the normal path.

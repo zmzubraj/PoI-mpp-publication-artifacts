@@ -55,8 +55,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
-      "sha256": "78715d972956a977a6ea5e153b334a4ba6008250f39abd040391ba36b5c4152d",
-      "size_bytes": 28087
+      "sha256": "7ec510264bd723844705c3de6988588e44823cf1998a641c0825eb0cad2299a7",
+      "size_bytes": 28234
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
@@ -141,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "a641ad94ae46a12093a83906c6aaeb6b2b849bef14779203cbf784ea678980e6",
+  "self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }

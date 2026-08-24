@@ -47,7 +47,9 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.csv" in paths
     assert "docs/algorithms/A1_SPAI.md" in paths
     assert "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md" in paths
+    assert "docs/paper_artifacts/final/review/TARGET_VENUE_PORTFOLIO.md" in paths
     assert "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip" in paths
+    assert "docs/paper_artifacts/final/external_review/ACCOUNTABLE_AUTHOR_SUBMISSION_INPUT.md" in paths
     assert "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json" in paths
     assert "scripts/build_e3_authority_package.py" in paths
     assert "scripts/verify_e3_result_attestation.py" in paths

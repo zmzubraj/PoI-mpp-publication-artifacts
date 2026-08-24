@@ -51,3 +51,22 @@ def test_manuscript_uses_canonical_hotstuff_venue_title() -> None:
     )
     assert "Symposium on Principles of Distributed Computing" in manuscript
     assert "Symposium on Principles in Distributed Computing" not in manuscript
+
+
+def test_manuscript_exposes_six_evidence_bound_keywords() -> None:
+    manuscript = (FINAL_ROOT / "manuscript" / "POI_SUBMISSION_MANUSCRIPT.md").read_text(
+        encoding="utf-8"
+    )
+    keyword_line = next(
+        line for line in manuscript.splitlines() if line.startswith("**Keywords:** ")
+    )
+    keywords = [keyword.strip() for keyword in keyword_line.removeprefix("**Keywords:** ").split(",")]
+
+    assert keywords == [
+        "proof of intelligence",
+        "verifiable AI inference",
+        "blockchain consensus",
+        "optimistic verification",
+        "evidence provenance",
+        "smart contracts",
+    ]
