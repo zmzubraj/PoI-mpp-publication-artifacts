@@ -60,6 +60,39 @@ _OPERATORS = {
 }
 
 
+def _conditions_are_jointly_feasible(
+    conditions: tuple["ClaimRuleCondition", ...],
+) -> bool:
+    bounds: dict[
+        tuple[str, MetricValueSource],
+        tuple[float | None, bool, float | None, bool],
+    ] = {}
+    for condition in conditions:
+        key = (condition.metric_id, condition.source)
+        lower, lower_inclusive, upper, upper_inclusive = bounds.get(
+            key, (None, False, None, False)
+        )
+        if condition.operator in {ThresholdOperator.GT, ThresholdOperator.GE}:
+            inclusive = condition.operator is ThresholdOperator.GE
+            if lower is None or condition.threshold > lower:
+                lower, lower_inclusive = condition.threshold, inclusive
+            elif condition.threshold == lower:
+                lower_inclusive = lower_inclusive and inclusive
+        else:
+            inclusive = condition.operator is ThresholdOperator.LE
+            if upper is None or condition.threshold < upper:
+                upper, upper_inclusive = condition.threshold, inclusive
+            elif condition.threshold == upper:
+                upper_inclusive = upper_inclusive and inclusive
+        if lower is not None and upper is not None:
+            if lower > upper:
+                return False
+            if lower == upper and not (lower_inclusive and upper_inclusive):
+                return False
+        bounds[key] = (lower, lower_inclusive, upper, upper_inclusive)
+    return True
+
+
 def _normalized_string(value: str, *, field_name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{field_name} must be a string")
@@ -385,6 +418,17 @@ class ClaimSpecV2(_FrozenClaimModel):
             raise ValueError(
                 "prohibited_generalizations must not include the admissible_wording"
             )
+        for rule_name, rule in (
+            ("supported_rule", self.supported_rule),
+            ("inconclusive_rule", self.inconclusive_rule),
+            ("not_supported_rule", self.not_supported_rule),
+        ):
+            if not _conditions_are_jointly_feasible(rule.conditions):
+                raise ValueError(f"{rule_name} contains contradictory conditions")
+        if _conditions_are_jointly_feasible(
+            self.supported_rule.conditions + self.not_supported_rule.conditions
+        ):
+            raise ValueError("supported_rule and not_supported_rule overlap")
         return self
 
     def canonical_material(self) -> dict[str, Any]:

@@ -320,6 +320,25 @@ def test_decision_rule_references_known_metrics_only() -> None:
         )
 
 
+def test_claim_spec_rejects_overlapping_supported_and_not_supported_rules() -> None:
+    with pytest.raises(ValidationError, match="overlap"):
+        ClaimSpecV2.model_validate(
+            _claim_payload(
+                not_supported_rule=_rule(
+                    "NOT_SUPPORTED",
+                    conditions=(
+                        _condition(
+                            source="UPPER_CONFIDENCE_BOUND",
+                            operator=">=",
+                            threshold=0.20,
+                            minimum_denominator=200,
+                        ),
+                    ),
+                )
+            )
+        )
+
+
 def test_decision_rule_disposition_and_condition_source_are_frozen() -> None:
     rule = ClaimDecisionRule.model_validate(_rule("SUPPORTED"))
     condition = ClaimRuleCondition.model_validate(_condition())

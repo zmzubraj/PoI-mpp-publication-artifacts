@@ -84,6 +84,12 @@ class TaskEnvelopeV2(_FrozenProtocolModel):
             raise ValueError("expiry must be positive")
         return value
 
+    @model_validator(mode="after")
+    def require_live_epoch_window(self) -> "TaskEnvelopeV2":
+        if self.expiry <= self.epoch:
+            raise ValueError("expiry must exceed epoch")
+        return self
+
     def canonical_payload(self) -> dict[str, object]:
         return self.model_dump(mode="json")
 

@@ -84,6 +84,11 @@ def test_task_envelope_v2_rejects_invalid_epoch_and_expiry(
         _envelope(**{field_name: value})
 
 
+def test_task_envelope_v2_rejects_expiry_not_after_epoch() -> None:
+    with pytest.raises(ValueError, match="expiry must exceed epoch"):
+        _envelope(epoch=7, expiry=7)
+
+
 def test_task_envelope_v2_rejects_ambiguous_scope_bindings() -> None:
     with pytest.raises(ValueError, match="scope bindings must be pairwise distinct"):
         _envelope(
