@@ -51,6 +51,7 @@ The following tracked source set and canonical manifest should be shown to the e
 
 | Relative path | Why it matters |
 |---|---|
+| `../../../../../Makefile` | fail-closed authorized E3 invocation and external-input handoff |
 | `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` | current manuscript claim boundary |
 | `../../../EXPERIMENT_PLAN.md` | experiment intent and E3 role |
 | `../../../EXPERIMENT_ARTIFACT_MATRIX.md` | E3 to artifact mapping |
@@ -82,6 +83,25 @@ A later result attestation, created only after authorized execution, should bind
 - `results/publication/<run_id>/raw_e3_execution.zip`
 
 These artifacts are not currently present as authorized confirmatory publication evidence in the current candidate. They are deliberately excluded from the pre-execution authority record because their hashes do not yet exist.
+
+After the pre-execution authority record and detached signature have been supplied by the accountable external evaluator, invoke the runner only with external trust material and authorized real-execution inputs. The Make target fails before execution if any required input is absent:
+
+```text
+make e3-authorized \
+  E3_AUTHORITY_RECORD=/external/path/e3_authority_record.json \
+  E3_AUTHORITY_SIGNATURE=/external/path/e3_authority_record.json.sig \
+  E3_ALLOWED_SIGNERS=/external/path/allowed_signers \
+  E3_CONFIRMATORY_CONFIG=/authorized/path/e3_confirmatory_config.json \
+  E3_MODEL_MANIFEST=/authorized/path/model_manifest.json \
+  E3_RAW_CONFIG=/authorized/path/raw_config.json \
+  E3_INPUTS=/authorized/path/inputs.jsonl \
+  E3_OUTPUTS=/authorized/path/outputs.jsonl \
+  E3_TRACE=/authorized/path/trace.jsonl \
+  E3_PROVENANCE=/authorized/path/provenance.json \
+  E3_ARTIFACT_ROOT=/authorized/output/path/e3_artifacts
+```
+
+The runner calls `scripts/verify_e3_authority.py` as its sole trust-verification boundary before reading execution inputs. It does not create a model run, evaluator identity, authority decision, result attestation, C3 decision, or publication claim. `E3_OUTPUTS` and `E3_TRACE` must therefore be outputs of the separately authorized real-model execution, not synthetic or producer-invented substitutes.
 
 The post-execution verifier parses typed T4 JSON, typed T8 CSV, structured F7 SVG metadata, and a typed raw-run manifest. All included artifacts must use distinct canonical paths and bind the same model, configuration, input, output, trace, provenance, run, and pre-execution-authority hashes. Merely embedding `E3`, `C3`, or `REAL_MODEL_EXECUTION` tokens is insufficient. A `LIMITED_SCOPE` authorization must retain the minimum attestable core (`RAW_E3_EXECUTION`, `T8`, and at least one authorized metric); it can authenticate only an exact signed subset and always returns `INCOMPLETE_NONPUBLICATION`. Even a full `APPROVED` input set returns `COMPLETE_INPUT_SET_REQUIRES_SEPARATE_C3_ADJUDICATION`, never automatic C3 support.
 

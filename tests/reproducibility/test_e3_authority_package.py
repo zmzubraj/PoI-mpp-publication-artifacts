@@ -99,6 +99,60 @@ def test_package_is_byte_for_byte_reproducible_and_checkable(tmp_path: Path) -> 
     assert "stale or non-canonical" in rejected.stderr
 
 
+def test_authority_request_binds_authorized_runner_exporter_and_schema() -> None:
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    paths = {entry["path"] for entry in manifest["request_inputs"]}
+
+    assert {
+        "Makefile",
+        "configs/confirmatory/e3.schema.yaml",
+        "experiments/e3_semantic_eval.py",
+        "src/poi_mpp/experiments/e3_semantic.py",
+        "src/poi_mpp/reporting/e3_artifacts.py",
+    }.issubset(paths)
+
+
+def test_makefile_keeps_e3_out_of_unauthorized_batch_execution() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+
+    experiments_block = makefile.split("experiments:\n", 1)[1].split("\ne3-authorized:", 1)[0]
+    assert "experiments/e3_semantic_eval.py" not in experiments_block
+    assert "E3 WAITING_EXTERNAL" in experiments_block
+    assert "e3-authorized:" in makefile
+    assert '--request-manifest "$(E3_REQUEST_MANIFEST)"' in makefile
+    assert '--authority-record "$(E3_AUTHORITY_RECORD)"' in makefile
+    assert '--authority-signature "$(E3_AUTHORITY_SIGNATURE)"' in makefile
+    assert '--allowed-signers "$(E3_ALLOWED_SIGNERS)"' in makefile
+    assert '--artifact-root "$(E3_ARTIFACT_ROOT)"' in makefile
+    assert "--out results/raw/e3_semantic_eval.csv" not in makefile
+
+
+def test_makefile_experiment_targets_remain_phony_under_name_collisions(tmp_path: Path) -> None:
+    (tmp_path / "experiments").mkdir()
+    (tmp_path / "e3-authorized").touch()
+
+    batch = subprocess.run(
+        ["make", "-f", str(REPO_ROOT / "Makefile"), "-n", "experiments"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+    )
+    assert batch.returncode == 0, batch.stderr
+    assert "e1_single_pass_cost.py" in batch.stdout
+    assert "E3 WAITING_EXTERNAL" in batch.stdout
+    assert "e8_consensus_weight_sim.py" in batch.stdout
+    assert "experiments/e3_semantic_eval.py" not in batch.stdout
+
+    authorized = subprocess.run(
+        ["make", "-f", str(REPO_ROOT / "Makefile"), "e3-authorized"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+    )
+    assert authorized.returncode == 2
+    assert "E3_AUTHORITY_RECORD is required" in authorized.stderr
+
+
 def test_package_rejects_hash_or_size_mismatch_before_writing(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()

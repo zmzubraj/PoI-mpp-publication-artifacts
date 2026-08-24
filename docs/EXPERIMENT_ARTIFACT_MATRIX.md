@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | E1 | `e1_single_pass_cost.csv` | T6 | F5 | common-path cost advantage |
 | E2 | `e2_tamper_detection.csv` + attack manifests | T7 | F6 | execution audit soundness |
-| E3 | `e3_semantic_eval.csv` + confusion records | T8 | F7 | semantic utility / abstention |
+| E3 | `results/publication/<run_id>/raw_e3_execution.zip` (model manifest, raw config, inputs, outputs, trace, provenance) | T4 + T8 | F7 | externally authorized grounded semantic utility / abstention; `APPROVED` can produce a complete input set for separate C3 adjudication, while `LIMITED_SCOPE` remains `INCOMPLETE_NONPUBLICATION` |
 | E4 | `e4_da_withholding.csv` | T9 | F8 | DA gate |
 | E5 | `e5_watcher_economics.csv` | T10 | none | watcher incentive |
 | E6 | `e6_sybil_economics.csv` | T11 | F9 + F10 | Sybil neutrality and modeled cost-to-target |

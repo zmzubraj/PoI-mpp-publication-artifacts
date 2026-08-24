@@ -20,6 +20,14 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from build_e3_authority_request import REPO_ROOT, build_manifest
 
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from poi_mpp.experiments.e3_semantic import (  # noqa: E402
+    VerifiedE3AuthorityGrant,
+)
+
 
 class AuthorityVerificationError(ValueError):
     pass
@@ -194,7 +202,7 @@ def verify_authority(
     *,
     allowed_signers_path: Path | None,
     signature_path: Path | None,
-) -> dict[str, Any]:
+) -> VerifiedE3AuthorityGrant:
     request, request_bytes = _read_json(request_path, label="E3 request manifest")
     _validate_request(request)
     record_payload, record_bytes = _read_json(authority_record_path, label="E3 authority record")
@@ -242,21 +250,31 @@ def verify_authority(
     if completed.returncode != 0:
         detail = (completed.stderr or completed.stdout).decode("utf-8", errors="replace").strip()
         raise AuthorityVerificationError(f"external E3 authority signature verification failed: {detail or 'unknown failure'}")
-    return {
-        "schema_version": "POI_MPP_E3_AUTHORITY_VERIFICATION_V1",
-        "status": "VERIFIED_EXTERNAL_PRE_EXECUTION_AUTHORITY",
-        "experiment_id": "E3",
-        "claim_id": "C3",
-        "decision": record.decision,
-        "authority_identity": record.authority_identity,
-        "request_manifest_sha256": hashlib.sha256(request_bytes).hexdigest(),
-        "request_manifest_self_digest": request["self_digest"],
-        "result_attestation_status": record.result_attestation_status,
-        "authority_boundary": (
-            "Signature verification authenticates pre-execution E3 scope authorization only; "
-            "it does not attest to any E3 result or publication claim."
-        ),
-    }
+    scope = record.authorized_scope
+    class _VerifiedAuthorityTranscript:
+        __slots__ = ("record_bytes",)
+
+        def __init__(self, signed_record_bytes: bytes) -> None:
+            self.record_bytes = signed_record_bytes
+
+    verification_transcript = _VerifiedAuthorityTranscript(record_bytes)
+    return VerifiedE3AuthorityGrant(
+        experiment_id=scope.experiment_id,
+        claim_id=scope.claim_id,
+        task_class=scope.task_class,
+        evidence_origin=scope.evidence_origin,
+        metric_scope=scope.metric_scope,
+        artifact_scope=scope.artifact_scope,
+        privacy_scope=scope.privacy_scope,
+        request_scope_digest=scope.request_scope_digest,
+        authority_record_sha256=hashlib.sha256(record_bytes).hexdigest(),
+        decision=record.decision,
+        authority_identity=record.authority_identity,
+        request_manifest_sha256=hashlib.sha256(request_bytes).hexdigest(),
+        request_manifest_self_digest=request["self_digest"],
+        result_attestation_status=record.result_attestation_status,
+        _verification_transcript=verification_transcript,
+    )
 
 
 def main() -> int:
@@ -276,7 +294,7 @@ def main() -> int:
     except (AuthorityVerificationError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 1
-    print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+    print(json.dumps(result.verification_summary, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 

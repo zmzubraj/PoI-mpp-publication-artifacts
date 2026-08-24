@@ -30,6 +30,7 @@ DEFAULT_OUTPUT = (
 )
 
 EXACT_INPUTS = (
+    "Makefile",
     "publication/artifact_manifest.json",
     "publication/tables/claim_matrix.json",
     "publication/tables/omissions.json",
@@ -52,6 +53,8 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
     "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
     "docs/paper_artifacts/final/external_review/independent_domain_expert_review_record.schema.json",
+    "configs/confirmatory/e3.schema.yaml",
+    "experiments/e3_semantic_eval.py",
     "docs/paper_artifacts/final/visuals_algorithms/A_final_paper_algorithms.md",
     "docs/paper_artifacts/final/visuals_algorithms/README.md",
     "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/README.md",
@@ -62,6 +65,8 @@ EXACT_INPUTS = (
     "scripts/build_external_review_handoff.py",
     "scripts/verify_e3_authority.py",
     "scripts/verify_e3_result_attestation.py",
+    "src/poi_mpp/experiments/e3_semantic.py",
+    "src/poi_mpp/reporting/e3_artifacts.py",
 )
 
 GLOB_INPUTS = (

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-import subprocess
-
 import pytest
 
 from poi_mpp.auditor.semantic.models import SemanticCalibrationArtifact, SemanticOutcome, VerificationDecision
@@ -209,6 +206,9 @@ def _confirmatory_config():
             authorization_scope="PUBLICATION_EVIDENCE_AUTHORIZED",
         ),
         publication_scope=E3_CONFIRMATORY_SCOPE,
+        authority_privacy_scope="No prompt text may leave the approved evaluator environment",
+        authority_request_scope_digest="3" * 64,
+        pre_execution_authority_record_sha256="4" * 64,
         development_dataset=E3DevelopmentDataset(
             dataset_id="development-e3",
             manifest=_manifest(
@@ -411,6 +411,57 @@ def test_real_confirmatory_waits_for_external_evaluator_authority() -> None:
         )
 
 
+def test_verified_authority_grant_cannot_be_constructed_or_model_constructed() -> None:
+    import poi_mpp.experiments.e3_semantic as semantic
+
+    VerifiedE3AuthorityGrant = semantic.VerifiedE3AuthorityGrant
+    assert not any(
+        callable(getattr(semantic, name))
+        for name in dir(semantic)
+        if "issue" in name.lower() and "grant" in name.lower()
+    )
+
+    with pytest.raises(TypeError, match="only verify_authority"):
+        VerifiedE3AuthorityGrant(
+            experiment_id="E3",
+            claim_id="C3",
+            task_class="GROUNDED_SEMANTIC_ASSURANCE",
+            evidence_origin="REAL_MODEL_EXECUTION",
+            metric_scope=("ABSTAIN", "FAR", "FRR", "calibration", "coverage"),
+            artifact_scope=("F7", "RAW_E3_EXECUTION", "T4", "T8"),
+            privacy_scope="external-only",
+            request_scope_digest="1" * 64,
+            authority_record_sha256="2" * 64,
+            decision="APPROVED",
+            authority_identity="lookalike@example.org",
+        )
+
+    assert not hasattr(VerifiedE3AuthorityGrant, "model_construct")
+
+
+def test_confirmatory_rejects_mapping_lookalike_authority_grant() -> None:
+    from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
+
+    lookalike = {
+        "experiment_id": "E3",
+        "claim_id": "C3",
+        "task_class": "GROUNDED_SEMANTIC_ASSURANCE",
+        "evidence_origin": "REAL_MODEL_EXECUTION",
+        "metric_scope": ("ABSTAIN", "FAR", "FRR", "calibration", "coverage"),
+        "artifact_scope": ("F7", "RAW_E3_EXECUTION", "T4", "T8"),
+        "privacy_scope": "external-only",
+        "request_scope_digest": "1" * 64,
+        "authority_record_sha256": "2" * 64,
+    }
+
+    with pytest.raises(PublicationEligibilityError, match="genuine VerifiedE3AuthorityGrant"):
+        run_confirmatory_semantic(
+            config=_confirmatory_config().model_copy(update={"provenance_bundle": _provenance_bundle()}),
+            rows=(_confirmatory_row(),),
+            authority_grant=lookalike,
+        )
+
+
 def test_confirmatory_row_outside_manifest_is_rejected_before_authority_boundary() -> None:
     from poi_mpp.experiments.e3_semantic import PublicationEligibilityError, run_confirmatory_semantic
 
@@ -478,53 +529,19 @@ def test_confirmatory_rejects_forged_provenance_manifest() -> None:
         )
 
 
-def test_cli_loads_schema_then_stops_at_external_authority_boundary() -> None:
-    repo = Path("/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts")
-    completed = subprocess.run(
-        [
-            str(repo / ".venv/bin/python"),
-            str(repo / "experiments/e3_semantic_eval.py"),
-            "--config",
-            str(repo / "configs/pilot/e3.yaml"),
-        ],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-    )
+def test_schema_loader_rejects_corrupt_schema_copy(tmp_path) -> None:
+    from poi_mpp.experiments.e3_semantic import load_e3_confirmatory_schema
 
-    combined = f"{completed.stdout}\n{completed.stderr}"
-    assert completed.returncode != 0
-    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" in combined
-    assert "schema_hash" not in combined
-
-
-def test_cli_rejects_corrupt_schema_copy_before_authority_boundary(tmp_path: Path) -> None:
-    repo = Path("/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts")
     schema_copy = tmp_path / "e3.schema.yaml"
     schema_copy.write_text("not: [valid\n", encoding="utf-8")
 
-    completed = subprocess.run(
-        [
-            str(repo / ".venv/bin/python"),
-            str(repo / "experiments/e3_semantic_eval.py"),
-            "--config",
-            str(repo / "configs/pilot/e3.yaml"),
-            "--schema",
-            str(schema_copy),
-        ],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-    )
-
-    combined = f"{completed.stdout}\n{completed.stderr}"
-    assert completed.returncode != 0
-    assert "unable to load E3 confirmatory schema" in combined
-    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" not in combined
+    with pytest.raises(ValueError, match="unable to load E3 confirmatory schema"):
+        load_e3_confirmatory_schema(schema_copy)
 
 
-def test_cli_rejects_mismatched_schema_copy_before_authority_boundary(tmp_path: Path) -> None:
-    repo = Path("/Users/rainbow/Documents/ZTech/Research/poi_mpp_workspace/.worktrees/poi-mpp-publication-artifacts")
+def test_schema_loader_rejects_mismatched_scope(tmp_path) -> None:
+    from poi_mpp.experiments.e3_semantic import load_e3_confirmatory_schema
+
     schema_copy = tmp_path / "e3.schema.yaml"
     schema_copy.write_text(
         (
@@ -548,21 +565,5 @@ def test_cli_rejects_mismatched_schema_copy_before_authority_boundary(tmp_path: 
         encoding="utf-8",
     )
 
-    completed = subprocess.run(
-        [
-            str(repo / ".venv/bin/python"),
-            str(repo / "experiments/e3_semantic_eval.py"),
-            "--config",
-            str(repo / "configs/pilot/e3.yaml"),
-            "--schema",
-            str(schema_copy),
-        ],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-    )
-
-    combined = f"{completed.stdout}\n{completed.stderr}"
-    assert completed.returncode != 0
-    assert "publication_scope must equal E3_CONFIRMATORY_PUBLICATION_V1" in combined
-    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" not in combined
+    with pytest.raises(ValueError, match="publication_scope must equal E3_CONFIRMATORY_PUBLICATION_V1"):
+        load_e3_confirmatory_schema(schema_copy)

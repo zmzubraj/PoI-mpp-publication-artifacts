@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
+import hashlib
+import inspect
 from pathlib import Path
+from typing import Literal
+import weakref
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 import yaml
@@ -20,6 +24,185 @@ PUBLICATION_EVIDENCE_AUTHORIZED = "PUBLICATION_EVIDENCE_AUTHORIZED"
 E3_CONFIRMATORY_SCOPE = "E3_CONFIRMATORY_PUBLICATION_V1"
 WAITING_EXTERNAL_EVALUATOR_AUTHORITY = "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
 _PLUMBING_INDEPENDENCE_BASIS = "SYNTHETIC_NON_EVIDENCE_PLUMBING_ONLY"
+E3_CLAIM_ID = "C3"
+E3_TASK_CLASS = "GROUNDED_SEMANTIC_ASSURANCE"
+E3_METRIC_SCOPE = ("ABSTAIN", "FAR", "FRR", "calibration", "coverage")
+E3_ARTIFACT_SCOPE = ("F7", "RAW_E3_EXECUTION", "T4", "T8")
+_CANONICAL_AUTHORITY_VERIFIER = (
+    Path(__file__).resolve().parents[3] / "scripts" / "verify_e3_authority.py"
+)
+
+
+def _authority_grant_contract():
+    issued: weakref.WeakSet[VerifiedE3AuthorityGrant] = weakref.WeakSet()
+
+    class VerifiedE3AuthorityGrant:
+        """Process-local capability emitted after canonical external verification.
+
+        The constructor guard is defense in depth against accidental/lookalike
+        grants, not a hostile same-process Python security boundary. Detached
+        SSH verification in ``scripts/verify_e3_authority.py`` is the trust
+        boundary used by the production CLI.
+        """
+
+        __slots__ = (
+            "_experiment_id",
+            "_claim_id",
+            "_task_class",
+            "_evidence_origin",
+            "_metric_scope",
+            "_artifact_scope",
+            "_privacy_scope",
+            "_request_scope_digest",
+            "_authority_record_sha256",
+            "_decision",
+            "_authority_identity",
+            "_request_manifest_sha256",
+            "_request_manifest_self_digest",
+            "_result_attestation_status",
+            "_locked",
+            "__weakref__",
+        )
+
+        def __init__(
+            self,
+            *,
+            experiment_id: str,
+            claim_id: str,
+            task_class: str,
+            evidence_origin: str,
+            metric_scope: Sequence[str],
+            artifact_scope: Sequence[str],
+            privacy_scope: str,
+            request_scope_digest: str,
+            authority_record_sha256: str,
+            decision: str,
+            authority_identity: str,
+            request_manifest_sha256: str = "",
+            request_manifest_self_digest: str = "",
+            result_attestation_status: str = "",
+            _verification_transcript: object | None = None,
+        ) -> None:
+            caller = inspect.currentframe().f_back
+            caller_locals = caller.f_locals if caller is not None else {}
+            completed = caller_locals.get("completed")
+            transcript_bytes = getattr(_verification_transcript, "record_bytes", None)
+            canonical_call = (
+                caller is not None
+                and caller.f_code.co_name == "verify_authority"
+                and Path(caller.f_code.co_filename).resolve() == _CANONICAL_AUTHORITY_VERIFIER
+                and caller_locals.get("verification_transcript") is _verification_transcript
+                and getattr(completed, "returncode", None) == 0
+                and isinstance(transcript_bytes, bytes)
+                and transcript_bytes == caller_locals.get("record_bytes")
+                and hashlib.sha256(transcript_bytes).hexdigest() == authority_record_sha256
+            )
+            if not canonical_call:
+                raise TypeError(
+                    "VerifiedE3AuthorityGrant: only verify_authority may produce a verified grant"
+                )
+            values = {
+                "_experiment_id": experiment_id,
+                "_claim_id": claim_id,
+                "_task_class": task_class,
+                "_evidence_origin": evidence_origin,
+                "_metric_scope": tuple(metric_scope),
+                "_artifact_scope": tuple(artifact_scope),
+                "_privacy_scope": privacy_scope,
+                "_request_scope_digest": request_scope_digest,
+                "_authority_record_sha256": authority_record_sha256,
+                "_decision": decision,
+                "_authority_identity": authority_identity,
+                "_request_manifest_sha256": request_manifest_sha256,
+                "_request_manifest_self_digest": request_manifest_self_digest,
+                "_result_attestation_status": result_attestation_status,
+                "_locked": True,
+            }
+            for name, value in values.items():
+                object.__setattr__(self, name, value)
+            issued.add(self)
+
+        def __setattr__(self, name: str, value: object) -> None:
+            if getattr(self, "_locked", False):
+                raise AttributeError("VerifiedE3AuthorityGrant is read-only")
+            object.__setattr__(self, name, value)
+
+        @property
+        def experiment_id(self) -> str:
+            return self._experiment_id
+
+        @property
+        def claim_id(self) -> str:
+            return self._claim_id
+
+        @property
+        def task_class(self) -> str:
+            return self._task_class
+
+        @property
+        def evidence_origin(self) -> str:
+            return self._evidence_origin
+
+        @property
+        def metric_scope(self) -> tuple[str, ...]:
+            return self._metric_scope
+
+        @property
+        def artifact_scope(self) -> tuple[str, ...]:
+            return self._artifact_scope
+
+        @property
+        def privacy_scope(self) -> str:
+            return self._privacy_scope
+
+        @property
+        def request_scope_digest(self) -> str:
+            return self._request_scope_digest
+
+        @property
+        def authority_record_sha256(self) -> str:
+            return self._authority_record_sha256
+
+        @property
+        def decision(self) -> str:
+            return self._decision
+
+        @property
+        def authority_identity(self) -> str:
+            return self._authority_identity
+
+        @property
+        def verification_summary(self) -> dict[str, str]:
+            return {
+                "schema_version": "POI_MPP_E3_AUTHORITY_VERIFICATION_V1",
+                "status": "VERIFIED_EXTERNAL_PRE_EXECUTION_AUTHORITY",
+                "experiment_id": self.experiment_id,
+                "claim_id": self.claim_id,
+                "decision": self.decision,
+                "authority_identity": self.authority_identity,
+                "request_manifest_sha256": self._request_manifest_sha256,
+                "request_manifest_self_digest": self._request_manifest_self_digest,
+                "result_attestation_status": self._result_attestation_status,
+                "authority_record_sha256": self.authority_record_sha256,
+                "authority_boundary": (
+                    "Signature verification authenticates pre-execution E3 scope authorization only; "
+                    "it does not attest to any E3 result or publication claim."
+                ),
+            }
+
+        def __getitem__(self, key: str) -> str:
+            """Narrow compatibility for the post-execution verifier's decision lookup."""
+            if key != "decision":
+                raise KeyError(key)
+            return self.decision
+
+    def is_authentic(value: object) -> bool:
+        return isinstance(value, VerifiedE3AuthorityGrant) and value in issued
+
+    return VerifiedE3AuthorityGrant, is_authentic
+
+
+VerifiedE3AuthorityGrant, _grant_is_authentic = _authority_grant_contract()
 
 
 class _FrozenModel(BaseModel):
@@ -268,6 +451,13 @@ class E3ConfirmatoryConfig(_FrozenModel):
     run_config: RunConfig
     schema_contract: E3ConfirmatorySchema = default_e3_confirmatory_schema()
     publication_scope: str
+    claim_id: Literal["C3"] = E3_CLAIM_ID
+    task_class: Literal["GROUNDED_SEMANTIC_ASSURANCE"] = E3_TASK_CLASS
+    metric_scope: tuple[Literal["FAR", "FRR", "ABSTAIN", "coverage", "calibration"], ...] = E3_METRIC_SCOPE
+    artifact_scope: tuple[Literal["T4", "T8", "F7", "RAW_E3_EXECUTION"], ...] = E3_ARTIFACT_SCOPE
+    authority_privacy_scope: str
+    authority_request_scope_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+    pre_execution_authority_record_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     development_dataset: E3DevelopmentDataset
     manifests: E3ManifestClosure
     evaluators: tuple[E3DeclaredEvaluator, ...]
@@ -277,7 +467,13 @@ class E3ConfirmatoryConfig(_FrozenModel):
     provenance_bundle: ProvenanceBundle | None = None
     policy: E3MetricPolicy = E3MetricPolicy()
 
-    @field_validator("publication_scope", "license_id", "privacy_status", "annotation_protocol_id")
+    @field_validator(
+        "publication_scope",
+        "license_id",
+        "privacy_status",
+        "annotation_protocol_id",
+        "authority_privacy_scope",
+    )
     @classmethod
     def require_nonblank_text(cls, value: str) -> str:
         if not value.strip():
@@ -292,6 +488,10 @@ class E3ConfirmatoryConfig(_FrozenModel):
             raise ValueError("calibration must be fitted on the DEVELOPMENT split")
         if self.publication_scope != self.schema_contract.publication_scope:
             raise ValueError(f"publication_scope must equal {self.schema_contract.publication_scope}")
+        if not self.metric_scope or len(self.metric_scope) != len(set(self.metric_scope)):
+            raise ValueError("metric_scope must be non-empty and unique")
+        if not self.artifact_scope or len(self.artifact_scope) != len(set(self.artifact_scope)):
+            raise ValueError("artifact_scope must be non-empty and unique")
         return self
 
 
@@ -326,6 +526,7 @@ class E3ErrorLedgerEntry(_FrozenModel):
 
 
 class E3ConfirmatoryResult(_FrozenModel):
+    evaluated_rows: tuple[E3SemanticRow, ...]
     summary: E3Summary
     annotation_provenance: E3AnnotationProvenance
     error_ledger: tuple[E3ErrorLedgerEntry, ...]
@@ -596,15 +797,50 @@ def run_confirmatory_semantic(
     *,
     config: E3ConfirmatoryConfig,
     rows: Sequence[E3SemanticRow] | Sequence[object],
+    authority_grant: VerifiedE3AuthorityGrant | object | None = None,
 ) -> E3ConfirmatoryResult:
     canonical_config = _revalidate_config(config, E3ConfirmatoryConfig)
     canonical_rows = tuple(_revalidate_row(row) for row in rows)
     reasons = _confirmatory_reasons(config=canonical_config, rows=canonical_rows)
     if reasons:
         raise PublicationEligibilityError(reasons)
-    raise PublicationEligibilityError(
-        (
-            WAITING_EXTERNAL_EVALUATOR_AUTHORITY,
-            "real E3 confirmatory publication requires an external registry-backed evaluator authority artifact before metrics can become publication evidence",
+    if not _grant_is_authentic(authority_grant):
+        boundary = (
+            WAITING_EXTERNAL_EVALUATOR_AUTHORITY
+            if authority_grant is None
+            else "a genuine VerifiedE3AuthorityGrant from verify_authority is required"
         )
+        raise PublicationEligibilityError((boundary,))
+    assert isinstance(authority_grant, VerifiedE3AuthorityGrant)
+    authority_reasons: list[str] = []
+    if authority_grant.experiment_id != canonical_config.run_config.experiment_id:
+        authority_reasons.append("authority experiment_id must exactly match config experiment_id E3")
+    if authority_grant.claim_id != canonical_config.claim_id:
+        authority_reasons.append("authority claim_id must exactly match config claim_id C3")
+    if authority_grant.task_class != canonical_config.task_class:
+        authority_reasons.append("authority task_class must exactly match config task_class")
+    if authority_grant.evidence_origin != canonical_config.run_config.origin.value:
+        authority_reasons.append("authority evidence_origin must exactly match REAL_MODEL_EXECUTION config origin")
+    if authority_grant.metric_scope != canonical_config.metric_scope:
+        authority_reasons.append("metric_scope must exactly match verified authority grant")
+    if authority_grant.artifact_scope != canonical_config.artifact_scope:
+        authority_reasons.append("artifact_scope must exactly match verified authority grant")
+    if authority_grant.privacy_scope != canonical_config.authority_privacy_scope:
+        authority_reasons.append("privacy_scope must exactly match verified authority grant")
+    if authority_grant.request_scope_digest != canonical_config.authority_request_scope_digest:
+        authority_reasons.append("request_scope_digest must exactly match verified authority grant")
+    if (
+        authority_grant.authority_record_sha256
+        != canonical_config.pre_execution_authority_record_sha256
+    ):
+        authority_reasons.append(
+            "pre_execution_authority_record_sha256 must exactly match verified authority grant"
+        )
+    if authority_reasons:
+        raise PublicationEligibilityError(authority_reasons)
+    return E3ConfirmatoryResult(
+        evaluated_rows=canonical_rows,
+        summary=semantic_metrics(canonical_rows, policy=canonical_config.policy),
+        annotation_provenance=_annotation_provenance(canonical_rows),
+        error_ledger=_error_ledger(canonical_rows),
     )

@@ -38,6 +38,7 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
 
     entries = payload["review_inputs"]
     paths = {entry["path"] for entry in entries}
+    assert "Makefile" in paths
     assert "publication/artifact_manifest.json" in paths
     assert "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md" in paths
     assert "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx" in paths
@@ -50,6 +51,10 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json" in paths
     assert "scripts/build_e3_authority_package.py" in paths
     assert "scripts/verify_e3_result_attestation.py" in paths
+    assert "configs/confirmatory/e3.schema.yaml" in paths
+    assert "experiments/e3_semantic_eval.py" in paths
+    assert "src/poi_mpp/experiments/e3_semantic.py" in paths
+    assert "src/poi_mpp/reporting/e3_artifacts.py" in paths
     assert all(not Path(path).is_absolute() and ".." not in Path(path).parts for path in paths)
 
     for entry in entries:

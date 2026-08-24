@@ -6,12 +6,22 @@
   "authority_boundary": "This unsigned manifest requests external pre-execution scope authorization for E3 only. It grants no authority and contains no evaluator identity, decision, signature, or result.",
   "current_e3_status": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
   "post_execution_boundary": "Generated E3 evidence can only be bound by a separate post-execution result attestation created after authorized execution; this request cannot attest to future artifacts.",
-  "request_input_count": 17,
+  "request_input_count": 22,
   "request_inputs": [
     {
+      "path": "Makefile",
+      "sha256": "dff08fde7a292c7cffd8f9b7e53022fa8578ef5383ab270f7d78e7012487b9fe",
+      "size_bytes": 4368
+    },
+    {
+      "path": "configs/confirmatory/e3.schema.yaml",
+      "sha256": "0cc4cd5b6719b7a94731adb39a46cd23a1fdc8cafb8afeb809c80f7204f543f4",
+      "size_bytes": 767
+    },
+    {
       "path": "docs/EXPERIMENT_ARTIFACT_MATRIX.md",
-      "sha256": "bb9747bf4ee88b59e27fca49ba803187721e1795381918fd1fa8694b77a9195e",
-      "size_bytes": 766
+      "sha256": "ced54c96f01e464ef2cdc6a28abf4eae4e8cb80a32f4133cbc42d8378ab4d29e",
+      "size_bytes": 1009
     },
     {
       "path": "docs/EXPERIMENT_PLAN.md",
@@ -30,8 +40,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
-      "sha256": "913d380a3d6d60a985b54b8b5d5530c1564acd0764adce088d163f36b20c9771",
-      "size_bytes": 9588
+      "sha256": "f807414d19c6099e9aa8690b08e01347f66ffb12b06b4b0f8ce47576124b9d21",
+      "size_bytes": 11017
     },
     {
       "path": "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
@@ -59,6 +69,11 @@
       "size_bytes": 1723
     },
     {
+      "path": "experiments/e3_semantic_eval.py",
+      "sha256": "2f77d8da07a3869a6445796c03755444ae17c7c6efba463e84c9326b7008e105",
+      "size_bytes": 9292
+    },
+    {
       "path": "publication/artifact_manifest.json",
       "sha256": "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf",
       "size_bytes": 42901
@@ -80,18 +95,28 @@
     },
     {
       "path": "scripts/build_e3_authority_request.py",
-      "sha256": "a02e19e073864b580b286a1b27c397e7e298d8ce98166f2ffe1803fb440a5995",
-      "size_bytes": 5927
+      "sha256": "822d53bfab20d4fa341cddff115446ee558b54fdab142c1336ff58c68f60fd0e",
+      "size_bytes": 6116
     },
     {
       "path": "scripts/verify_e3_authority.py",
-      "sha256": "b8b10ac0a2a765c6eb118439c8c486cb8faca54f1c7ebd483f46acce790a5ed9",
-      "size_bytes": 11376
+      "sha256": "631df21662a701664a30b2078a30264411f7268bb50c315b91f04acea29cb211",
+      "size_bytes": 11998
     },
     {
       "path": "scripts/verify_e3_result_attestation.py",
       "sha256": "691499e6bb08801c7960d065de61cacc46484289c166fd79599aac76825749bf",
       "size_bytes": 34440
+    },
+    {
+      "path": "src/poi_mpp/experiments/e3_semantic.py",
+      "sha256": "caa173af01179e740d55a1cf0bc2afcd3f7cf1cbf4bf6bf8f58dcc3227b7cdc9",
+      "size_bytes": 37766
+    },
+    {
+      "path": "src/poi_mpp/reporting/e3_artifacts.py",
+      "sha256": "23c21fd6e6a2bcdc54480804be926669ee4e504c14d94c452e68dabd6d1efcf8",
+      "size_bytes": 29252
     }
   ],
   "requested_scope": {
@@ -116,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "7c779e8a09742cf64ec671d6fd718b52accdd971d190edfc7e5bd542d3c94481",
+  "self_digest": "cc9d4a680a529b72e1bb21bdf1d1077f794c1e78d0ce74c23111935c20492a64",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }
