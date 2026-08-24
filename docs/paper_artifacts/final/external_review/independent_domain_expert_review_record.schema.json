@@ -15,7 +15,9 @@
     "reviewed_run_id",
     "reviewed_artifact_hashes",
     "checks",
-    "conflicts_of_interest"
+    "conflicts_of_interest",
+    "required_questions_answered",
+    "verdict_summary"
   ],
   "properties": {
     "schema_version": {
@@ -53,16 +55,11 @@
     "reviewed_artifact_hashes": {
       "type": "object",
       "required": [
-        "manifest.json",
         "claim_support_matrix.json",
         "publication/artifact_manifest.json",
-        "verification_report.json"
+        "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json"
       ],
       "properties": {
-        "manifest.json": {
-          "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
-        },
         "claim_support_matrix.json": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
@@ -71,7 +68,7 @@
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         },
-        "verification_report.json": {
+        "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         }
@@ -125,7 +122,7 @@
       ],
       "properties": {
         "has_conflict": {
-          "type": "boolean"
+          "const": false
         },
         "conflict_details": {
           "type": "string"
@@ -135,6 +132,7 @@
     },
     "required_questions_answered": {
       "type": "array",
+      "minItems": 12,
       "items": {
         "type": "string",
         "minLength": 1
@@ -143,6 +141,7 @@
     },
     "verdict_summary": {
       "type": "string",
+      "minLength": 1,
       "description": "Narrative verdict text supplied by the real external reviewer."
     },
     "signature_reference": {

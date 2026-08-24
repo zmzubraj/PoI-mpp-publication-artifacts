@@ -43,6 +43,7 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/review/MPP_ALIGNMENT_AND_SCORECARD.md",
     "docs/paper_artifacts/final/review/MPP_ALIGNMENT_EXPLANATION_BN.md",
     "docs/paper_artifacts/final/review/PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md",
+    "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
     "docs/paper_artifacts/final/external_review/README.md",
     "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
     "docs/paper_artifacts/final/external_review/INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md",

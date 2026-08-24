@@ -6,7 +6,7 @@ This file is not a completed review, not a verdict, and not a signature-bearing 
 
 ## Current claim matrix boundary
 
-Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current narrative source of truth. The tracked canonical machine-readable bundle is `../../../../publication/artifact_manifest.json` (SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`). That bundle is review input only: this unsigned packet does not satisfy the independent-review or freeze gate.
+Use `../manuscript/POI_SUBMISSION_MANUSCRIPT.md` as the current narrative source of truth. The tracked canonical machine-readable bundle is `../../../../publication/artifact_manifest.json`; its current hash is recorded in `EXTERNAL_REVIEW_HANDOFF_MANIFEST.json`. That bundle is review input only: this unsigned packet does not satisfy the independent-review or freeze gate.
 
 Current claim status:
 
@@ -35,15 +35,18 @@ The external reviewer should be given read access to the canonical manifest-clos
 | `../../../../publication/artifact_manifest.json` | canonical artifact closure, hashes, dispositions, and omissions |
 | `../../../../publication/tables/claim_matrix.json` | canonical claim-to-artifact status matrix |
 | `../../../../publication/tables/omissions.json` | explicit E3 omission ledger |
+| `EXTERNAL_REVIEW_HANDOFF_MANIFEST.json` | deterministic selection and hash closure for all review inputs |
+| `../review/SUBMISSION_READINESS_VALIDATION.md` | developmental killer-question audit and unresolved submission blockers |
 
-The freeze-eligible handoff must bind the canonical `publication/artifact_manifest.json` and every reviewed manuscript/review file to exact SHA-256 values. If separate freeze-level `manifest.json`, `claim_support_matrix.json`, or `verification_report.json` files are required by the verifier, those must also be generated and bound; the canonical report manifest does not impersonate them.
+The freeze-eligible handoff must bind the canonical `publication/artifact_manifest.json` and every reviewed manuscript/review file to exact SHA-256 values. Candidate creation copies those inputs into a self-contained `review_handoff/inputs/` tree and recomputes the handoff manifest against the candidate-specific publication evidence.
 
 If the reviewer is assessing a freeze-eligible bundle rather than only the manuscript, the reviewed hash set must also include the actual reviewed bundle files required by the verifier:
 
-- `manifest.json`
 - `claim_support_matrix.json`
 - `publication/artifact_manifest.json`
-- `verification_report.json`
+- `review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json`
+
+The candidate `manifest.json` and `verification_report.json` are mutable freeze-state records and therefore are not reviewer-signed inputs. They are recomputed and reverified during promotion; the handoff manifest is the stable reviewed-content anchor.
 
 ## Required review questions
 

@@ -357,7 +357,7 @@ The correct current interpretation is therefore not that the architecture is ful
 
 ## Reproducibility and artifact availability
 
-The canonical report bundle is rooted at `publication/artifact_manifest.json`, SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`. It contains machine-readable tables, quantitative SVG and JSON outputs, the claim matrix, and the omission ledger. Conceptual diagrams are retained as editable Mermaid source, and Algorithms 1-5 are retained as manuscript-ready pseudocode and detailed source specifications. Paper-only PNGs are deterministic presentation derivatives generated from canonical figure JSON by `scripts/build_paper_figures.py`; they do not replace the canonical evidence artifacts.
+The canonical report bundle is rooted at `publication/artifact_manifest.json`, SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`. It contains machine-readable tables, quantitative SVG and JSON outputs, the claim matrix, and the omission ledger. Conceptual diagrams are retained as editable Mermaid source, and Algorithms 1-5 are retained as manuscript-ready pseudocode and detailed source specifications. Paper-only PNGs are deterministic presentation derivatives generated from canonical figure JSON by `scripts/build_paper_figures.py`; they do not replace the canonical evidence artifacts.
 
 The bundle is intentionally not frozen for submission. E3 external evaluator authority, authenticated independent manual review, and the freeze sentinel remain open. AI production, AI review, user approval, clean tests, and matching hashes do not by themselves constitute independent scientific review or authorize submission.
 

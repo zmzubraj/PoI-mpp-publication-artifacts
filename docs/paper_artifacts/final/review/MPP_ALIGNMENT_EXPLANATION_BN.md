@@ -74,7 +74,7 @@ Novelty provisional থাকার কারণগুলো non-compensating:
 
 বর্তমান workspace বোঝার source of truth হলো canonical
 `publication/artifact_manifest.json`। এর SHA-256 হলো
-`416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`।
+`7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`।
 
 এই canonical bundle-এ E1, E2, এবং E4-E8-এর table/figure artifact আছে; E3-এর
 T4, T8, ও F7 `WAITING_EXTERNAL` omission হিসেবে আছে। এই evidence state আর

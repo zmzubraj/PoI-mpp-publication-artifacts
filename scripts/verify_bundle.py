@@ -79,7 +79,10 @@ EXPECTED_CLAIM_ORDER = tuple(EXPECTED_CLAIMS)
 REQUIRED_MANUAL_REVIEW_HASH_KEYS = (
     "claim_support_matrix.json",
     "publication/artifact_manifest.json",
+    "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json",
 )
+EXTERNAL_REVIEW_HANDOFF_SCHEMA = "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1"
+EXTERNAL_REVIEW_HANDOFF_STATUS = "UNSIGNED_REVIEW_INPUT_ONLY"
 
 
 class ManualReviewChecks(_FrozenModel):
@@ -90,6 +93,11 @@ class ManualReviewChecks(_FrozenModel):
     editability: bool = False
     accessibility: bool = False
     claim_language: bool = False
+
+
+class ConflictsOfInterest(_FrozenModel):
+    has_conflict: bool
+    conflict_details: str
 
 
 class ManualReviewRecord(_FrozenModel):
@@ -103,6 +111,11 @@ class ManualReviewRecord(_FrozenModel):
     reviewed_run_id: str | None = None
     reviewed_artifact_hashes: dict[str, str] = Field(default_factory=dict)
     checks: ManualReviewChecks | None = None
+    conflicts_of_interest: ConflictsOfInterest | None = None
+    required_questions_answered: tuple[str, ...] = ()
+    verdict_summary: str | None = None
+    signature_reference: str | None = None
+    allowed_signers_reference: str | None = None
 
     @field_validator("schema_version")
     @classmethod
@@ -168,6 +181,7 @@ class AuthoritativeInputs(_FrozenModel):
     e7_run_config_relative_path: str | None = None
     e8_rows_relative_path: str | None = None
     e8_contract_relative_path: str | None = None
+    review_handoff_manifest_relative_path: str
 
     @field_validator(
         "report_spec_relative_path",
@@ -176,6 +190,7 @@ class AuthoritativeInputs(_FrozenModel):
         "e7_run_config_relative_path",
         "e8_rows_relative_path",
         "e8_contract_relative_path",
+        "review_handoff_manifest_relative_path",
         mode="before",
     )
     @classmethod
@@ -514,8 +529,11 @@ def _report_spec_expected_files(bundle: LoadedBundle) -> set[str]:
     sources = payload.get("sources")
     if not isinstance(artifact_root, str) or not isinstance(sources, dict):
         return set()
+    artifact_root_candidate = Path(artifact_root)
+    if not artifact_root_candidate.is_absolute():
+        artifact_root_candidate = Path(bundle.root) / artifact_root_candidate
     try:
-        artifact_root_path = Path(artifact_root).resolve(strict=True)
+        artifact_root_path = artifact_root_candidate.resolve(strict=True)
     except FileNotFoundError as error:
         raise BundleVerificationError(f"report_spec artifact_root is missing: {artifact_root}") from error
     bundle_root = Path(bundle.root)
@@ -533,6 +551,63 @@ def _report_spec_expected_files(bundle: LoadedBundle) -> set[str]:
                 continue
             if candidate.is_file():
                 expected.add(relative.as_posix())
+    return expected
+
+
+def _canonical_json_digest(payload: dict[str, Any]) -> str:
+    unsigned = dict(payload)
+    unsigned.pop("self_digest", None)
+    encoded = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return _sha256_bytes(encoded)
+
+
+def _review_handoff_expected_files(bundle: LoadedBundle) -> set[str]:
+    bundle_root = Path(bundle.root)
+    manifest_relative = bundle.manifest.authoritative_inputs.review_handoff_manifest_relative_path
+    manifest_path = _resolve_relative(bundle_root, manifest_relative)
+    payload = _safe_read_json(manifest_path, root=bundle_root)
+    if payload.get("schema_version") != EXTERNAL_REVIEW_HANDOFF_SCHEMA:
+        raise BundleVerificationError(
+            f"external review handoff schema_version must equal {EXTERNAL_REVIEW_HANDOFF_SCHEMA}"
+        )
+    if payload.get("status") != EXTERNAL_REVIEW_HANDOFF_STATUS:
+        raise BundleVerificationError(
+            f"external review handoff status must equal {EXTERNAL_REVIEW_HANDOFF_STATUS}"
+        )
+    if payload.get("self_digest") != _canonical_json_digest(payload):
+        raise BundleVerificationError("external review handoff self_digest mismatch")
+    entries = payload.get("review_inputs")
+    if not isinstance(entries, list) or payload.get("review_input_count") != len(entries):
+        raise BundleVerificationError("external review handoff review_input_count mismatch")
+    expected = {manifest_relative}
+    seen: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise BundleVerificationError("external review handoff entries must be objects")
+        try:
+            source_relative = _canonical_relative_path(entry.get("path"))
+        except ValueError as error:
+            raise BundleVerificationError(f"invalid external review handoff input path: {error}") from error
+        if source_relative in seen:
+            raise BundleVerificationError(f"duplicate external review handoff input: {source_relative}")
+        seen.add(source_relative)
+        staged_relative = str(PurePosixPath("review_handoff") / "inputs" / PurePosixPath(source_relative))
+        staged_path = _resolve_relative(bundle_root, staged_relative)
+        data = _safe_read_bytes(staged_path, root=bundle_root)
+        if entry.get("size_bytes") != len(data):
+            raise BundleVerificationError(f"external review handoff size mismatch for {source_relative}")
+        if entry.get("sha256") != _sha256_bytes(data):
+            raise BundleVerificationError(f"external review handoff hash mismatch for {source_relative}")
+        expected.add(staged_relative)
+    publication_copy = _resolve_relative(
+        bundle_root, "review_handoff/inputs/publication/artifact_manifest.json"
+    )
+    publication_copy_hash = _sha256_bytes(_safe_read_bytes(publication_copy, root=bundle_root))
+    canonical_hash = _digest_for_relative_path(bundle_root, bundle.manifest.publication_report_relative_path)
+    if publication_copy_hash != canonical_hash:
+        raise BundleVerificationError("external review handoff publication manifest differs from bundle publication manifest")
+    if payload.get("canonical_publication_manifest_sha256") != canonical_hash:
+        raise BundleVerificationError("external review handoff canonical publication manifest hash mismatch")
     return expected
 
 
@@ -557,6 +632,7 @@ def _validate_bundle_closure(bundle: LoadedBundle, *, verification_mode: str) ->
             expected.add(optional_path)
     expected |= _publication_expected_files(bundle)
     expected |= _report_spec_expected_files(bundle)
+    expected |= _review_handoff_expected_files(bundle)
     if bundle.manifest.bundle_state == BUNDLE_STATE_FROZEN and verification_mode == VERIFICATION_MODE_NORMAL:
         expected.add(SENTINEL)
     actual = _enumerate_files(Path(bundle.root))
@@ -783,12 +859,24 @@ def _validate_manual_review(
         for key, passed in record.checks.model_dump(mode="json").items():
             if not passed:
                 reasons.append(f"manual review check failed: {key}")
+    if record.conflicts_of_interest is None:
+        reasons.append("manual review requires conflicts_of_interest declaration")
+    elif record.review_basis == QUALIFYING_REVIEW_BASIS and record.conflicts_of_interest.has_conflict:
+        reasons.append("qualifying independent manual review must declare no conflict of interest")
+    answered_questions = tuple(question.strip() for question in record.required_questions_answered if question.strip())
+    if len(answered_questions) < 12 or len(answered_questions) != len(set(answered_questions)):
+        reasons.append("manual review requires at least 12 unique required_questions_answered entries")
+    if not record.verdict_summary or not record.verdict_summary.strip():
+        reasons.append("manual review requires a non-blank verdict_summary")
     bundle_root = Path(bundle.root)
     observed_hashes = {
         "manifest.json": _digest_for_relative_path(bundle_root, "manifest.json"),
         "claim_support_matrix.json": _digest_for_relative_path(bundle_root, bundle.manifest.claim_matrix_relative_path),
         "publication/artifact_manifest.json": _digest_for_relative_path(
             bundle_root, bundle.manifest.publication_report_relative_path
+        ),
+        "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json": _digest_for_relative_path(
+            bundle_root, bundle.manifest.authoritative_inputs.review_handoff_manifest_relative_path
         ),
         "verification_report.json": _digest_for_relative_path(bundle_root, bundle.manifest.report_relative_path),
     }

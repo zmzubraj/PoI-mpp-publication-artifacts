@@ -185,9 +185,9 @@ def _signed_review_payload(
     expertise_scope: str | None = "consensus-protocols",
     independence_basis: str | None = "separate-review-chain",
 ) -> dict[str, object]:
-    report_path = candidate_root / "verification_report.json"
     claim_matrix_path = candidate_root / "claim_support_matrix.json"
     publication_manifest_path = candidate_root / "publication" / "artifact_manifest.json"
+    review_handoff_path = candidate_root / "review_handoff" / "EXTERNAL_REVIEW_HANDOFF_MANIFEST.json"
     manifest = _read_json(candidate_root / "manifest.json")
     return {
         "schema_version": "POI_MPP_MANUAL_REVIEW_V1",
@@ -201,6 +201,7 @@ def _signed_review_payload(
         "reviewed_artifact_hashes": {
             "claim_support_matrix.json": _digest(claim_matrix_path),
             "publication/artifact_manifest.json": _digest(publication_manifest_path),
+            "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json": _digest(review_handoff_path),
         },
         "checks": {
             "denominator": True,
@@ -211,7 +212,50 @@ def _signed_review_payload(
             "accessibility": True,
             "claim_language": True,
         },
+        "conflicts_of_interest": {
+            "has_conflict": False,
+            "conflict_details": "",
+        },
+        "required_questions_answered": [f"Q{index}" for index in range(1, 13)],
+        "verdict_summary": "The evidence boundary and negative results are preserved.",
     }
+
+
+def _write_review_handoff_fixture(candidate_root: Path) -> None:
+    inputs = (
+        "claim_support_matrix.json",
+        "publication/artifact_manifest.json",
+    )
+    entries = []
+    for relative_path in inputs:
+        source = candidate_root / relative_path
+        copy_path = candidate_root / "review_handoff" / "inputs" / relative_path
+        copy_path.parent.mkdir(parents=True, exist_ok=True)
+        copy_path.write_bytes(source.read_bytes())
+        entries.append(
+            {
+                "path": relative_path,
+                "role": "TEST_ONLY_REVIEW_INPUT",
+                "sha256": _digest(source),
+                "size_bytes": source.stat().st_size,
+            }
+        )
+    payload = {
+        "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
+        "status": "UNSIGNED_REVIEW_INPUT_ONLY",
+        "canonical_publication_manifest_sha256": _digest(candidate_root / "publication" / "artifact_manifest.json"),
+        "review_input_count": len(entries),
+        "review_inputs": entries,
+        "external_gates": {
+            "e3_semantic_evaluator_authority": "WAITING_EXTERNAL",
+            "independent_domain_expert_review": "WAITING_EXTERNAL",
+            "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE",
+        },
+        "authority_boundary": "TEST_ONLY_NON_EVIDENCE",
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    payload["self_digest"] = hashlib.sha256(encoded).hexdigest()
+    _write_json(candidate_root / "review_handoff" / "EXTERNAL_REVIEW_HANDOFF_MANIFEST.json", payload)
 
 
 def _build_production_like_complete_candidate(candidate_root: Path) -> tuple[Path, Path, Path]:
@@ -245,6 +289,7 @@ def _build_production_like_complete_candidate(candidate_root: Path) -> tuple[Pat
         ("figures/F11_consensus_dynamics.svg", "F11", "E8"),
     ]
     _make_publication_manifest(candidate_root, output_paths)
+    _write_review_handoff_fixture(candidate_root)
     _write_json(
         candidate_root / "manifest.json",
         {
@@ -261,6 +306,7 @@ def _build_production_like_complete_candidate(candidate_root: Path) -> tuple[Pat
                 "report_spec_relative_path": "inputs/report_spec.json",
                 "task21_config_relative_path": "inputs/task21_local_config.json",
                 "task21_blocker_relative_path": "task21/task21_blockers.json",
+                "review_handoff_manifest_relative_path": "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json",
             },
             "completeness": "COMPLETE",
             "claim_support_overall": "INCONCLUSIVE",
@@ -386,6 +432,10 @@ def _build_test_only_structural_candidate(
                 "accessibility": True,
                 "claim_language": True,
             },
+            "conflicts_of_interest": {
+                "has_conflict": False,
+                "conflict_details": "",
+            },
         },
     )
     _write_json(
@@ -396,6 +446,7 @@ def _build_test_only_structural_candidate(
         },
     )
     _write_json(candidate_root / "publication" / "artifact_manifest.json", {"schema_version": "TEST_ONLY_NON_EVIDENCE"})
+    _write_review_handoff_fixture(candidate_root)
     _write_json(
         candidate_root / "manifest.json",
         {
@@ -412,6 +463,7 @@ def _build_test_only_structural_candidate(
                 "report_spec_relative_path": "inputs/report_spec.json",
                 "task21_config_relative_path": "inputs/task21_local_config.json",
                 "task21_blocker_relative_path": "task21/task21_blockers.json",
+                "review_handoff_manifest_relative_path": "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json",
             },
             "completeness": "COMPLETE",
             "claim_support_overall": "INCONCLUSIVE",
@@ -501,6 +553,58 @@ def test_production_verifier_rejects_unsigned_manual_review(tmp_path: Path) -> N
     assert "manual scientific review signature is absent" in "\n".join(reasons)
 
 
+def test_manual_review_runtime_accepts_published_schema_fields(tmp_path: Path) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    payload = _signed_review_payload(candidate_root)
+    record = verify_module.ManualReviewRecord.model_validate(payload)
+    assert record.conflicts_of_interest is not None
+    assert record.conflicts_of_interest.has_conflict is False
+    assert record.required_questions_answered == tuple(f"Q{index}" for index in range(1, 13))
+
+
+def test_qualifying_manual_review_rejects_declared_conflict(tmp_path: Path) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    review_payload = _signed_review_payload(candidate_root)
+    review_payload["conflicts_of_interest"] = {
+        "has_conflict": True,
+        "conflict_details": "Producer-chain financial relationship",
+    }
+    allowed_signers, signature_path = _generate_signature_bundle(candidate_root, review_payload=review_payload)
+    bundle = verify_module._load_bundle(candidate_root, allow_test_only=True)
+    reasons, authenticated = verify_module._validate_manual_review(
+        bundle,
+        allowed_signers_path=allowed_signers,
+        signature_path=signature_path,
+    )
+    assert not authenticated
+    assert "no conflict of interest" in "\n".join(reasons)
+
+
+def test_manual_review_requires_hash_bound_review_handoff(tmp_path: Path) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    review_payload = _signed_review_payload(candidate_root)
+    review_payload["reviewed_artifact_hashes"].pop(
+        "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json"
+    )
+    allowed_signers, signature_path = _generate_signature_bundle(candidate_root, review_payload=review_payload)
+    bundle = verify_module._load_bundle(candidate_root, allow_test_only=True)
+    reasons, authenticated = verify_module._validate_manual_review(
+        bundle,
+        allowed_signers_path=allowed_signers,
+        signature_path=signature_path,
+    )
+    assert not authenticated
+    assert "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json" in "\n".join(reasons)
+
+
+def test_structural_checker_rejects_tampered_review_handoff_input(tmp_path: Path) -> None:
+    candidate_root = _build_test_only_structural_candidate(tmp_path / "candidate")
+    staged_input = candidate_root / "review_handoff" / "inputs" / "claim_support_matrix.json"
+    staged_input.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(verify_module.BundleVerificationError, match="handoff (size|hash) mismatch"):
+        verify_module.verify_bundle_structure(candidate_root)
+
+
 @pytest.mark.parametrize(
     ("review_basis", "review_date", "expertise_scope", "independence_basis", "expected_fragment"),
     (
@@ -573,7 +677,10 @@ def test_reproduce_candidate_report_is_deterministic_and_run_path_matches_return
     assert first_payload == second_payload
     run_id = first_payload["run_id"]
     assert first_payload["candidate_relative_path"] == f"results/tmp/candidates/{run_id}"
-    assert (REPO_ROOT / first_payload["candidate_relative_path"]).is_dir()
+    candidate_root = REPO_ROOT / first_payload["candidate_relative_path"]
+    assert candidate_root.is_dir()
+    completed = _run_python(str(VERIFY_BUNDLE), "--bundle-root", str(candidate_root))
+    assert "report_spec artifact_root is missing" not in completed.stdout
 
 
 def test_reproduce_candidate_only_integrates_production_e8_as_inconclusive() -> None:

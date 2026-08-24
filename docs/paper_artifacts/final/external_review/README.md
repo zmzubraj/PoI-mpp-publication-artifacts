@@ -27,11 +27,13 @@ Current evidence boundary:
 - `C7`: supported by local Foundry measurement
 - `C8`: reproducible simulation / inconclusive
 
-The canonical machine-readable report bundle is attached at `../../../../publication/artifact_manifest.json` (SHA-256 `416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49`). It does not satisfy external authority, independent review, or the freeze sentinel. A freeze-eligible handoff must additionally generate and hash-bind any verifier-required:
+The canonical machine-readable report bundle is attached at `../../../../publication/artifact_manifest.json`. Its current hash is recorded in `EXTERNAL_REVIEW_HANDOFF_MANIFEST.json`; do not copy a hash from prose. It does not satisfy external authority, independent review, or the freeze sentinel. A freeze-eligible handoff must additionally generate and hash-bind the verifier-required stable review objects:
 
-- `verification_report.json`
 - `claim_support_matrix.json`
-- `../../../MAIN_RESULTS_TARGETS.md`
+- `publication/artifact_manifest.json`
+- `review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json`
+
+The candidate `manifest.json` and `verification_report.json` are deliberately not reviewer-signed inputs because the freeze transition rewrites their state and hashes. The self-contained review-handoff manifest binds the exact manuscript, tables, figures, algorithms, audit context, and canonical publication manifest that the reviewer actually received.
 
 ## Files in this folder
 
@@ -66,6 +68,15 @@ The production freeze gate requires all of the following, none of which are sati
 - a detached external signature;
 - a trusted allowed-signers file outside the bundle;
 - successful signature verification against the reviewed record.
+
+## Deterministic handoff sequence
+
+1. Generate the tracked review selection: `./.venv/bin/python scripts/build_external_review_handoff.py`.
+2. Verify it is current: `./.venv/bin/python scripts/build_external_review_handoff.py --check`.
+3. Build a candidate bundle. The replay pipeline copies every selected input under `review_handoff/inputs/`, recomputes a candidate-specific handoff manifest, and verifies its closed hash set.
+4. Give the complete candidate review-handoff tree to the real reviewer.
+5. The reviewer completes `manual_review.json`, including the three stable reviewed hashes, and signs that exact JSON externally.
+6. Promotion verifies the signature and stable hashes, then rewrites only freeze-state metadata and creates the sentinel.
 
 ## Producer and verifier separation
 

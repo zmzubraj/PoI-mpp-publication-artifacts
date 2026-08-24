@@ -34,7 +34,7 @@ const DEFAULT_OUTPUT = path.join(
   "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx",
 );
 const MANIFEST_PATH = path.join(REPO_ROOT, "publication/artifact_manifest.json");
-const MANIFEST_SHA256 = "416c4fd909e10304c361af056f0fddbc3ab47c67aeedad8f22fb69d839801e49";
+const MANIFEST_SHA256 = "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf";
 
 const sourcePath = path.resolve(process.argv[2] || DEFAULT_SOURCE);
 const outputPath = path.resolve(process.argv[3] || DEFAULT_OUTPUT);
@@ -347,8 +347,6 @@ async function main() {
       border: {
         top: { style: BorderStyle.SINGLE, size: 6, color: "D6B656" },
         bottom: { style: BorderStyle.SINGLE, size: 6, color: "D6B656" },
-        left: { style: BorderStyle.SINGLE, size: 6, color: "D6B656" },
-        right: { style: BorderStyle.SINGLE, size: 6, color: "D6B656" },
       },
       spacing: { before: 240, after: 240 },
       children: [

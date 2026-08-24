@@ -45,7 +45,7 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert "docs/paper_artifacts/final/visuals_algorithms/F1_single_pass_end_to_end.mmd" in paths
     assert "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.csv" in paths
     assert "docs/algorithms/A1_SPAI.md" in paths
-    assert "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md" not in paths
+    assert "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md" in paths
     assert all(not Path(path).is_absolute() and ".." not in Path(path).parts for path in paths)
 
     for entry in entries:

@@ -35,6 +35,14 @@ REPORT_ALL = REPO_ROOT / "scripts" / "report_all.py"
 RUN_MPP = REPO_ROOT / "scripts" / "run_mpp.py"
 LOCAL_MPP_CONFIG = REPO_ROOT / "configs" / "e2e" / "local.yaml"
 PUBLICATION_REPORT_SPEC = REPO_ROOT / "configs" / "publication_report.json"
+EXTERNAL_REVIEW_HANDOFF_MANIFEST = (
+    REPO_ROOT
+    / "docs"
+    / "paper_artifacts"
+    / "final"
+    / "external_review"
+    / "EXTERNAL_REVIEW_HANDOFF_MANIFEST.json"
+)
 TASK22_SCHEMA = "POI_MPP_FREEZE_BUNDLE_V1"
 CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
 MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
@@ -95,6 +103,7 @@ class AuthoritativeInputs(_FrozenModel):
     e7_run_config_relative_path: str | None = None
     e8_rows_relative_path: str | None = None
     e8_contract_relative_path: str | None = None
+    review_handoff_manifest_relative_path: str
 
 
 class ManualReviewSummary(_FrozenModel):
@@ -346,6 +355,10 @@ def _build_publication_report(
     )
     if completed.returncode != 0:
         return [f"publication report build failed: {completed.stderr.strip() or completed.stdout.strip()}"]
+    portable_spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    portable_spec["artifact_root"] = "inputs"
+    portable_spec["output_root"] = "publication"
+    _write_json(spec_path, portable_spec)
     return []
 
 
@@ -412,6 +425,68 @@ def _stage_e8_publication_inputs(staging_root: Path) -> tuple[str, str]:
         str(staged_rows.relative_to(staging_root)),
         str(staged_contract.relative_to(staging_root)),
     )
+
+
+def _stage_external_review_handoff(staging_root: Path) -> str:
+    selection = json.loads(EXTERNAL_REVIEW_HANDOFF_MANIFEST.read_text(encoding="utf-8"))
+    if selection.get("schema_version") != "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1":
+        raise ValueError("external review handoff selection has an unsupported schema")
+    if selection.get("status") != "UNSIGNED_REVIEW_INPUT_ONLY":
+        raise ValueError("external review handoff selection must remain unsigned review input only")
+    selected_entries = selection.get("review_inputs")
+    if not isinstance(selected_entries, list) or not selected_entries:
+        raise ValueError("external review handoff selection must contain review inputs")
+
+    staged_entries: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for selected in selected_entries:
+        if not isinstance(selected, dict) or not isinstance(selected.get("path"), str):
+            raise ValueError("external review handoff selection entries must contain a path")
+        relative_path = selected["path"]
+        pure = PurePosixPath(relative_path)
+        if pure.is_absolute() or str(pure) != relative_path or any(part in {"", ".", ".."} for part in pure.parts):
+            raise ValueError(f"unsafe external review handoff path: {relative_path}")
+        if relative_path in seen:
+            raise ValueError(f"duplicate external review handoff path: {relative_path}")
+        seen.add(relative_path)
+        source = staging_root.joinpath(*pure.parts) if pure.parts[0] == "publication" else REPO_ROOT.joinpath(*pure.parts)
+        if source.is_symlink() or not source.is_file():
+            raise ValueError(f"external review handoff input is missing or unsafe: {relative_path}")
+        data = source.read_bytes()
+        destination = staging_root / "review_handoff" / "inputs" / pure
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+        staged_entries.append(
+            {
+                "path": relative_path,
+                "role": str(selected.get("role", "REVIEW_INPUT")),
+                "sha256": _sha256_bytes(data),
+                "size_bytes": len(data),
+            }
+        )
+
+    publication_manifest = staging_root / "publication" / "artifact_manifest.json"
+    payload: dict[str, object] = {
+        "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
+        "status": "UNSIGNED_REVIEW_INPUT_ONLY",
+        "canonical_publication_manifest_sha256": _sha256_bytes(publication_manifest.read_bytes()),
+        "review_input_count": len(staged_entries),
+        "review_inputs": staged_entries,
+        "external_gates": {
+            "e3_semantic_evaluator_authority": "WAITING_EXTERNAL",
+            "independent_domain_expert_review": "WAITING_EXTERNAL",
+            "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE",
+        },
+        "authority_boundary": (
+            "This manifest binds review inputs only; it does not create evaluator authority, "
+            "independent review, a signature, or publication readiness."
+        ),
+    }
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    payload["self_digest"] = _sha256_bytes(canonical)
+    relative_manifest = "review_handoff/EXTERNAL_REVIEW_HANDOFF_MANIFEST.json"
+    _write_json(staging_root / relative_manifest, payload)
+    return relative_manifest
 
 
 def _validated_publication_artifacts(
@@ -587,6 +662,7 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
         e8_contract_relative_path=e8_contract_relative_path,
     )
     publication_manifest, publication_claim_rows, _, publication_validation_blockers = _validated_publication_artifacts(staging_root)
+    review_handoff_manifest_relative_path = _stage_external_review_handoff(staging_root)
     task21_reasons, task21_result_path = _task21_blockers(staging_root, full_mode=full_mode)
     experiments, experiment_blockers = _experiment_states(
         publication_manifest,
@@ -609,6 +685,7 @@ def _write_candidate_bundle(staging_root: Path, run_context: RunContext, *, full
         e7_run_config_relative_path="inputs/e7_run_config.yaml" if full_mode else None,
         e8_rows_relative_path=e8_rows_relative_path,
         e8_contract_relative_path=e8_contract_relative_path,
+        review_handoff_manifest_relative_path=review_handoff_manifest_relative_path,
     )
     manifest = _candidate_manifest(run_context, blockers, experiments, authoritative_inputs)
     claim_rows = _claim_rows(experiments, publication_claim_rows)
