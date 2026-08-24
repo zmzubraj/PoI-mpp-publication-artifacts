@@ -10,7 +10,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
-from poi_mpp.auditor.semantic.models import SemanticOutcome, VerificationDecision, VerificationMode
+from poi_mpp.auditor.semantic.models import (
+    SemanticCalibrationFreezeStatus,
+    SemanticCalibrationFreezeV2,
+    SemanticOutcome,
+    VerificationDecision,
+    VerificationMode,
+)
 from poi_mpp.evidence.canonical import digest
 from poi_mpp.evidence.models import EvidenceOrigin
 
@@ -29,6 +35,8 @@ _REQUIRED_HASH_FIELDS = (
     "task_payload_hash",
     "prompt_template_hash",
     "calibration_hash",
+    "calibration_error_ledger_hash",
+    "confirmatory_leakage_report_hash",
 )
 
 
@@ -57,6 +65,8 @@ class SemanticPolicyV2(_FrozenPolicyModel):
     task_payload_hash: str
     prompt_template_hash: str
     calibration_hash: str
+    calibration_error_ledger_hash: str
+    confirmatory_leakage_report_hash: str
     mode: VerificationMode
     calibration_split: VerificationMode = VerificationMode.DEVELOPMENT
     support_threshold: float
@@ -190,6 +200,39 @@ class SemanticPolicyV2(_FrozenPolicyModel):
                 raise ValueError(f"{field_name} must be a lowercase SHA-256 hex digest")
             if value != getattr(self, field_name):
                 raise ValueError(f"{field_name} does not match the frozen policy binding")
+
+    def assert_calibration_freeze(self, freeze: SemanticCalibrationFreezeV2) -> None:
+        if freeze.status is not SemanticCalibrationFreezeStatus.FROZEN_DEVELOPMENT_ONLY:
+            raise ValueError(
+                "confirmatory execution requires a FROZEN_DEVELOPMENT_ONLY calibration freeze"
+            )
+        field_pairs = (
+            ("calibration_hash", self.calibration_hash, freeze.content_hash),
+            ("claim_spec_hash", self.claim_spec_hash, freeze.claim_spec_hash),
+            ("prompt_template_hash", self.prompt_template_hash, freeze.prompt_template_hash),
+            ("model_manifest_hash", self.model_manifest_hash, freeze.model_manifest_hash),
+            (
+                "runtime_environment_hash",
+                self.runtime_environment_hash,
+                freeze.runtime_environment_hash,
+            ),
+        )
+        for field_name, policy_value, freeze_value in field_pairs:
+            if policy_value != freeze_value:
+                raise ValueError(f"{field_name} does not match the frozen calibration binding")
+
+        threshold_pairs = (
+            ("support_threshold", self.support_threshold, freeze.support_threshold),
+            ("reject_threshold", self.reject_threshold, freeze.reject_threshold),
+            (
+                "minimum_calibrated_confidence",
+                self.minimum_calibrated_confidence,
+                freeze.minimum_calibrated_confidence,
+            ),
+        )
+        for field_name, policy_value, freeze_value in threshold_pairs:
+            if not math.isclose(policy_value, freeze_value, rel_tol=0.0, abs_tol=0.0):
+                raise ValueError(f"{field_name} does not match the frozen calibration binding")
 
     def require_evidence_origin(self, origin: EvidenceOrigin) -> None:
         normalized = origin if isinstance(origin, EvidenceOrigin) else EvidenceOrigin(origin)

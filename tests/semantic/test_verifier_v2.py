@@ -16,6 +16,10 @@ from poi_mpp.auditor.semantic.authority_registry import (
     SemanticAuthorityRegistrySnapshotV1,
 )
 from poi_mpp.auditor.semantic.models import (
+    CalibrationErrorLedgerV1,
+    CalibrationLeakageReportV1,
+    CalibrationLeakageStatus,
+    DevelopmentCalibrationObservationV2,
     EvidenceAnnotation,
     EvidenceAnnotationKind,
     EvidenceRecord,
@@ -23,8 +27,12 @@ from poi_mpp.auditor.semantic.models import (
     NumericComparator,
     NumericExpectation,
     NumericFact,
-    SemanticCalibrationArtifact,
+    SemanticCalibrationErrorCode,
+    SemanticCalibrationErrorFamily,
+    SemanticCalibrationFreezeStatus,
+    SemanticCalibrationFreezeV2,
     VerificationDecision,
+    semantic_calibration_taxonomy_hash,
     semantic_annotation_payload_hash,
     semantic_evidence_content_hash,
 )
@@ -373,7 +381,9 @@ def _semantic_policy(
     dataset_manifest: DatasetManifestV2,
     environment_manifest: ExecutionEnvironmentManifestV1,
     registry_snapshot_hash: str,
-    calibration: SemanticCalibrationArtifact,
+    calibration_freeze: SemanticCalibrationFreezeV2,
+    calibration_error_ledger: CalibrationErrorLedgerV1,
+    confirmatory_leakage_report: CalibrationLeakageReportV1,
 ) -> SemanticPolicyV2:
     return SemanticPolicyV2.model_validate(
         {
@@ -384,12 +394,14 @@ def _semantic_policy(
             "runtime_environment_hash": environment_manifest.environment_manifest_hash(),
             "task_payload_hash": _hash("b"),
             "prompt_template_hash": _hash("5"),
-            "calibration_hash": calibration.content_hash,
+            "calibration_hash": calibration_freeze.content_hash,
+            "calibration_error_ledger_hash": calibration_error_ledger.content_hash,
+            "confirmatory_leakage_report_hash": confirmatory_leakage_report.content_hash,
             "mode": "CONFIRMATORY",
             "calibration_split": "DEVELOPMENT",
-            "support_threshold": 0.75,
-            "reject_threshold": 0.25,
-            "minimum_calibrated_confidence": 0.60,
+            "support_threshold": calibration_freeze.support_threshold,
+            "reject_threshold": calibration_freeze.reject_threshold,
+            "minimum_calibrated_confidence": calibration_freeze.minimum_calibrated_confidence,
             "freeze_locked": True,
             "require_output_trace_agreement": True,
             "allowed_evidence_origins": ("REAL_MODEL_EXECUTION",),
@@ -490,12 +502,119 @@ def _record(
     )
 
 
-def _calibration(threshold: float = 1.0) -> SemanticCalibrationArtifact:
-    return SemanticCalibrationArtifact.create(
-        dataset_label="dev-e3-v2",
-        minimum_support_fraction=threshold,
-        example_count=10,
+def _leakage_report(
+    dataset_manifest: DatasetManifestV2,
+    *,
+    status: CalibrationLeakageStatus = CalibrationLeakageStatus.NOT_YET_ASSESSABLE,
+    confirmatory_manifest_hash: str | None = None,
+) -> CalibrationLeakageReportV1:
+    payload: dict[str, object] = {
+        "development_manifest_hash": _hash("8"),
+        "confirmatory_manifest_hash": confirmatory_manifest_hash,
+        "record_overlap_count": 0,
+        "content_overlap_count": 0,
+        "item_overlap_count": 0,
+        "label_overlap_count": 0,
+        "dedup_overlap_count": 0,
+        "source_overlap_count": 0,
+        "source_family_overlap_count": 0,
+        "near_duplicate_overlap_count": 0,
+        "status": status.value,
+    }
+    return CalibrationLeakageReportV1.model_validate(payload)
+
+
+def _confirmatory_leakage_report(
+    dataset_manifest: DatasetManifestV2,
+    *,
+    status: CalibrationLeakageStatus = CalibrationLeakageStatus.CLEAR,
+    confirmatory_manifest_hash: str | None = None,
+) -> CalibrationLeakageReportV1:
+    development_payload = _leakage_report(
+        dataset_manifest,
+        status=CalibrationLeakageStatus.NOT_YET_ASSESSABLE,
+    ).model_dump(mode="python")
+    development_payload.pop("content_hash", None)
+    return CalibrationLeakageReportV1.model_validate(
+        {
+            **development_payload,
+            "confirmatory_manifest_hash": (
+                dataset_manifest.dataset_manifest_hash()
+                if confirmatory_manifest_hash is None
+                else confirmatory_manifest_hash
+            ),
+            "status": status.value,
+            "record_overlap_count": 1 if status is CalibrationLeakageStatus.BLOCKED else 0,
+        }
     )
+
+
+def _calibration_error_ledger(
+    development_manifest_hash: str,
+    *,
+    origin: EvidenceOrigin = EvidenceOrigin.REAL_MODEL_EXECUTION,
+) -> CalibrationErrorLedgerV1:
+    return CalibrationErrorLedgerV1.model_validate(
+        {
+            "dataset_manifest_hash": development_manifest_hash,
+            "rows": (
+                DevelopmentCalibrationObservationV2(
+                    record_id="dev-row-1",
+                    expected_decision=VerificationDecision.ACCEPT,
+                    observed_decision=VerificationDecision.ACCEPT,
+                    support_fraction=0.90,
+                    calibrated_confidence=0.90,
+                    error_code=SemanticCalibrationErrorCode.CORRECT_ACCEPT,
+                    error_family=SemanticCalibrationErrorFamily.DECISION,
+                    attack_family="BASELINE",
+                    subgroup="all",
+                    difficulty="standard",
+                    origin=origin,
+                ),
+            ),
+        }
+    )
+
+
+def _calibration_freeze(
+    claim_spec: ClaimSpecV2,
+    environment_manifest: ExecutionEnvironmentManifestV1,
+    development_leakage_report: CalibrationLeakageReportV1,
+    calibration_error_ledger: CalibrationErrorLedgerV1,
+    *,
+    support_threshold: float = 0.75,
+    reject_threshold: float = 0.25,
+    minimum_calibrated_confidence: float = 0.60,
+) -> SemanticCalibrationFreezeV2:
+    return SemanticCalibrationFreezeV2.model_validate(
+        {
+            "status": SemanticCalibrationFreezeStatus.FROZEN_DEVELOPMENT_ONLY.value,
+            "development_dataset_manifest_hash": development_leakage_report.development_manifest_hash,
+            "claim_spec_hash": claim_spec.claim_spec_hash(),
+            "prompt_template_hash": _hash("5"),
+            "model_manifest_hash": _hash("4"),
+            "runtime_environment_hash": environment_manifest.environment_manifest_hash(),
+            "output_schema_hash": _hash("1"),
+            "contradiction_policy_hash": _hash("2"),
+            "error_recovery_policy_hash": _hash("3"),
+            "accept_example_count": 50,
+            "reject_example_count": 50,
+            "abstain_example_count": 20,
+            "error_taxonomy_version": "POI_MPP_SEMANTIC_CALIBRATION_ERROR_TAXONOMY_V1",
+            "error_taxonomy_hash": semantic_calibration_taxonomy_hash(),
+            "support_threshold": support_threshold,
+            "reject_threshold": reject_threshold,
+            "minimum_calibrated_confidence": minimum_calibrated_confidence,
+            "selection_rule_id": "TRI_STATE_ACCURACY_FAIL_CLOSED_V1",
+            "example_count": 120,
+            "error_ledger_hash": calibration_error_ledger.content_hash,
+            "leakage_report_hash": development_leakage_report.content_hash,
+        }
+    )
+
+
+def _calibrated_confidence() -> float:
+    return 0.90
 
 
 def _pending_receipt(
@@ -551,7 +670,10 @@ def _supported_metrics() -> dict[str, ClaimMetricObservation]:
 def _bind_trace(
     kwargs: dict[str, object],
     decision: VerificationDecision,
+    *,
+    calibrated_confidence: float | None = None,
 ) -> None:
+    confidence = _calibrated_confidence() if calibrated_confidence is None else calibrated_confidence
     response_hash = digest("SEMANTIC_RESPONSE", kwargs["response"])
     trace_artifact = SemanticTraceArtifactV1.create(
         task_root=kwargs["task_envelope"].task_root,
@@ -560,6 +682,7 @@ def _bind_trace(
         dataset_manifest_hash=kwargs["dataset_manifest"].dataset_manifest_hash(),
         authority_record_digest=kwargs["authority_record"].record_digest,
         decision=decision,
+        calibrated_confidence=confidence,
     )
     protocol_task = TaskSpec(
         task_id=1,
@@ -621,7 +744,17 @@ def _base_kwargs():
     )
     dataset_manifest = _dataset_manifest(evidence)
     environment_manifest = _environment_manifest()
-    calibration = _calibration()
+    development_leakage_report = _leakage_report(dataset_manifest)
+    calibration_error_ledger = _calibration_error_ledger(
+        development_leakage_report.development_manifest_hash
+    )
+    confirmatory_leakage_report = _confirmatory_leakage_report(dataset_manifest)
+    calibration_freeze = _calibration_freeze(
+        claim_spec,
+        environment_manifest,
+        development_leakage_report,
+        calibration_error_ledger,
+    )
     preliminary_authority = _authority_record(
         claim_spec,
         dataset_manifest,
@@ -636,7 +769,9 @@ def _base_kwargs():
         dataset_manifest=dataset_manifest,
         environment_manifest=environment_manifest,
         registry_snapshot_hash=registry_snapshot_hash,
-        calibration=calibration,
+        calibration_freeze=calibration_freeze,
+        calibration_error_ledger=calibration_error_ledger,
+        confirmatory_leakage_report=confirmatory_leakage_report,
     )
     authority_record, registry_snapshot, authority_crypto = _bind_authority_registry(
         _authority_record(
@@ -664,7 +799,10 @@ def _base_kwargs():
             ),
         ),
         "evidence": evidence,
-        "calibration": calibration,
+        "calibration_freeze": calibration_freeze,
+        "development_leakage_report": development_leakage_report,
+        "calibration_error_ledger": calibration_error_ledger,
+        "confirmatory_leakage_report": confirmatory_leakage_report,
         "metrics": _supported_metrics(),
         "model_manifest_hash": _hash("4"),
         "registry_snapshot": registry_snapshot,
@@ -682,6 +820,20 @@ def _base_kwargs():
 def _rebind_dataset(kwargs: dict[str, object]) -> None:
     evidence = tuple(kwargs["evidence"])
     dataset_manifest = _dataset_manifest(evidence)
+    development_leakage_report = _leakage_report(dataset_manifest)
+    calibration_error_ledger = _calibration_error_ledger(
+        development_leakage_report.development_manifest_hash
+    )
+    confirmatory_leakage_report = _confirmatory_leakage_report(dataset_manifest)
+    calibration_freeze = _calibration_freeze(
+        kwargs["claim_spec"],
+        kwargs["environment_manifest"],
+        development_leakage_report,
+        calibration_error_ledger,
+        support_threshold=kwargs["calibration_freeze"].support_threshold,
+        reject_threshold=kwargs["calibration_freeze"].reject_threshold,
+        minimum_calibrated_confidence=kwargs["calibration_freeze"].minimum_calibrated_confidence,
+    )
     preliminary_authority = _authority_record(
         kwargs["claim_spec"],
         dataset_manifest,
@@ -696,7 +848,9 @@ def _rebind_dataset(kwargs: dict[str, object]) -> None:
         dataset_manifest=dataset_manifest,
         environment_manifest=kwargs["environment_manifest"],
         registry_snapshot_hash=registry_snapshot_hash,
-        calibration=kwargs["calibration"],
+        calibration_freeze=calibration_freeze,
+        calibration_error_ledger=calibration_error_ledger,
+        confirmatory_leakage_report=confirmatory_leakage_report,
     )
     authority_record, registry_snapshot, authority_crypto = _bind_authority_registry(
         _authority_record(
@@ -707,6 +861,10 @@ def _rebind_dataset(kwargs: dict[str, object]) -> None:
         )
     )
     kwargs["dataset_manifest"] = dataset_manifest
+    kwargs["development_leakage_report"] = development_leakage_report
+    kwargs["confirmatory_leakage_report"] = confirmatory_leakage_report
+    kwargs["calibration_error_ledger"] = calibration_error_ledger
+    kwargs["calibration_freeze"] = calibration_freeze
     kwargs["authority_record"] = authority_record
     kwargs["registry_snapshot"] = registry_snapshot
     kwargs["authority_crypto_verification"] = authority_crypto
@@ -718,7 +876,11 @@ def _rebind_dataset(kwargs: dict[str, object]) -> None:
         authority_record,
     )
     prior_decision = kwargs["trace_artifact"].decision
-    _bind_trace(kwargs, prior_decision)
+    _bind_trace(
+        kwargs,
+        prior_decision,
+        calibrated_confidence=kwargs["trace_artifact"].calibrated_confidence,
+    )
 
 
 def _replace_authority(
@@ -738,7 +900,11 @@ def _replace_authority(
         authority_record,
     )
     prior_decision = kwargs["trace_artifact"].decision
-    _bind_trace(kwargs, prior_decision)
+    _bind_trace(
+        kwargs,
+        prior_decision,
+        calibrated_confidence=kwargs["trace_artifact"].calibrated_confidence,
+    )
 
 
 def test_verify_grounded_v2_accepts_when_all_publication_gates_and_support_pass():
@@ -916,7 +1082,7 @@ def test_verify_grounded_v2_rejects_output_trace_disagreement():
     result = verify_grounded_v2(**kwargs)
 
     assert result.decision is VerificationDecision.REJECT
-    assert "trace" in " ".join(result.residual_risks).lower()
+    assert "output decision and trace decision must agree" in " ".join(result.integrity_reasons)
 
 
 def test_verify_grounded_v2_rejects_trace_artifact_not_bound_by_commitment():
@@ -979,6 +1145,142 @@ def test_verify_grounded_v2_rejects_prompt_policy_binding_drift():
 
     assert result.decision is VerificationDecision.REJECT
     assert "semantic policy binding failure" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_abstains_when_confidence_is_below_frozen_threshold():
+    kwargs = _base_kwargs()
+    _bind_trace(
+        kwargs,
+        VerificationDecision.ABSTAIN,
+        calibrated_confidence=0.50,
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.ABSTAIN
+    assert result.integrity_reasons == ()
+
+
+def test_verify_grounded_v2_rejects_threshold_drift_between_policy_and_freeze():
+    kwargs = _base_kwargs()
+    kwargs["semantic_policy"] = _semantic_policy(
+        claim_spec=kwargs["claim_spec"],
+        dataset_manifest=kwargs["dataset_manifest"],
+        environment_manifest=kwargs["environment_manifest"],
+        registry_snapshot_hash=kwargs["registry_snapshot"].snapshot_hash,
+        calibration_freeze=kwargs["calibration_freeze"].model_copy(
+            update={"support_threshold": 0.80}
+        ),
+        calibration_error_ledger=kwargs["calibration_error_ledger"],
+        confirmatory_leakage_report=kwargs["confirmatory_leakage_report"],
+    )
+    _replace_authority(
+        kwargs,
+        _authority_record(
+            kwargs["claim_spec"],
+            kwargs["dataset_manifest"],
+            kwargs["environment_manifest"],
+            semantic_policy_hash=kwargs["semantic_policy"].policy_hash(),
+        ),
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "calibration freeze binding failure" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_rejects_non_clear_leakage_report():
+    kwargs = _base_kwargs()
+    kwargs["confirmatory_leakage_report"] = _confirmatory_leakage_report(
+        kwargs["dataset_manifest"],
+        status=CalibrationLeakageStatus.BLOCKED,
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "leakage report status must be CLEAR" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_rejects_confirmatory_manifest_hash_mismatch():
+    kwargs = _base_kwargs()
+    kwargs["confirmatory_leakage_report"] = _confirmatory_leakage_report(
+        kwargs["dataset_manifest"],
+        confirmatory_manifest_hash=_hash("f"),
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "confirmatory manifest hash mismatch" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_rejects_freeze_hash_drift():
+    kwargs = _base_kwargs()
+    kwargs["calibration_freeze"] = kwargs["calibration_freeze"].model_copy(
+        update={"leakage_report_hash": _hash("f")}
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "freeze leakage_report_hash mismatch" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_rejects_error_ledger_hash_drift():
+    kwargs = _base_kwargs()
+    kwargs["calibration_freeze"] = kwargs["calibration_freeze"].model_copy(
+        update={"error_ledger_hash": _hash("f")}
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "freeze error_ledger_hash mismatch" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_rejects_non_real_error_ledger_rows():
+    kwargs = _base_kwargs()
+    kwargs["calibration_error_ledger"] = _calibration_error_ledger(
+        kwargs["development_leakage_report"].development_manifest_hash,
+        origin=EvidenceOrigin.REPRODUCIBLE_SIMULATION,
+    )
+    kwargs["semantic_policy"] = _semantic_policy(
+        claim_spec=kwargs["claim_spec"],
+        dataset_manifest=kwargs["dataset_manifest"],
+        environment_manifest=kwargs["environment_manifest"],
+        registry_snapshot_hash=kwargs["registry_snapshot"].snapshot_hash,
+        calibration_freeze=kwargs["calibration_freeze"],
+        calibration_error_ledger=kwargs["calibration_error_ledger"],
+        confirmatory_leakage_report=kwargs["confirmatory_leakage_report"],
+    )
+    _replace_authority(
+        kwargs,
+        _authority_record(
+            kwargs["claim_spec"],
+            kwargs["dataset_manifest"],
+            kwargs["environment_manifest"],
+            semantic_policy_hash=kwargs["semantic_policy"].policy_hash(),
+        ),
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "error ledger rows must remain REAL_MODEL_EXECUTION" in " ".join(result.integrity_reasons)
+
+
+def test_verify_grounded_v2_rejects_trace_confidence_tampering():
+    kwargs = _base_kwargs()
+    kwargs["trace_artifact"] = kwargs["trace_artifact"].model_copy(
+        update={"calibrated_confidence": 0.10}
+    )
+
+    result = verify_grounded_v2(**kwargs)
+
+    assert result.decision is VerificationDecision.REJECT
+    assert "trace_root mismatch" in " ".join(result.integrity_reasons)
 
 
 @pytest.mark.parametrize(
@@ -1130,7 +1432,7 @@ def test_not_supported_semantic_result_is_rejected_and_never_activates():
             confidence_interval=(0.30, 0.70),
         ),
     }
-    _bind_trace(kwargs, VerificationDecision.REJECT)
+    _bind_trace(kwargs, VerificationDecision.ACCEPT)
     result = verify_grounded_v2(**kwargs)
     receipt = _pending_receipt(
         semantic_task_root=result.task_root,

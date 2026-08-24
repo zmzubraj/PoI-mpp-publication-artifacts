@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+import math
 from typing import Sequence
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -13,11 +14,14 @@ from poi_mpp.auditor.semantic.authority_registry import (
     SemanticAuthorityRegistrySnapshotV1,
 )
 from poi_mpp.auditor.semantic.models import (
+    CalibrationErrorLedgerV1,
+    CalibrationLeakageReportV1,
+    CalibrationLeakageStatus,
     EvidenceAnnotationKind,
     EvidenceRecord,
     GroundedClaim,
     NumericExpectation,
-    SemanticCalibrationArtifact,
+    SemanticCalibrationFreezeV2,
     SemanticOutcome,
     VerificationDecision,
     parse_bounded_decimal,
@@ -57,6 +61,7 @@ class SemanticTraceArtifactV1(_FrozenVerifierModel):
     dataset_manifest_hash: str
     authority_record_digest: str
     decision: VerificationDecision
+    calibrated_confidence: float
 
     @field_validator(
         "response_hash",
@@ -81,6 +86,18 @@ class SemanticTraceArtifactV1(_FrozenVerifierModel):
             raise ValueError("task_root must be lowercase hexadecimal")
         return normalized
 
+    @field_validator("calibrated_confidence", mode="before")
+    @classmethod
+    def require_calibrated_confidence(cls, value: float) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError("calibrated_confidence must be a finite real number")
+        normalized = float(value)
+        if not math.isfinite(normalized):
+            raise ValueError("calibrated_confidence must be finite")
+        if normalized < 0.0 or normalized > 1.0:
+            raise ValueError("calibrated_confidence must lie within [0, 1]")
+        return normalized
+
     def canonical_payload(self) -> dict[str, object]:
         return self.model_dump(mode="json")
 
@@ -98,6 +115,7 @@ class SemanticTraceArtifactV1(_FrozenVerifierModel):
         dataset_manifest_hash: str,
         authority_record_digest: str,
         decision: VerificationDecision,
+        calibrated_confidence: float,
     ) -> "SemanticTraceArtifactV1":
         return cls(
             task_root=task_root,
@@ -106,6 +124,7 @@ class SemanticTraceArtifactV1(_FrozenVerifierModel):
             dataset_manifest_hash=dataset_manifest_hash,
             authority_record_digest=authority_record_digest,
             decision=decision,
+            calibrated_confidence=calibrated_confidence,
         )
 
 
@@ -233,7 +252,6 @@ def _compare_numeric_expectation(
 def _evaluate_claim(
     claim: GroundedClaim,
     evidence_index: dict[str, list[EvidenceRecord]],
-    calibration: SemanticCalibrationArtifact,
 ) -> ClaimVerificationOutcomeV2:
     missing = [citation_id for citation_id in claim.cited_citation_ids if citation_id not in evidence_index]
     duplicate = [
@@ -309,9 +327,7 @@ def _evaluate_claim(
                 reasons=numeric_reasons,
             )
 
-    if support_fraction < calibration.minimum_support_fraction or len(supported_citations) != len(
-        claim.cited_citation_ids
-    ):
+    if len(supported_citations) != len(claim.cited_citation_ids):
         return ClaimVerificationOutcomeV2(
             claim_id=claim.claim_id,
             outcome=SemanticOutcome.PARTIAL,
@@ -333,6 +349,74 @@ def _evaluate_claim(
     )
 
 
+def _calibration_integrity_reasons(
+    *,
+    dataset_manifest: DatasetManifestV2,
+    calibration_freeze: SemanticCalibrationFreezeV2,
+    development_leakage_report: CalibrationLeakageReportV1,
+    confirmatory_leakage_report: CalibrationLeakageReportV1,
+    calibration_error_ledger: CalibrationErrorLedgerV1,
+    semantic_policy: SemanticPolicyV2,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if (
+        development_leakage_report.status
+        is not CalibrationLeakageStatus.NOT_YET_ASSESSABLE
+    ):
+        reasons.append("development leakage report must remain NOT_YET_ASSESSABLE for the frozen phase-3 contract")
+    if development_leakage_report.confirmatory_manifest_hash is not None:
+        reasons.append("development leakage report must not bind a confirmatory manifest hash")
+    if (
+        development_leakage_report.development_manifest_hash
+        != calibration_freeze.development_dataset_manifest_hash
+    ):
+        reasons.append("development manifest hash mismatch between development leakage report and calibration freeze")
+    dataset_hash = dataset_manifest.dataset_manifest_hash()
+    if confirmatory_leakage_report.status is not CalibrationLeakageStatus.CLEAR:
+        reasons.append("leakage report status must be CLEAR for confirmatory verification")
+    if (
+        confirmatory_leakage_report.development_manifest_hash
+        != calibration_freeze.development_dataset_manifest_hash
+    ):
+        reasons.append("development manifest hash mismatch between confirmatory leakage report and calibration freeze")
+    if confirmatory_leakage_report.confirmatory_manifest_hash != dataset_hash:
+        reasons.append("confirmatory manifest hash mismatch between leakage report and dataset manifest")
+    if calibration_freeze.leakage_report_hash != development_leakage_report.content_hash:
+        reasons.append("freeze leakage_report_hash mismatch")
+    if calibration_freeze.error_ledger_hash != calibration_error_ledger.content_hash:
+        reasons.append("freeze error_ledger_hash mismatch")
+    if (
+        calibration_error_ledger.dataset_manifest_hash
+        != calibration_freeze.development_dataset_manifest_hash
+    ):
+        reasons.append("error ledger development manifest hash mismatch")
+    if calibration_error_ledger.taxonomy_hash != calibration_freeze.error_taxonomy_hash:
+        reasons.append("error ledger taxonomy hash mismatch")
+    if any(row.origin is not EvidenceOrigin.REAL_MODEL_EXECUTION for row in calibration_error_ledger.rows):
+        reasons.append("error ledger rows must remain REAL_MODEL_EXECUTION")
+    try:
+        semantic_policy.assert_calibration_freeze(calibration_freeze)
+    except ValueError as error:
+        reasons.append(f"calibration freeze binding failure: {error}")
+    return _ordered_unique(reasons)
+
+
+def _aggregate_policy_inputs(
+    outcomes: tuple[ClaimVerificationOutcomeV2, ...],
+) -> tuple[SemanticOutcome, float, VerificationDecision]:
+    if any(outcome.decision is VerificationDecision.REJECT for outcome in outcomes):
+        chosen = next(outcome for outcome in outcomes if outcome.decision is VerificationDecision.REJECT)
+        return chosen.outcome, min(outcome.support_fraction for outcome in outcomes), VerificationDecision.REJECT
+    if all(outcome.decision is VerificationDecision.ACCEPT for outcome in outcomes):
+        return (
+            outcomes[0].outcome,
+            min(outcome.support_fraction for outcome in outcomes),
+            VerificationDecision.ACCEPT,
+        )
+    chosen = next(outcome for outcome in outcomes if outcome.decision is VerificationDecision.ABSTAIN)
+    return chosen.outcome, min(outcome.support_fraction for outcome in outcomes), VerificationDecision.ABSTAIN
+
+
 def _integrity_reasons(
     *,
     claim_spec: ClaimSpecV2,
@@ -341,7 +425,10 @@ def _integrity_reasons(
     authority_record: SemanticAuthorityRecordV1,
     task_envelope: TaskEnvelopeV2,
     evidence: Sequence[EvidenceRecord],
-    calibration: SemanticCalibrationArtifact,
+    calibration_freeze: SemanticCalibrationFreezeV2,
+    development_leakage_report: CalibrationLeakageReportV1,
+    confirmatory_leakage_report: CalibrationLeakageReportV1,
+    calibration_error_ledger: CalibrationErrorLedgerV1,
     model_manifest_hash: str,
     registry_snapshot: SemanticAuthorityRegistrySnapshotV1,
     semantic_policy: SemanticPolicyV2,
@@ -444,7 +531,9 @@ def _integrity_reasons(
         "runtime_environment_hash": environment_hash,
         "task_payload_hash": _word_hex_to_digest(task_envelope.task_payload_hash),
         "prompt_template_hash": prompt_template_hash,
-        "calibration_hash": calibration.content_hash,
+        "calibration_hash": calibration_freeze.content_hash,
+        "calibration_error_ledger_hash": calibration_error_ledger.content_hash,
+        "confirmatory_leakage_report_hash": confirmatory_leakage_report.content_hash,
     }
     try:
         semantic_policy.assert_frozen_inputs(frozen_bindings)
@@ -455,6 +544,16 @@ def _integrity_reasons(
         reasons.append("semantic policy metric scope does not equal claim metric scope")
     if set(semantic_policy.required_artifact_ids) != set(claim_spec.required_artifacts):
         reasons.append("semantic policy artifact scope does not equal claim artifact scope")
+    reasons.extend(
+        _calibration_integrity_reasons(
+            dataset_manifest=dataset_manifest,
+            calibration_freeze=calibration_freeze,
+            development_leakage_report=development_leakage_report,
+            confirmatory_leakage_report=confirmatory_leakage_report,
+            calibration_error_ledger=calibration_error_ledger,
+            semantic_policy=semantic_policy,
+        )
+    )
 
     reasons.extend(
         authority_record.publication_eligibility_gate_reasons(
@@ -537,7 +636,10 @@ def verify_grounded_v2(
     response_commitment: ResponseCommitment,
     claims: Sequence[GroundedClaim],
     evidence: Sequence[EvidenceRecord],
-    calibration: SemanticCalibrationArtifact,
+    calibration_freeze: SemanticCalibrationFreezeV2,
+    development_leakage_report: CalibrationLeakageReportV1,
+    confirmatory_leakage_report: CalibrationLeakageReportV1,
+    calibration_error_ledger: CalibrationErrorLedgerV1,
     claim_spec: ClaimSpecV2,
     dataset_manifest: DatasetManifestV2,
     environment_manifest: ExecutionEnvironmentManifestV1,
@@ -561,7 +663,10 @@ def verify_grounded_v2(
         authority_record=authority_record,
         task_envelope=task_envelope,
         evidence=evidence,
-        calibration=calibration,
+        calibration_freeze=calibration_freeze,
+        development_leakage_report=development_leakage_report,
+        confirmatory_leakage_report=confirmatory_leakage_report,
+        calibration_error_ledger=calibration_error_ledger,
         model_manifest_hash=model_manifest_hash,
         registry_snapshot=registry_snapshot,
         semantic_policy=semantic_policy,
@@ -595,7 +700,7 @@ def verify_grounded_v2(
     evidence_index: dict[str, list[EvidenceRecord]] = {}
     for record in evidence:
         evidence_index.setdefault(record.citation_id, []).append(record)
-    outcomes = tuple(_evaluate_claim(claim, evidence_index, calibration) for claim in claims)
+    outcomes = tuple(_evaluate_claim(claim, evidence_index) for claim in claims)
 
     if integrity_reasons:
         return GroundedVerificationResultV2(
@@ -619,24 +724,63 @@ def verify_grounded_v2(
             residual_risks=(),
         )
 
-    if any(outcome.decision is VerificationDecision.REJECT for outcome in outcomes):
-        computed_decision = VerificationDecision.REJECT
-    elif all(outcome.decision is VerificationDecision.ACCEPT for outcome in outcomes):
-        computed_decision = VerificationDecision.ACCEPT
-    else:
-        computed_decision = VerificationDecision.ABSTAIN
+    aggregate_outcome, aggregate_support_fraction, _raw_grounding_decision = _aggregate_policy_inputs(
+        outcomes
+    )
+    policy_integrity_reasons: list[str] = []
+    try:
+        computed_decision = semantic_policy._decision_from_outcome(
+            outcome=aggregate_outcome,
+            support_fraction=aggregate_support_fraction,
+            calibrated_confidence=trace_artifact.calibrated_confidence,
+        )
+        computed_decision = semantic_policy.adjudicate(
+            outcome=aggregate_outcome,
+            support_fraction=aggregate_support_fraction,
+            calibrated_confidence=trace_artifact.calibrated_confidence,
+            output_decision=computed_decision,
+            trace_decision=trace_artifact.decision,
+            evidence_origin=EvidenceOrigin.REAL_MODEL_EXECUTION,
+        )
+    except ValueError as error:
+        policy_integrity_reasons.append(f"semantic policy adjudication failure: {error}")
+
+    if policy_integrity_reasons:
+        return GroundedVerificationResultV2(
+            response_hash=digest("SEMANTIC_RESPONSE", response),
+            task_root=task_envelope.task_root,
+            response_commitment_hash=response_commitment.commitment_hash,
+            claim_spec_hash=claim_spec.claim_spec_hash(),
+            dataset_manifest_hash=dataset_manifest.dataset_manifest_hash(),
+            environment_manifest_hash=environment_manifest.environment_manifest_hash(),
+            authority_record_digest=authority_record.record_digest,
+            authority_crypto_verification_digest=(
+                authority_crypto_verification.verification_digest
+            ),
+            authority_verification_receipt_digest=(
+                authority_crypto_verification.verification_receipt.receipt_digest
+            ),
+            claim_disposition=claim_disposition,
+            decision=VerificationDecision.REJECT,
+            outcomes=outcomes,
+            integrity_reasons=_ordered_unique(policy_integrity_reasons),
+            residual_risks=(),
+        )
 
     residual_risks: list[str] = []
     if claim_disposition is ClaimDisposition.NOT_SUPPORTED:
         computed_decision = VerificationDecision.REJECT
-        residual_risks.append("claim metrics adjudicate to NOT_SUPPORTED under the frozen claim specification")
-    elif claim_disposition is ClaimDisposition.INCONCLUSIVE and computed_decision is VerificationDecision.ACCEPT:
+        residual_risks.append(
+            "claim metrics adjudicate to NOT_SUPPORTED under the frozen claim specification"
+        )
+    elif (
+        claim_disposition is ClaimDisposition.INCONCLUSIVE
+        and computed_decision is VerificationDecision.ACCEPT
+    ):
         computed_decision = VerificationDecision.ABSTAIN
-        residual_risks.append("claim metrics remain inconclusive under the frozen claim specification")
-
-    if trace_artifact.decision is not computed_decision:
-        residual_risks.append("output/trace disagreement detected")
-        computed_decision = VerificationDecision.REJECT
+        residual_risks.append(
+            "claim metrics remain inconclusive under the frozen claim specification"
+        )
 
     return GroundedVerificationResultV2(
         response_hash=digest("SEMANTIC_RESPONSE", response),

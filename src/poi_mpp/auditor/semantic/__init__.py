@@ -1,9 +1,19 @@
 """Grounded semantic verification entrypoints."""
 
-from poi_mpp.auditor.semantic.calibration import fit_development_calibration
+from poi_mpp.auditor.semantic.calibration import (
+    fit_development_calibration,
+    fit_development_calibration_v2,
+    select_development_calibration_thresholds_v2,
+)
 from poi_mpp.auditor.semantic.models import (
+    CalibrationErrorLedgerV1,
+    CalibrationLeakageReportV1,
+    CalibrationLeakageStatus,
     ClaimVerificationOutcome,
     DevelopmentCalibrationExample,
+    DevelopmentCalibrationFitResultV2,
+    DevelopmentCalibrationObservationV2,
+    DevelopmentCalibrationThresholdSelectionV2,
     EvidenceAnnotation,
     EvidenceAnnotationKind,
     EvidenceRecord,
@@ -12,7 +22,13 @@ from poi_mpp.auditor.semantic.models import (
     NumericComparator,
     NumericExpectation,
     NumericFact,
+    SEMANTIC_CALIBRATION_ERROR_TAXONOMY_VERSION,
+    SEMANTIC_CALIBRATION_SELECTION_RULE_V2,
+    SemanticCalibrationErrorCode,
+    SemanticCalibrationErrorFamily,
     SemanticCalibrationArtifact,
+    SemanticCalibrationFreezeStatus,
+    SemanticCalibrationFreezeV2,
     SemanticLabelAuthority,
     SemanticOutcome,
     VerificationDecision,
@@ -21,8 +37,14 @@ from poi_mpp.auditor.semantic.models import (
 from poi_mpp.auditor.semantic.verifier import verify_grounded
 
 __all__ = [
+    "CalibrationErrorLedgerV1",
+    "CalibrationLeakageReportV1",
+    "CalibrationLeakageStatus",
     "ClaimVerificationOutcome",
     "DevelopmentCalibrationExample",
+    "DevelopmentCalibrationFitResultV2",
+    "DevelopmentCalibrationObservationV2",
+    "DevelopmentCalibrationThresholdSelectionV2",
     "EvidenceAnnotation",
     "EvidenceAnnotationKind",
     "EvidenceRecord",
@@ -31,11 +53,19 @@ __all__ = [
     "NumericComparator",
     "NumericExpectation",
     "NumericFact",
+    "SEMANTIC_CALIBRATION_ERROR_TAXONOMY_VERSION",
+    "SEMANTIC_CALIBRATION_SELECTION_RULE_V2",
+    "SemanticCalibrationErrorCode",
+    "SemanticCalibrationErrorFamily",
     "SemanticCalibrationArtifact",
+    "SemanticCalibrationFreezeStatus",
+    "SemanticCalibrationFreezeV2",
     "SemanticLabelAuthority",
     "SemanticOutcome",
     "VerificationDecision",
     "VerificationMode",
     "fit_development_calibration",
+    "fit_development_calibration_v2",
+    "select_development_calibration_thresholds_v2",
     "verify_grounded",
 ]

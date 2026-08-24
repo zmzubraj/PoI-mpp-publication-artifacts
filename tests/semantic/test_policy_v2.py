@@ -1,7 +1,14 @@
 import pytest
 from pydantic import ValidationError
 
-from poi_mpp.auditor.semantic.models import SemanticOutcome, VerificationDecision, VerificationMode
+from poi_mpp.auditor.semantic.models import (
+    SemanticCalibrationFreezeStatus,
+    SemanticCalibrationFreezeV2,
+    SemanticOutcome,
+    VerificationDecision,
+    VerificationMode,
+    semantic_calibration_taxonomy_hash,
+)
 from poi_mpp.auditor.semantic.policy_v2 import (
     SEMANTIC_POLICY_V2_DOMAIN,
     SemanticPolicyV2,
@@ -24,6 +31,8 @@ def _policy(**overrides: object) -> dict[str, object]:
         "task_payload_hash": _hash("6"),
         "prompt_template_hash": _hash("7"),
         "calibration_hash": _hash("8"),
+        "calibration_error_ledger_hash": _hash("9"),
+        "confirmatory_leakage_report_hash": _hash("a"),
         "mode": "CONFIRMATORY",
         "calibration_split": "DEVELOPMENT",
         "support_threshold": 0.75,
@@ -45,6 +54,34 @@ def _policy(**overrides: object) -> dict[str, object]:
     }
     payload.update(overrides)
     return payload
+
+
+def _freeze(**overrides: object) -> SemanticCalibrationFreezeV2:
+    payload: dict[str, object] = {
+        "status": SemanticCalibrationFreezeStatus.FROZEN_DEVELOPMENT_ONLY.value,
+        "development_dataset_manifest_hash": _hash("a"),
+        "claim_spec_hash": _hash("1"),
+        "prompt_template_hash": _hash("7"),
+        "model_manifest_hash": _hash("4"),
+        "runtime_environment_hash": _hash("5"),
+        "accept_example_count": 50,
+        "reject_example_count": 50,
+        "abstain_example_count": 20,
+        "error_taxonomy_version": "POI_MPP_SEMANTIC_CALIBRATION_ERROR_TAXONOMY_V1",
+        "support_threshold": 0.75,
+        "reject_threshold": 0.25,
+        "minimum_calibrated_confidence": 0.60,
+        "selection_rule_id": "TRI_STATE_ACCURACY_FAIL_CLOSED_V1",
+        "example_count": 120,
+        "output_schema_hash": _hash("d"),
+        "contradiction_policy_hash": _hash("e"),
+        "error_recovery_policy_hash": _hash("f"),
+        "error_ledger_hash": _hash("b"),
+        "leakage_report_hash": _hash("c"),
+        "error_taxonomy_hash": semantic_calibration_taxonomy_hash(),
+    }
+    payload.update(overrides)
+    return SemanticCalibrationFreezeV2.model_validate(payload)
 
 
 def test_policy_v2_is_immutable_and_forbids_unknown_fields() -> None:
@@ -148,6 +185,36 @@ def test_policy_v2_rejects_missing_or_mutated_frozen_inputs() -> None:
     mutated["prompt_template_hash"] = _hash("9")
     with pytest.raises(ValueError, match="prompt_template_hash"):
         policy.assert_frozen_inputs(mutated)
+
+
+def test_policy_v2_rejects_threshold_or_hash_drift_from_calibration_freeze() -> None:
+    freeze = _freeze()
+    policy = SemanticPolicyV2.model_validate(_policy(calibration_hash=freeze.content_hash))
+
+    policy.assert_calibration_freeze(freeze)
+
+    threshold_drift_policy = SemanticPolicyV2.model_validate(
+        _policy(calibration_hash=freeze.content_hash, support_threshold=0.80)
+    )
+    with pytest.raises(ValueError, match="support_threshold"):
+        threshold_drift_policy.assert_calibration_freeze(freeze)
+
+    with pytest.raises(ValueError, match="calibration_hash"):
+        policy.assert_calibration_freeze(
+            _freeze(output_schema_hash=_hash("0"))
+        )
+
+
+def test_policy_v2_rejects_non_frozen_calibration_freeze_status() -> None:
+    freeze = _freeze()
+    policy = SemanticPolicyV2.model_validate(_policy(calibration_hash=freeze.content_hash))
+
+    with pytest.raises(ValueError, match="FROZEN_DEVELOPMENT_ONLY"):
+        policy.assert_calibration_freeze(
+            _freeze(
+                status=SemanticCalibrationFreezeStatus.READY_FOR_DATA.value,
+            )
+        )
 
 
 def test_policy_v2_enforces_output_trace_agreement_and_origin_policy() -> None:
