@@ -20,6 +20,7 @@ interface Vm {
     function assume(bool condition) external;
     function load(address target, bytes32 slot) external view returns (bytes32 data);
     function store(address target, bytes32 slot, bytes32 value) external;
+    function readFile(string calldata path) external returns (string memory data);
 }
 
 abstract contract MinimalTest {

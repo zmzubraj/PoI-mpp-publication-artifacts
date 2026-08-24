@@ -10,12 +10,23 @@ contract HashVectors is ProtocolKernelBase {
         0x6cc38e7d8ed382ce80d3142fef6db5d65f77e5e7c13bed9b732212ad35c3f55f;
     bytes32 internal constant EXPECTED_RESPONSE_COMMITMENT =
         0xcd90bb210febc07e2db63ffaa2297d921e3c520e52ccf525df89d089dd3ed66b;
+    bytes32 internal constant EXPECTED_TASK_ENVELOPE_V2_ROOT =
+        0x5b37c42cc679b1d5c9f7dfb38729902bbfe9859269bba604d5dc809a267ebc48;
 
     function testCommitmentVectorsMatchExpectedConstants() public view {
         (bytes32 taskCommitment_, bytes32 modelCommitment_, bytes32 responseCommitment_) = witnessBaselineCommitment();
         assertEq(taskCommitment_, EXPECTED_TASK_COMMITMENT, "task commitment");
         assertEq(modelCommitment_, EXPECTED_MODEL_COMMITMENT, "model commitment");
         assertEq(responseCommitment_, EXPECTED_RESPONSE_COMMITMENT, "response commitment");
+    }
+
+    function testTaskEnvelopeV2CanonicalBytesMatchPythonRoot() public {
+        bytes memory canonical = bytes(vm.readFile("test/fixtures/task_envelope_v2_canonical.txt"));
+        assertTrue(canonical.length > 0 && canonical[canonical.length - 1] == 0x0a, "fixture newline");
+        assembly ("memory-safe") {
+            mstore(canonical, sub(mload(canonical), 1))
+        }
+        assertEq(sha256(canonical), EXPECTED_TASK_ENVELOPE_V2_ROOT, "TaskEnvelopeV2 taskRoot");
     }
 
     function testResponseCommitmentIgnoresEnvelopeHeights() public {

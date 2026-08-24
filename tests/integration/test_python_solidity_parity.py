@@ -24,10 +24,12 @@ from poi_mpp.protocol.types import (
     TaskSpec,
     TransitionContext,
 )
+from poi_mpp.protocol.task_envelope import TaskEnvelopeScopeV2, TaskEnvelopeV2
 
 
 ROOT = Path(__file__).resolve().parents[2]
 VECTORS = ROOT / "tests" / "fixtures" / "protocol_vectors.json"
+TASK_ENVELOPE_V2_CANONICAL = ROOT / "contracts" / "test" / "fixtures" / "task_envelope_v2_canonical.txt"
 
 
 def _load_vectors() -> dict[str, object]:
@@ -71,6 +73,32 @@ def _event(payload: dict[str, object]):
 
 def test_protocol_vectors_fixture_exists():
     assert VECTORS.is_file()
+
+
+def test_task_envelope_v2_root_matches_foundry_canonical_fixture() -> None:
+    word = lambda digit: f"0x{digit * 64}"
+    envelope = TaskEnvelopeV2(
+        claim_spec_hash=word("1"),
+        task_payload_hash=word("2"),
+        semantic_policy_hash=word("3"),
+        dataset_manifest_hash=word("4"),
+        authority_registry_snapshot_hash=word("5"),
+        model_manifest_hash=word("6"),
+        runtime_environment_hash=word("7"),
+        evidence_origin_policy_hash=word("8"),
+        experiment_protocol_hash=word("9"),
+        epoch=7,
+        expiry=500,
+        scope=TaskEnvelopeScopeV2(
+            publication_scope="E3_CONFIRMATORY_PUBLICATION_V2",
+            authorization_scope="PUBLICATION_EVIDENCE_AUTHORIZED",
+            evidence_origin="REAL_MODEL_EXECUTION",
+            task_class=1,
+        ),
+    )
+
+    assert TASK_ENVELOPE_V2_CANONICAL.read_bytes().removesuffix(b"\n") == envelope.canonical_bytes()
+    assert envelope.task_root == "0x5b37c42cc679b1d5c9f7dfb38729902bbfe9859269bba604d5dc809a267ebc48"
 
 
 def test_protocol_vectors_include_commitment_state_and_credit_sections():
