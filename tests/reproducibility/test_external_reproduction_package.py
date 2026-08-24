@@ -26,6 +26,9 @@ def test_external_reproduction_manifest_is_deterministic_and_fail_closed() -> No
     assert payload["input_count"] == len(payload["inputs"])
     assert all(len(item["sha256"]) == 64 for item in payload["inputs"])
     assert all(not item["path"].startswith("results/publication/") for item in payload["inputs"])
+    paths = {item["path"] for item in payload["inputs"]}
+    assert "docs/paper_artifacts/final/review/FIGURE_TABLE_FIDELITY_LEDGER.csv" in paths
+    assert "docs/paper_artifacts/final/review/FIGURE_TABLE_INTEGRITY_QA.md" in paths
 
 
 def test_external_reproduction_handoff_requires_real_identity_and_signature() -> None:

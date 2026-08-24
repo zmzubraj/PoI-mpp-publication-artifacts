@@ -48,6 +48,27 @@ Official sources:
 - Guide for Authors: https://www.sciencedirect.com/journal/blockchain-research-and-applications/publish/guide-for-authors
 - Aims and Scope: https://www.sciencedirect.com/journal/blockchain-research-and-applications
 
+Current policy record:
+
+- fees/access model: the journal is open access. Its official open-access page
+  lists a nominal full-length article publishing charge of USD 1,600 and, as
+  checked on the date above, states that Zhejiang University Press covers the
+  charge for accepted peer-reviewed submissions. This coverage is time-sensitive
+  and must be rechecked before submission.
+- data/code policy: the guide encourages depositing research data in a relevant
+  repository, linking or citing the dataset, and explaining any inability to
+  share. Software used in the work should be cited as a research output.
+- AI policy: generative-AI use in manuscript preparation must be declared in the
+  required section; AI tools may not be listed as authors. This repository's AI
+  assistance still requires an accountable-author-approved, fact-specific
+  disclosure.
+- review/anonymity model: single-anonymized peer review; suitable manuscripts
+  are normally sent to at least two independent expert reviewers.
+
+Official access/fee source:
+
+- Open access options: https://www.sciencedirect.com/journal/blockchain-research-and-applications/publish/open-access-options
+
 Current blocking fit issue: the manuscript architecture fits, but E3 remains `WAITING_EXTERNAL`, E1/E2 remain inconclusive pilots, independently signed
 domain review is absent, and author declarations are unapproved. The current
 bundle therefore does not satisfy the scientific or accountable-human submission
@@ -127,6 +148,9 @@ humans must approve and provide:
 The recommended default is `Blockchain: Research and Applications / full length
 research paper`, but that recommendation is not a venue-selection decision and
 does not authorize submission.
+
+Acceptance probability: `NOT ESTIMABLE`. No target-matched, current calibration
+dataset is available, so this portfolio does not invent acceptance odds.
 
 ## Next gated transition
 

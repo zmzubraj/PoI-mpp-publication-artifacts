@@ -41,6 +41,11 @@ def test_target_venue_portfolio_is_dated_bounded_and_source_linked() -> None:
         "https://www.computer.org/digital-library/journals/oj/cfp-open-journal"
         in content
     )
+    assert "fees/access model" in content
+    assert "data/code policy" in content
+    assert "AI policy" in content
+    assert "review/anonymity model" in content
+    assert "NOT ESTIMABLE" in content
     assert "E3 remains `WAITING_EXTERNAL`" in content
     assert "does not authorize submission" in content
 

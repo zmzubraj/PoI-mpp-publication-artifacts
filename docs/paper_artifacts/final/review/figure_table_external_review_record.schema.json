@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {"enum": ["PASS", "REMEDIATE", "BLOCKED"]},
+    "discrepancies": {"items": {"minLength": 1, "type": "string"}, "type": "array"},
+    "independence_basis": {"minLength": 1, "type": "string"},
+    "reviewed_artifact_ids": {"items": {"minLength": 2, "type": "string"}, "minItems": 17, "type": "array"},
+    "reviewed_ledger_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "reviewer_identity": {"minLength": 1, "type": "string"},
+    "schema_version": {"const": "POI_MPP_FIGURE_TABLE_EXTERNAL_REVIEW_V1"},
+    "scope_statement": {"minLength": 1, "type": "string"}
+  },
+  "required": [
+    "schema_version",
+    "reviewer_identity",
+    "independence_basis",
+    "reviewed_ledger_sha256",
+    "reviewed_artifact_ids",
+    "discrepancies",
+    "decision",
+    "scope_statement"
+  ],
+  "type": "object"
+}

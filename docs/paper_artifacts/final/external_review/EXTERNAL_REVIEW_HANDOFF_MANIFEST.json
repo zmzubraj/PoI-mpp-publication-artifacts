@@ -6,7 +6,7 @@
     "independent_domain_expert_review": "WAITING_EXTERNAL",
     "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE"
   },
-  "review_input_count": 99,
+  "review_input_count": 102,
   "review_inputs": [
     {
       "path": "Makefile",
@@ -89,8 +89,8 @@
     {
       "path": "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA",
-      "sha256": "3a7e3b7d698914f685dcd0b80316bb04364fe1e9f85d8d36d8ec8cbda40d34b6",
-      "size_bytes": 28665
+      "sha256": "270e737474ed6522fa6376bbede3d66cad912c104232c1ab0b60748537ff850d",
+      "size_bytes": 29293
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/README.md",
@@ -195,6 +195,18 @@
       "size_bytes": 2331
     },
     {
+      "path": "docs/paper_artifacts/final/review/FIGURE_TABLE_FIDELITY_LEDGER.csv",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "213fa134d188c2730d20d73363eebc823e4e8e0e59d84bbe4c8334eb3e27f917",
+      "size_bytes": 5659
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/FIGURE_TABLE_INTEGRITY_QA.md",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "6f2c138c7db7bee9981493f2f1d3a8dc2218ff6892a4675f6bc89dcf6b97c843",
+      "size_bytes": 2438
+    },
+    {
       "path": "docs/paper_artifacts/final/review/MPP_ALIGNMENT_AND_SCORECARD.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
       "sha256": "015bb8107fceddb498fb25f7661a06d21a52b3efc4812b76e43b687a94ed9fc2",
@@ -221,8 +233,14 @@
     {
       "path": "docs/paper_artifacts/final/review/TARGET_VENUE_PORTFOLIO.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "3b5332cf1a9251ae3e2720225aacc56967167704c52e73495c8d1ba5ad2264da",
-      "size_bytes": 6193
+      "sha256": "25b7ad9d5132a5f86e8370a59e9754ed37de7d73f0f8811199910e4129a75cd4",
+      "size_bytes": 7509
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/figure_table_external_review_record.schema.json",
+      "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
+      "sha256": "74a145b451ec1b30a54309f997e5a2fdb2eb9d9fb4f1510fba73878a05542859",
+      "size_bytes": 942
     },
     {
       "path": "docs/paper_artifacts/final/tables/README.md",
@@ -563,8 +581,8 @@
     {
       "path": "scripts/build_external_review_handoff.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "a81f999e27bc10a04d6ac4b7f206914f49fa5ea61e7cc7abda64a38bf5b22cc6",
-      "size_bytes": 10000
+      "sha256": "f2cdb51b24626a42544456b2e3852f682e0f6ab37d7b247c7c98aee7c08897a0",
+      "size_bytes": 10233
     },
     {
       "path": "scripts/build_paper_docx.js",
@@ -604,6 +622,6 @@
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "33b4cd5e25d499d11b4b90ee4158fe15cfb064aadabd296e20d717bac65e2272",
+  "self_digest": "8667ae8cf64c631cb8583d0cd1080ed4aea84d0eece344da8c3b926f27719691",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

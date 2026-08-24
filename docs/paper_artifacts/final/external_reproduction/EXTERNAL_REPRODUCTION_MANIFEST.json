@@ -2,7 +2,7 @@
   "authority_boundary": "This manifest packages inputs only. It does not prove execution, identity, independence, agreement, scientific validity, or publication readiness.",
   "canonical_publication_manifest_sha256": "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf",
   "independent_reproduction_complete": false,
-  "input_count": 154,
+  "input_count": 157,
   "inputs": [
     {
       "path": "Makefile",
@@ -165,9 +165,24 @@
       "size_bytes": 2331
     },
     {
+      "path": "docs/paper_artifacts/final/review/FIGURE_TABLE_FIDELITY_LEDGER.csv",
+      "sha256": "213fa134d188c2730d20d73363eebc823e4e8e0e59d84bbe4c8334eb3e27f917",
+      "size_bytes": 5659
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/FIGURE_TABLE_INTEGRITY_QA.md",
+      "sha256": "6f2c138c7db7bee9981493f2f1d3a8dc2218ff6892a4675f6bc89dcf6b97c843",
+      "size_bytes": 2438
+    },
+    {
       "path": "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
       "sha256": "2eb14a7cd5e3ab1922e535215545febdac318c30fe89db641ac0e1d4ea6a91df",
       "size_bytes": 23966
+    },
+    {
+      "path": "docs/paper_artifacts/final/review/figure_table_external_review_record.schema.json",
+      "sha256": "74a145b451ec1b30a54309f997e5a2fdb2eb9d9fb4f1510fba73878a05542859",
+      "size_bytes": 942
     },
     {
       "path": "docs/paper_artifacts/final/tables/README.md",
@@ -381,8 +396,8 @@
     },
     {
       "path": "scripts/build_external_reproduction_package.py",
-      "sha256": "ca9baa812f656f17c2d43c556462c397149d7c0ccb6b4f36243cbed251c036da",
-      "size_bytes": 6126
+      "sha256": "a73257b0c0b6f9d793cf7ffbb3d6e19fdc90af72aae4902516acb1d955fa7582",
+      "size_bytes": 6359
     },
     {
       "path": "scripts/build_paper_docx.js",
@@ -783,6 +798,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "2cfaa9fbc99b38cb61c5d1440a67ae193a0d124d8c5721f051b2aa49c9f5267a",
+  "self_digest": "b5676c5f2596e61b1060202efacb3dcc5a1c6b4d63573fa1abf51b5ce0a0ed9e",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

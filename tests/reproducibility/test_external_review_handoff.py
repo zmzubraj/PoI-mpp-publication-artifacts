@@ -56,6 +56,9 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
         in paths
     )
     assert "docs/paper_artifacts/final/external_reproduction/CLEAN_ROOM_PROTOCOL.md" in paths
+    assert "docs/paper_artifacts/final/review/FIGURE_TABLE_FIDELITY_LEDGER.csv" in paths
+    assert "docs/paper_artifacts/final/review/FIGURE_TABLE_INTEGRITY_QA.md" in paths
+    assert "docs/paper_artifacts/final/review/figure_table_external_review_record.schema.json" in paths
     assert "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json" in paths
     assert "scripts/build_e3_authority_package.py" in paths
     assert "scripts/verify_e3_result_attestation.py" in paths
