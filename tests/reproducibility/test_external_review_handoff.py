@@ -30,7 +30,10 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert payload["schema_version"] == "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1"
     assert payload["status"] == "UNSIGNED_REVIEW_INPUT_ONLY"
     assert payload["external_gates"] == {
-        "e3_semantic_evaluator_authority": "WAITING_EXTERNAL",
+        "e3_pre_execution_authority": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+        "e3_post_execution_attestation": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+        "e3_c3_disposition": "NOT_SUPPORTED",
+        "e3_evaluator_identity_independence_key_custody": "WAITING_EXTERNAL",
         "independent_domain_expert_review": "WAITING_EXTERNAL",
         "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE",
     }
@@ -69,6 +72,11 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert "scripts/build_e3_authority_package.py" in paths
     assert "scripts/build_novelty_package.py" in paths
     assert "scripts/verify_e3_result_attestation.py" in paths
+    assert "scripts/import_verified_e3_result.py" in paths
+    assert (
+        "results/publication/e3-confirmatory-real-20260824/verification_receipt.json"
+        in paths
+    )
     assert "package.json" in paths
     assert "package-lock.json" in paths
     assert "docs/paper_artifacts/final/visuals_algorithms/rendered/quantitative/F8_da_withholding.png" in paths
@@ -108,16 +116,18 @@ def test_external_review_handoff_check_rejects_stale_manifest(tmp_path: Path) ->
     assert "stale or non-canonical" in completed.stderr
 
 
-def test_e3_stale_signature_note_binds_current_request_and_extracted_verification() -> None:
+def test_e3_historical_signature_note_binds_signed_request_and_extracted_verification() -> None:
     note = (
         REPO_ROOT
         / "docs/paper_artifacts/final/external_review/E3_STALE_SIGNATURE_HANDOFF_NOTE.md"
     ).read_text(encoding="utf-8")
-    request_manifest = (
-        REPO_ROOT
-        / "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json"
+    receipt = json.loads(
+        (
+            REPO_ROOT
+            / "results/publication/e3-confirmatory-real-20260824/verification_receipt.json"
+        ).read_text(encoding="utf-8")
     )
-    request_sha256 = hashlib.sha256(request_manifest.read_bytes()).hexdigest()
+    request_sha256 = receipt["authority_verification"]["request_manifest_sha256"]
 
     assert f"`reviewed_request_manifest.sha256`: `{request_sha256}`" in note
     assert "cd _verify" in note

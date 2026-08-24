@@ -2,7 +2,7 @@
 
 Status: `DEVELOPMENTAL_QA_ONLY`
 
-Audit date: 2026-08-25
+Audit date: 2026-08-24
 
 This audit binds the final figure/table derivatives to editable sources and
 canonical data. It is an AI-assisted developmental review, not independent
@@ -12,8 +12,11 @@ scientific, accessibility, image-integrity, or publisher approval.
 
 - SHA-256, file presence, and explicit source-path mapping are recorded in
   `FIGURE_TABLE_FIDELITY_LEDGER.csv`.
-- Quantitative figures F5, F6, and F8-F12 retain their real-model, simulation,
+- Quantitative figures F5-F12 retain their real-model, simulation,
   or local-Foundry evidence ceilings; no visual promotes an inconclusive result.
+- F7 is hash-identical to the externally attested E3 SVG and remains a negative
+  bounded result: n=8, invalid n=2, FAR 0.500 exceeds `alpha_sem=0.25`, and C3
+  is `NOT_SUPPORTED`. Signature validity does not prove evaluator independence.
 - Conceptual figures remain separate from quantitative evidence.
 - Editable CSV table sources, Mermaid sources, canonical JSON/CSV data, and the
   deterministic figure builder are preserved.

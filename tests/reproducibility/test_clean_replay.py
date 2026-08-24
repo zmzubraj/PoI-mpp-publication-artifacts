@@ -131,7 +131,13 @@ def test_candidate_only_replay_spec_preserves_canonical_publication_inputs(tmp_p
         e8_contract_relative_path="inputs/configs/confirmatory/e8.yaml",
     )
 
-    assert set(spec["sources"]) == {"E1", "E2", "E4", "E5", "E6", "E7", "E8"}
+    assert set(spec["sources"]) == {"E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8"}
+    assert spec["sources"]["E3"]["artifact_root_path"] == (
+        "results/publication/e3-confirmatory-real-20260824/source"
+    )
+    assert spec["sources"]["E3"]["verified_receipt_path"] == (
+        "results/publication/e3-confirmatory-real-20260824/verification_receipt.json"
+    )
     assert spec["sources"]["E1"]["rows_path"] == "results/publication/e1-real-11de165/e1_cost_rows.parquet"
     assert spec["sources"]["E2"]["summary_path"] == "results/publication/e2-real-eb866c2/e2_summary.json"
     assert spec["sources"]["E5"]["rows_path"] == "results/publication/e5-11de165/e5_rows.json"
@@ -557,7 +563,9 @@ def test_reproduce_current_workspace_is_incomplete_and_writes_no_frozen_sentinel
     manifest = _read_json(candidate_root / "manifest.json")
     assert manifest["completeness"] == "INCOMPLETE"
     blockers = "\n".join(str(item) for item in payload["blockers"])
-    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" in blockers
+    assert "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" not in blockers
+    assert "WAITING_EXTERNAL_EVALUATOR_IDENTITY_INDEPENDENCE_KEY_CUSTODY" in blockers
+    assert "cryptographic validity does not prove evaluator identity" in blockers
     assert "WAITING_LOCAL_MODEL_ARTIFACT" not in blockers
     assert "manual scientific review record is absent" in blockers
     assert "results/tmp/candidates" in payload["candidate_relative_path"]

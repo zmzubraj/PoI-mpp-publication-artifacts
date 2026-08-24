@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require("fs");
+const crypto = require("crypto");
 const path = require("path");
 const {
   AlignmentType,
@@ -34,7 +35,7 @@ const DEFAULT_OUTPUT = path.join(
   "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx",
 );
 const MANIFEST_PATH = path.join(REPO_ROOT, "publication/artifact_manifest.json");
-const MANIFEST_SHA256 = "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf";
+const MANIFEST_SHA256 = crypto.createHash("sha256").update(fs.readFileSync(MANIFEST_PATH)).digest("hex");
 
 const sourcePath = path.resolve(process.argv[2] || DEFAULT_SOURCE);
 const outputPath = path.resolve(process.argv[3] || DEFAULT_OUTPUT);
@@ -323,8 +324,14 @@ function markdownToDocx(markdown) {
 async function main() {
   const markdown = fs.readFileSync(sourcePath, "utf8");
   const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
-  if (!Array.isArray(manifest.outputs) || manifest.outputs.length !== 36) {
-    throw new Error("canonical manifest must contain exactly 36 outputs");
+  if (!Array.isArray(manifest.outputs)) {
+    throw new Error("canonical manifest must contain an outputs array");
+  }
+  for (const artifactId of ["T4", "T8", "F7"]) {
+    const output = manifest.outputs.find((candidate) => candidate.artifact_id === artifactId);
+    if (!output || output.experiment_id !== "E3" || output.disposition !== "NOT_SUPPORTED" || output.origin !== "REAL_MODEL_EXECUTION") {
+      throw new Error(`canonical manifest must contain E3 ${artifactId} as NOT_SUPPORTED REAL_MODEL_EXECUTION`);
+    }
   }
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
@@ -349,7 +356,7 @@ async function main() {
       spacing: { before: 240, after: 240 },
       children: [
         new TextRun({
-          text: "NOT PUBLICATION-READY: E3 external evaluator authority, authenticated independent manual review, and the freeze sentinel remain open.",
+          text: "NOT PUBLICATION-READY: E3 is externally attested but C3 is NOT_SUPPORTED; evaluator identity/independence/key custody, authenticated independent review, and the freeze sentinel remain open.",
           bold: true,
           size: 22,
           color: "7F6000",

@@ -14,7 +14,7 @@ Current claim status:
 |---|---|---|
 | `C1` | inconclusive | canonical authorized real-model fixed-order pilot; the design ceiling prevents support for C1 |
 | `C2` | inconclusive | canonical authorized real-model narrow pilot; the tested scope prevents support for C2 |
-| `C3` | waiting external | E3 confirmatory evaluator authority and evidence are absent |
+| `C3` | `NOT_SUPPORTED` | externally authorized and post-execution-attested `REAL_MODEL_EXECUTION`; FAR 0.500 (1/2) exceeds frozen `alpha_sem=0.25`; n=8 with only 2 invalid items; signature validity does not itself prove evaluator independence |
 | `C4` | inconclusive | canonical declared-outcome-playback simulation, not executed reconstruction |
 | `C5` | supported within simulation scope | canonical reproducible simulation only |
 | `C6` | supported within simulation scope | canonical reproducible simulation only |
@@ -34,7 +34,8 @@ The external reviewer should be given read access to the canonical manifest-clos
 | `../tables/T7_limitations_and_nonclaims.md` | explicit non-claims |
 | `../../../../publication/artifact_manifest.json` | canonical artifact closure, hashes, dispositions, and omissions |
 | `../../../../publication/tables/claim_matrix.json` | canonical claim-to-artifact status matrix |
-| `../../../../publication/tables/omissions.json` | explicit E3 omission ledger |
+| `../../../../publication/tables/omissions.json` | explicit omission ledger; E3 is not omitted after verified import |
+| `../../../../results/publication/e3-confirmatory-real-20260824/verification_receipt.json` | canonical E3 authority/attestation/artifact lineage and negative C3 adjudication |
 | `EXTERNAL_REVIEW_HANDOFF_MANIFEST.json` | deterministic selection and hash closure for all review inputs |
 | `../review/SUBMISSION_READINESS_VALIDATION.md` | developmental killer-question audit and unresolved submission blockers |
 
@@ -52,7 +53,7 @@ The candidate `manifest.json` and `verification_report.json` are mutable freeze-
 
 The external reviewer should answer at least the following questions:
 
-1. Does the manuscript preserve the current claim boundary without upgrading `C1`-`C6`?
+1. Does the manuscript preserve the current claim boundary without upgrading `C1`, `C2`, `C4`, `C5`, or `C6`, and retain `C3=NOT_SUPPORTED`?
 2. Does the manuscript preserve `C7` as local Foundry boundedness only?
 3. Does the manuscript preserve `C8` as reproducible simulation and inconclusive?
 4. Are denominators and scope limits explicit where quantitative evidence is mentioned?

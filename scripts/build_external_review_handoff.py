@@ -90,6 +90,8 @@ EXACT_INPUTS = (
     "scripts/build_novelty_package.py",
     "scripts/verify_e3_authority.py",
     "scripts/verify_e3_result_attestation.py",
+    "scripts/import_verified_e3_result.py",
+    "results/publication/e3-confirmatory-real-20260824/verification_receipt.json",
     "src/poi_mpp/experiments/e3_semantic.py",
     "src/poi_mpp/reporting/e3_artifacts.py",
 )
@@ -193,13 +195,17 @@ def build_manifest() -> dict[str, Any]:
         "review_input_count": len(entries),
         "review_inputs": entries,
         "external_gates": {
-            "e3_semantic_evaluator_authority": "WAITING_EXTERNAL",
+            "e3_pre_execution_authority": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+            "e3_post_execution_attestation": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+            "e3_c3_disposition": "NOT_SUPPORTED",
+            "e3_evaluator_identity_independence_key_custody": "WAITING_EXTERNAL",
             "independent_domain_expert_review": "WAITING_EXTERNAL",
             "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE",
         },
         "authority_boundary": (
-            "This manifest binds review inputs only; it does not create evaluator authority, "
-            "independent review, a signature, or publication readiness."
+            "This manifest binds review inputs only. E3 signature verification authenticates exact files "
+            "and hashes, but does not prove evaluator identity, independence, expertise, private-key "
+            "custody, independent scientific review, or publication readiness."
         ),
     }
     manifest["self_digest"] = _sha256(_canonical_bytes(manifest))

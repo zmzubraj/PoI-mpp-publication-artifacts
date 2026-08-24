@@ -2,14 +2,17 @@
 
 ## Canonical publication-artifact status
 
-Source of truth: `publication/artifact_manifest.json`, SHA-256
-`7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`.
+Source of truth: `publication/artifact_manifest.json`; verify its current
+SHA-256 mechanically rather than copying a digest from prose.
 
-The canonical bundle contains result artifacts for E1, E2, and E4-E8. It is
+The canonical bundle contains result artifacts for E1-E8. It is
 **not publication-ready**. The remaining non-compensating blockers are:
 
-- E3 is `WAITING_EXTERNAL`: T4, T8, and F7 have no evidence because
-  `WAITING_EXTERNAL_EVALUATOR_AUTHORITY` remains unresolved.
+- E3 is an externally authorized and post-execution-attested real-model run.
+  FAR 0.500 (1/2) exceeds frozen `alpha_sem=0.25`, so C3 is `NOT_SUPPORTED`.
+  The sample is only n=8 with invalid n=2 and does not establish general
+  semantic reliability. Evaluator identity, independence, expertise, and
+  private-key custody still require accountable out-of-band confirmation.
 - An authenticated independent manual review is absent. AI output, AI approval,
   and user approval are not independent review.
 - The publication-freeze sentinel is absent. Its absence cannot be repaired by
@@ -26,7 +29,7 @@ consensus client.
 |---|---|---|
 | C1 / E1 single-pass cost | T6, F5 | `INCONCLUSIVE`. Fixed-order real-model pilot: two paired observations and six measured rows. Mean two-run baseline is 5197.17125 ms; mean MPP single-pass is 2678.932229 ms; delta is 2518.239021 ms with bootstrap interval [2440.923209, 2595.554833]. The fixed order caps the result at `INCONCLUSIVE`; it does not support a general cost-advantage claim. |
 | C2 / E2 execution audit | T7, F6 | `INCONCLUSIVE`. Narrow real-model pilot: 4/4 attacked observations detected, three exact surfaces plus one empirical floating-point surface, Wilson interval [0.5101091635454027, 1.0], and one honest control with no false positive. This is not a general execution-audit effectiveness claim. |
-| C3 / E3 semantic verifier | T4, T8, F7 | `WAITING_EXTERNAL`. No evidence artifact; external evaluator authority is required before semantic performance may be reported. |
+| C3 / E3 semantic verifier | T4, T8, F7 | `NOT_SUPPORTED`. Externally attested `REAL_MODEL_EXECUTION`: FAR 0.500 (1/2), FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178; FAR exceeds frozen `alpha_sem=0.25`. With n=8 and invalid n=2, no general semantic-reliability claim is admissible. |
 | C4 / E4 data availability | T9, F8 | `INCONCLUSIVE`. Declared playback simulation only; it is not executed reconstruction evidence and does not support C4. |
 | C5 / E5 watcher/dispute economics | T10 | `SUPPORTED` only for the declared reproducible simulation scenarios. No figure is present; do not generalize to production watcher economics. |
 | C6 / E6 Sybil/task-budget neutrality | T11, F9, F10 | `SUPPORTED` only for the declared reproducible simulation scenarios. It is not open-network Sybil-resistance evidence. |
@@ -38,5 +41,6 @@ consensus client.
 Paper text, tables, figures, and captions must preserve the canonical
 disposition, evidence origin, scope, and explicit limits for each artifact. A
 `SUPPORTED` simulation result is not real-world deployment evidence; a local
-Foundry measurement is not a mainnet claim; and no artifact may compensate for
-the E3 authority, independent-review, or freeze-sentinel blockers.
+Foundry measurement is not a mainnet claim; cryptographic verification is not
+proof of evaluator independence; and no artifact may compensate for the
+independent-review or freeze-sentinel blockers.

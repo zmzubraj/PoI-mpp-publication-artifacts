@@ -1,7 +1,7 @@
 | Limitation ID | Statement | Affected surface | Current status | Current implication |
 |---|---|---|---|---|
 | `L1` | Canonical E1, E2, and E4-E8 artifacts exist, but their recorded dispositions and scope ceilings are non-compensating. | E1 to E8 | Open | Preserve `INCONCLUSIVE`, simulation-only, or local-Foundry-only language exactly; do not convert artifact presence into general claim support. |
-| `L2` | E3 T4/T8/F7 remain `WAITING_EXTERNAL` because `WAITING_EXTERNAL_EVALUATOR_AUTHORITY` is unresolved. | Semantic verification path | Open | No semantic performance claim is admissible. |
+| `L2` | E3 completed an externally authorized real-model run, but the result is `NOT_SUPPORTED` (FAR 0.500 (1/2) exceeds alpha_sem 0.25; FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178; n=8, invalid n=2). | Semantic verification path | Mitigated | The failure is documented as a negative result, not a general reliability claim. |
 | `L3` | The publication-freeze sentinel is absent. | Freeze state | Open | The canonical bundle is not publication-ready. |
 | `L4` | Accountable external manual scientific review is absent. | Independent review gate | Open | No independent-review completion claim is admissible. |
 | `L5` | E7 is a local Foundry measurement surface rather than an Ethereum mainnet cost claim. | C7 scope | Open | The paper may claim local boundedness evidence only. |

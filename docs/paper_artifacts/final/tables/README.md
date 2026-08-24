@@ -6,9 +6,11 @@ Boundary rules:
 
 - No fabricated or target-only result values appear here.
 - E1, E2, and E4-E8 have canonical result artifacts; their canonical dispositions and scope limits must be preserved.
-- E3 remains `WAITING_EXTERNAL` with no evidence for T4, T8, or F7.
+- E3 T4/T8/F7 are externally attested `REAL_MODEL_EXECUTION` artifacts with
+  C3 `NOT_SUPPORTED`; FAR 0.500 (1/2) exceeded `alpha_sem = 0.25`, FRR 0.167 (1/6),
+  ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178; n=8, invalid n=2.
 - E7 is local Foundry evidence only; E8 is explicitly `INCONCLUSIVE` reproducible simulation.
-- The bundle is not publication-ready until E3 external authority, authenticated independent manual review, and the freeze sentinel are resolved.
+- The bundle is not publication-ready until evaluator identity/independence/key-custody confirmation, authenticated independent manual review, external reproduction, and the freeze sentinel are resolved.
 - Conceptual architecture tables are separated from result-bearing tables.
 
 Files:

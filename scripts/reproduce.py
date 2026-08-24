@@ -47,6 +47,7 @@ TASK22_SCHEMA = "POI_MPP_FREEZE_BUNDLE_V1"
 CLAIM_SCHEMA = "POI_MPP_CLAIM_SUPPORT_MATRIX_V1"
 MANUAL_REVIEW_SCHEMA = "POI_MPP_MANUAL_REVIEW_V1"
 MANUAL_REVIEW_ABSENT = "manual scientific review record is absent"
+E3_IDENTITY_INDEPENDENCE_BLOCKER = "WAITING_EXTERNAL_EVALUATOR_IDENTITY_INDEPENDENCE_KEY_CUSTODY"
 BUNDLE_STATE_CANDIDATE = "CANDIDATE_VERIFIED"
 ALLOWED_CLAIM_DISPOSITIONS = {"SUPPORTED", "NOT_SUPPORTED", "INCONCLUSIVE"}
 EXPECTED_CLAIMS = {
@@ -317,6 +318,34 @@ def _report_spec(
             source_path = Path(value)
             if not source_path.is_absolute():
                 source_path = (REPO_ROOT / source_path).resolve()
+            if experiment_id == "E3" and key == "artifact_root_path":
+                if not source_path.is_dir():
+                    raise ValueError(
+                        f"publication_report source {experiment_id}.{key} is missing: {source_path}"
+                    )
+                staged_relative = PurePosixPath(value)
+                staged_path = input_root / staged_relative
+                for candidate in sorted(source_path.rglob("*")):
+                    if candidate.is_symlink():
+                        raise ValueError(
+                            f"publication_report source {experiment_id}.{key} may not contain symlinks: "
+                            f"{candidate}"
+                        )
+                    if candidate.is_dir():
+                        continue
+                    if not candidate.is_file():
+                        raise ValueError(
+                            f"publication_report source {experiment_id}.{key} contains a non-file: "
+                            f"{candidate}"
+                        )
+                    relative_candidate = candidate.relative_to(source_path)
+                    destination = staged_path / relative_candidate
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(candidate, destination)
+                staged_source[key] = _artifact_root_relative(
+                    str(staged_path.relative_to(staging_root))
+                )
+                continue
             if not source_path.is_file():
                 raise ValueError(f"publication_report source {experiment_id}.{key} is missing: {source_path}")
             staged_relative = PurePosixPath(value)
@@ -380,6 +409,28 @@ def _task21_blockers(staging_root: Path, *, full_mode: bool) -> tuple[tuple[str,
     staged_config = _sanitized_task21_config()
     _write_json(task21_config_path, staged_config)
     blocker, reasons = _verify_local_model_artifact(load_local_mpp_config(task21_config_path))
+    blocker_value = blocker.value
+    staged_e3_receipt = (
+        staging_root
+        / "inputs"
+        / "results"
+        / "publication"
+        / "e3-confirmatory-real-20260824"
+        / "verification_receipt.json"
+    )
+    if blocker.value == "WAITING_EXTERNAL_EVALUATOR_AUTHORITY" and staged_e3_receipt.is_file():
+        receipt = json.loads(staged_e3_receipt.read_text(encoding="utf-8"))
+        if (
+            receipt.get("status") != "VERIFIED_E3_IMPORTED"
+            or receipt.get("decision", {}).get("c3_disposition") != "NOT_SUPPORTED"
+            or receipt.get("decision", {}).get("alpha_sem") != "0.25"
+        ):
+            raise ValueError("staged E3 verification receipt does not preserve the canonical negative decision")
+        blocker_value = E3_IDENTITY_INDEPENDENCE_BLOCKER
+        reasons = (
+            f"{E3_IDENTITY_INDEPENDENCE_BLOCKER}: cryptographic validity does not prove evaluator identity, "
+            "independence, expertise, or private-key custody",
+        )
     status_path = staging_root / "task21" / "task21_blockers.json"
     _write_json(
         status_path,
@@ -387,7 +438,7 @@ def _task21_blockers(staging_root: Path, *, full_mode: bool) -> tuple[tuple[str,
             "schema_version": "POI_MPP_TASK21_BLOCKER_CHAIN_V1",
             "mode": "full" if full_mode else "candidate-only",
             "config_path": str(task21_config_path.relative_to(staging_root)),
-            "blocker": blocker.value,
+            "blocker": blocker_value,
             "blocker_chain": list(reasons),
         },
     )
@@ -486,13 +537,17 @@ def _stage_external_review_handoff(staging_root: Path) -> str:
         "review_input_count": len(staged_entries),
         "review_inputs": staged_entries,
         "external_gates": {
-            "e3_semantic_evaluator_authority": "WAITING_EXTERNAL",
+            "e3_pre_execution_authority": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+            "e3_post_execution_attestation": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+            "e3_c3_disposition": "NOT_SUPPORTED",
+            "e3_evaluator_identity_independence_key_custody": "WAITING_EXTERNAL",
             "independent_domain_expert_review": "WAITING_EXTERNAL",
             "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE",
         },
         "authority_boundary": (
-            "This manifest binds review inputs only; it does not create evaluator authority, "
-            "independent review, a signature, or publication readiness."
+            "This manifest binds review inputs only. E3 signature verification authenticates exact files "
+            "and hashes, but does not prove evaluator identity, independence, expertise, private-key "
+            "custody, independent scientific review, or publication readiness."
         ),
     }
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")

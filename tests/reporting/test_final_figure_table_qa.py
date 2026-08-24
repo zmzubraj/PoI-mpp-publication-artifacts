@@ -13,13 +13,14 @@ def test_figure_table_fidelity_ledger_covers_manuscript_outputs() -> None:
     ledger_path = REVIEW_ROOT / "FIGURE_TABLE_FIDELITY_LEDGER.csv"
     rows = list(csv.DictReader(ledger_path.open(encoding="utf-8", newline="")))
 
-    assert len(rows) == 17
+    assert len(rows) == 18
     assert {row["artifact_id"] for row in rows if row["artifact_type"] == "FIGURE"} == {
         "F1",
         "F2",
         "F4",
         "F5",
         "F6",
+        "F7",
         "F8",
         "F9",
         "F10",

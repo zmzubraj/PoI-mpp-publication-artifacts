@@ -551,6 +551,19 @@ def _report_spec_expected_files(bundle: LoadedBundle) -> set[str]:
                 continue
             if candidate.is_file():
                 expected.add(relative.as_posix())
+            elif candidate.is_dir():
+                for member in sorted(candidate.rglob("*")):
+                    if member.is_symlink():
+                        raise BundleVerificationError(
+                            f"report_spec directory source may not contain symlinks: {member}"
+                        )
+                    if member.is_dir():
+                        continue
+                    if not member.is_file():
+                        raise BundleVerificationError(
+                            f"report_spec directory source contains a non-file: {member}"
+                        )
+                    expected.add(member.relative_to(bundle_root).as_posix())
     return expected
 
 

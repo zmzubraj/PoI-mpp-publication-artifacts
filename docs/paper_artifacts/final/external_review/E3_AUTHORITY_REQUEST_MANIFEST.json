@@ -30,13 +30,13 @@
     },
     {
       "path": "docs/MAIN_RESULTS_TARGETS.md",
-      "sha256": "316c9e23ab7dec0b9d9138b53ac6a54e3d1698decf852ec1830b37ddea37c653",
-      "size_bytes": 3375
+      "sha256": "18fe42a058cf28470536ccbe63f54a7a6b99f7412905dae50d88627e171797c4",
+      "size_bytes": 3804
     },
     {
       "path": "docs/PAPER_ARTIFACT_MAP.md",
-      "sha256": "1fdc412cb6846e2cda3fb0bd0f0c8f96418144be99158a0896807b3c605215b5",
-      "size_bytes": 5227
+      "sha256": "44d54fe67867ac699a34411c40cac5be085e6f3e75467667c017a20436350885",
+      "size_bytes": 5421
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
@@ -55,18 +55,18 @@
     },
     {
       "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
-      "sha256": "7ec510264bd723844705c3de6988588e44823cf1998a641c0825eb0cad2299a7",
-      "size_bytes": 28234
+      "sha256": "cafb7c78ab834f64461371803b58db786aeae9758d39f3e6f88127a9f001f644",
+      "size_bytes": 29905
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
-      "sha256": "d2f4860bcef28358b3f299d62ac1e85a95e8ef2fd5851172610e3a3d8459c679",
-      "size_bytes": 3730
+      "sha256": "24bd1947b913888c1b3c6a24783e63025277557f65efd7db9cd67d16e979ccad",
+      "size_bytes": 4275
     },
     {
       "path": "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md",
-      "sha256": "366162b35463077577a7a5f02b2837e8e14cfd8a71ca00e4315ba5e9648bd377",
-      "size_bytes": 1723
+      "sha256": "5add0edf7dc90196c57297ace25d7d5222180503928cda8e4d38e522ffb4b21c",
+      "size_bytes": 1885
     },
     {
       "path": "experiments/e3_semantic_eval.py",
@@ -75,18 +75,18 @@
     },
     {
       "path": "publication/artifact_manifest.json",
-      "sha256": "7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf",
-      "size_bytes": 42901
+      "sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
+      "size_bytes": 49406
     },
     {
       "path": "publication/tables/claim_matrix.json",
-      "sha256": "7b4f18633847c850fafd330124b455d99be939a77428d77d43454a0d534f6965",
-      "size_bytes": 6860
+      "sha256": "6ac2e0b9caf04f38294bf9bdfff70a6175a32d4beaac2e88925f6d0bb4ee9a96",
+      "size_bytes": 8386
     },
     {
       "path": "publication/tables/omissions.json",
-      "sha256": "cdf8370b3eaeeedcdaa0e0343bd2c78f47472aaab3a91128b4d3ff49b7fc4732",
-      "size_bytes": 516
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "size_bytes": 3
     },
     {
       "path": "scripts/build_e3_authority_package.py",
@@ -141,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
+  "self_digest": "4068bc2b1503f5bd1cef256d6383a27662b3b010c8b7a539d1d5dd27530b06a4",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }

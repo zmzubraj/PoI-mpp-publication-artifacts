@@ -8,6 +8,7 @@ and manifest under ``publication/``.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FIGURE_SOURCE = REPO_ROOT / "publication" / "figures"
+TABLE_SOURCE = REPO_ROOT / "publication" / "tables"
 DEFAULT_OUTPUT = (
     REPO_ROOT
     / "docs"
@@ -102,6 +104,29 @@ def build_f6(output: Path) -> None:
     ax.text(0, rate - 0.11, f"{int(point['exact_detected'])} exact + {int(point['empirical_detected'])} empirical\n/ {int(point['denominator'])} attacked observations", ha="center", va="top", color="white", fontweight="bold")
     _style(ax)
     _finish(fig, output, name="Figure 6 | E2 audit detection pilot")
+
+
+def build_f7(output: Path) -> None:
+    with (TABLE_SOURCE / "T8_semantic_verification.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        rows = {row["metric"]: row for row in csv.DictReader(handle)}
+    ordered = ("FAR", "FRR", "ABSTAIN", "coverage", "calibration")
+    if set(rows) != set(ordered):
+        raise ValueError("T8 semantic metric scope must match the attested E3 contract")
+    values = [float(rows[metric]["value"]) for metric in ordered]
+    labels = ["FAR\n(n=2)", "FRR\n(n=6)", "ABSTAIN\n(n=8)", "Coverage\n(n=8)", "Brier\n(n=7)"]
+    fig, ax = plt.subplots(figsize=(8.6, 4.8))
+    colors = [COLORS["orange"], COLORS["blue"], COLORS["purple"], COLORS["green"], COLORS["grey"]]
+    bars = ax.bar(labels, values, width=0.62, color=colors)
+    ax.axhline(0.25, color="#111111", linewidth=1.4, linestyle="--", label="Frozen FAR threshold = 0.25")
+    ax.set_ylim(0, 1.0)
+    ax.set_ylabel("Observed metric value")
+    ax.legend(frameon=False, fontsize=9, loc="upper center")
+    for bar, value in zip(bars, values, strict=True):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 0.025, f"{value:.3f}", ha="center", va="bottom", fontsize=9)
+    _style(ax)
+    _finish(fig, output, name="Figure 7 | E3 externally attested negative result")
 
 
 def build_f8(output: Path) -> None:
@@ -238,6 +263,7 @@ def main() -> int:
     builders = {
         "F5_single_pass_cost.png": build_f5,
         "F6_audit_soundness.png": build_f6,
+        "F7_semantic_verification_quality.png": build_f7,
         "F8_da_withholding.png": build_f8,
         "F9_sybil_advantage.png": build_f9,
         "F10_economic_security.png": build_f10,

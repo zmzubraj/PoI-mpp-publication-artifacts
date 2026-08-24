@@ -1,0 +1,138 @@
+{
+  "attestation_verification": {
+    "attestation_boundary": "Signature verification authenticates the exact post-execution E3 artifacts and declared evaluator disposition only; it does not determine whether C3 is publication-supported.",
+    "authority_decision": "APPROVED",
+    "authority_identity": "istiaque@omu.ac.jp",
+    "claim_id": "C3",
+    "evidence_origin": "REAL_MODEL_EXECUTION",
+    "experiment_id": "E3",
+    "pre_execution_authority_record_sha256": "3d32fcedbe3c5112ca2476dbc28467820875c144f30720d9147d94f420292622",
+    "publication_eligibility_status": "COMPLETE_INPUT_SET_REQUIRES_SEPARATE_C3_ADJUDICATION",
+    "publication_support_decision_status": "NOT_EVALUATED_BY_THIS_ATTESTATION",
+    "request_manifest_self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
+    "request_manifest_sha256": "10d44a05f8407583011f405013a10e7c9647144c3e295e571e86035492c82133",
+    "result_attestation_record_sha256": "02cbe2bc9bf3cb62c0a244cc1c027ff1ea89c23997d3b538a52d66d67a2e2055",
+    "results_disposition": "ATTESTED_AS_REPORTED",
+    "run_id": "e3-confirmatory-real-20260824",
+    "schema_version": "POI_MPP_E3_RESULT_ATTESTATION_VERIFICATION_V1",
+    "status": "VERIFIED_EXTERNAL_POST_EXECUTION_ATTESTATION",
+    "verified_artifacts": [
+      {
+        "artifact_id": "F7",
+        "artifact_role": "SEMANTIC_QUALITY_FIGURE",
+        "path": "publication/figures/F7_semantic_verification_quality.svg",
+        "sha256": "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211",
+        "size_bytes": 2625
+      },
+      {
+        "artifact_id": "RAW_E3_EXECUTION",
+        "artifact_role": "RAW_EXECUTION_BUNDLE",
+        "path": "results/publication/e3-confirmatory-real-20260824/raw_e3_execution.zip",
+        "sha256": "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3",
+        "size_bytes": 5541
+      },
+      {
+        "artifact_id": "T4",
+        "artifact_role": "DATASET_COMPOSITION",
+        "path": "publication/tables/T4_dataset_composition.json",
+        "sha256": "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a",
+        "size_bytes": 868
+      },
+      {
+        "artifact_id": "T8",
+        "artifact_role": "SEMANTIC_METRICS",
+        "path": "publication/tables/T8_semantic_verification.csv",
+        "sha256": "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a",
+        "size_bytes": 3045
+      }
+    ]
+  },
+  "attestation_verification_sha256": "9dd3e812df13e05608114435f29e797d114c78182177627964c3229a017f0cc4",
+  "authority_verification": {
+    "authority_boundary": "Signature verification authenticates pre-execution E3 scope authorization only; it does not attest to any E3 result or publication claim.",
+    "authority_identity": "istiaque@omu.ac.jp",
+    "authority_record_sha256": "3d32fcedbe3c5112ca2476dbc28467820875c144f30720d9147d94f420292622",
+    "claim_id": "C3",
+    "decision": "APPROVED",
+    "experiment_id": "E3",
+    "request_manifest_self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
+    "request_manifest_sha256": "10d44a05f8407583011f405013a10e7c9647144c3e295e571e86035492c82133",
+    "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
+    "schema_version": "POI_MPP_E3_AUTHORITY_VERIFICATION_V1",
+    "status": "VERIFIED_EXTERNAL_PRE_EXECUTION_AUTHORITY"
+  },
+  "authority_verification_sha256": "4135c1d246d8e7c19285932cf4d60a6648f1cfa8f1411fad8b851ed2ac52590d",
+  "caveats": [
+    "Cryptographic verification authenticates exact signed files and artifact hashes only; it does not prove real-world identity, independence, or private-key custody."
+  ],
+  "current_request_manifest": {
+    "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
+    "self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
+    "sha256": "10d44a05f8407583011f405013a10e7c9647144c3e295e571e86035492c82133"
+  },
+  "dataset_composition": {
+    "class_counts": {
+      "invalid": 2,
+      "valid": 6
+    },
+    "record_count": 8
+  },
+  "decision": {
+    "alpha_sem": "0.25",
+    "c3_disposition": "NOT_SUPPORTED",
+    "reason": "FAR exceeds the frozen alpha_sem threshold"
+  },
+  "imported_artifacts": [
+    {
+      "artifact_id": "F7",
+      "sha256": "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211",
+      "size_bytes": 2625,
+      "source_path": "publication/figures/F7_semantic_verification_quality.svg",
+      "target_path": "results/publication/e3-confirmatory-real-20260824/source/F7_semantic_verification_quality.svg"
+    },
+    {
+      "artifact_id": "RAW_E3_EXECUTION",
+      "sha256": "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3",
+      "size_bytes": 5541,
+      "source_path": "results/publication/e3-confirmatory-real-20260824/raw_e3_execution.zip",
+      "target_path": "results/publication/e3-confirmatory-real-20260824/source/raw_e3_execution.zip"
+    },
+    {
+      "artifact_id": "T4",
+      "sha256": "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a",
+      "size_bytes": 868,
+      "source_path": "publication/tables/T4_dataset_composition.json",
+      "target_path": "results/publication/e3-confirmatory-real-20260824/source/T4_dataset_composition.json"
+    },
+    {
+      "artifact_id": "T8",
+      "sha256": "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a",
+      "size_bytes": 3045,
+      "source_path": "publication/tables/T8_semantic_verification.csv",
+      "target_path": "results/publication/e3-confirmatory-real-20260824/source/T8_semantic_verification.csv"
+    }
+  ],
+  "metric_sample_counts": {
+    "ABSTAIN": 8,
+    "FAR": 2,
+    "FRR": 6,
+    "calibration": 7,
+    "coverage": 8
+  },
+  "metrics": {
+    "ABSTAIN": "0.125",
+    "FAR": "0.500",
+    "FRR": "0.167",
+    "calibration": "0.178",
+    "coverage": "0.875"
+  },
+  "run_id": "e3-confirmatory-real-20260824",
+  "schema_version": "POI_MPP_E3_VERIFIED_IMPORT_RECEIPT_V1",
+  "signed_request_manifest": {
+    "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
+    "self_digest": "1c08df9d307c2b60ac2bf4118d560c981e36f84f16394a44816c6c538ed4b30a",
+    "sha256": "10d44a05f8407583011f405013a10e7c9647144c3e295e571e86035492c82133"
+  },
+  "signed_revision": "ab78c6fddd0b872e92ed607504400964eb3559a8",
+  "status": "VERIFIED_E3_IMPORTED"
+}

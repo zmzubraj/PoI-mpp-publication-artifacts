@@ -35,6 +35,7 @@ def test_manuscript_embeds_every_available_quantitative_experiment_figure() -> N
     expected = {
         "F5_single_pass_cost.png",
         "F6_audit_soundness.png",
+        "F7_semantic_verification_quality.png",
         "F8_da_withholding.png",
         "F9_sybil_advantage.png",
         "F10_economic_security.png",

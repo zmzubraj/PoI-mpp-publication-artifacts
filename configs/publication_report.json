@@ -9,6 +9,10 @@
       "rows_path": "results/publication/e2-real-eb866c2/e2_receipt_rows.json",
       "summary_path": "results/publication/e2-real-eb866c2/e2_summary.json"
     },
+    "E3": {
+      "artifact_root_path": "results/publication/e3-confirmatory-real-20260824/source",
+      "verified_receipt_path": "results/publication/e3-confirmatory-real-20260824/verification_receipt.json"
+    },
     "E4": {
       "metadata_path": "results/publication/e4-11de165/e4_metadata.json",
       "rows_path": "results/publication/e4-11de165/e4_rows.json",

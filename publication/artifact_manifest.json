@@ -1,7 +1,7 @@
 {
   "artifact_root_relative_path": "..",
   "build_environment_hash": "54d08714888b9e6a87ac74ad265c89f835eb9ae43a2614dd4036ddd4e307f676",
-  "generator_source_closure_hash": "8173a59976b88002afd032651eff3edb192f77399b557792edfef1404d9811d4",
+  "generator_source_closure_hash": "29e37b616c662e401a6bb532d073d446160a25ad1ab59093bb2f85b305dedafd",
   "inputs": [
     {
       "config_hash": null,
@@ -47,6 +47,86 @@
       "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
       "schema_version": "POI_MPP_E2_SUMMARY_V1",
       "sha256": "a0b1ed623897d75c2d30f8efa0fae6dc09af5f282a3c55f771766258abeb2277"
+    },
+    {
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
+      "disposition": "NOT_SUPPORTED",
+      "experiment_id": "E3",
+      "input_role": "source_f7",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T4",
+        "T8",
+        "F7"
+      ],
+      "relative_path": "results/publication/e3-confirmatory-real-20260824/source/F7_semantic_verification_quality.svg",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_F7_METADATA_V1",
+      "sha256": "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211"
+    },
+    {
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
+      "disposition": "NOT_SUPPORTED",
+      "experiment_id": "E3",
+      "input_role": "source_raw_execution",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T4",
+        "T8",
+        "F7"
+      ],
+      "relative_path": "results/publication/e3-confirmatory-real-20260824/source/raw_e3_execution.zip",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_RAW_EXECUTION_V1",
+      "sha256": "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3"
+    },
+    {
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
+      "disposition": "NOT_SUPPORTED",
+      "experiment_id": "E3",
+      "input_role": "source_t4",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T4",
+        "T8",
+        "F7"
+      ],
+      "relative_path": "results/publication/e3-confirmatory-real-20260824/source/T4_dataset_composition.json",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_T4_V1",
+      "sha256": "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a"
+    },
+    {
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
+      "disposition": "NOT_SUPPORTED",
+      "experiment_id": "E3",
+      "input_role": "source_t8",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T4",
+        "T8",
+        "F7"
+      ],
+      "relative_path": "results/publication/e3-confirmatory-real-20260824/source/T8_semantic_verification.csv",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_T8_V1",
+      "sha256": "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a"
+    },
+    {
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
+      "disposition": "NOT_SUPPORTED",
+      "experiment_id": "E3",
+      "input_role": "verified_receipt",
+      "origin": "REAL_MODEL_EXECUTION",
+      "paper_artifact_ids": [
+        "T4",
+        "T8",
+        "F7"
+      ],
+      "relative_path": "results/publication/e3-confirmatory-real-20260824/verification_receipt.json",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_RESULT_ATTESTATION_VERIFICATION_V1",
+      "sha256": "bf51e6cf917e2542745f0ce229e198f2a4dba37a9e0c29e906d500b395942147"
     },
     {
       "config_hash": "1639574c9328a6c2afb01c0b57807a28dcf9e5639d144664e31a6cc56c8ed2be",
@@ -199,29 +279,7 @@
       "sha256": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7"
     }
   ],
-  "omissions": [
-    {
-      "artifact_id": "T4",
-      "disposition": "WAITING_EXTERNAL",
-      "experiment_id": "E3",
-      "origin": "",
-      "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
-    },
-    {
-      "artifact_id": "T8",
-      "disposition": "WAITING_EXTERNAL",
-      "experiment_id": "E3",
-      "origin": "",
-      "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
-    },
-    {
-      "artifact_id": "F7",
-      "disposition": "WAITING_EXTERNAL",
-      "experiment_id": "E3",
-      "origin": "",
-      "reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY"
-    }
-  ],
+  "omissions": [],
   "outputs": [
     {
       "artifact_id": "F10",
@@ -475,22 +533,36 @@
     },
     {
       "artifact_id": "F7",
-      "config_hash": null,
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
       "derivation_edge": "E3->F7:svg",
-      "derived_from_input_paths": [],
-      "derives_to_artifact_ids": [],
-      "disposition": "WAITING_EXTERNAL",
+      "derived_from_input_paths": [
+        "results/publication/e3-confirmatory-real-20260824/verification_receipt.json",
+        "results/publication/e3-confirmatory-real-20260824/source/T4_dataset_composition.json",
+        "results/publication/e3-confirmatory-real-20260824/source/T8_semantic_verification.csv",
+        "results/publication/e3-confirmatory-real-20260824/source/F7_semantic_verification_quality.svg",
+        "results/publication/e3-confirmatory-real-20260824/source/raw_e3_execution.zip"
+      ],
+      "derives_to_artifact_ids": [
+        "F7"
+      ],
+      "disposition": "NOT_SUPPORTED",
       "experiment_id": "E3",
       "kind": "figures",
-      "omission_reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
-      "origin": "",
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
       "output_id": "figures:F7_semantic_verification_quality:svg",
       "relative_path": "figures/F7_semantic_verification_quality.svg",
-      "run_id": null,
-      "schema_version": null,
-      "sha256": "ce0c772b7718b344805afd02ffcbc6e8e01064a6f2f1725de669e5c86ac5b87a",
-      "source_closure_hash": null,
-      "source_hashes": []
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_F7_METADATA_V1",
+      "sha256": "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211",
+      "source_closure_hash": "26d90fc9445e18b546df6f85f3d655c9c2d16694aa4e0a76e8980b52a60d90d5",
+      "source_hashes": [
+        "bf51e6cf917e2542745f0ce229e198f2a4dba37a9e0c29e906d500b395942147",
+        "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a",
+        "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a",
+        "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211",
+        "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3"
+      ]
     },
     {
       "artifact_id": "F8",
@@ -616,7 +688,7 @@
       "relative_path": "raw/E7_live_bundle.json",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": "POI_MPP_E7_BUNDLE_V1",
-      "sha256": "38d5895acfddc907a9b3d17d586533345af3c593a40be96eb11bcf2f8a21a873",
+      "sha256": "03c60ecaf306613f6ca3e7532287a84ae5a152ec19a932dd046b66f834a9e489",
       "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
@@ -625,6 +697,25 @@
         "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
         "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
       ]
+    },
+    {
+      "artifact_id": "publication/e3-confirmatory-real-20260824/raw",
+      "config_hash": null,
+      "derivation_edge": "REPORT->publication/e3-confirmatory-real-20260824/raw:zip",
+      "derived_from_input_paths": [],
+      "derives_to_artifact_ids": [],
+      "disposition": "",
+      "experiment_id": "REPORT",
+      "kind": "results",
+      "omission_reason": null,
+      "origin": "",
+      "output_id": "results:publication/e3-confirmatory-real-20260824/raw_e3_execution:zip",
+      "relative_path": "results/publication/e3-confirmatory-real-20260824/raw_e3_execution.zip",
+      "run_id": null,
+      "schema_version": null,
+      "sha256": "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3",
+      "source_closure_hash": null,
+      "source_hashes": []
     },
     {
       "artifact_id": "T10",
@@ -832,22 +923,36 @@
     },
     {
       "artifact_id": "T4",
-      "config_hash": null,
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
       "derivation_edge": "E3->T4:json",
-      "derived_from_input_paths": [],
-      "derives_to_artifact_ids": [],
-      "disposition": "WAITING_EXTERNAL",
+      "derived_from_input_paths": [
+        "results/publication/e3-confirmatory-real-20260824/verification_receipt.json",
+        "results/publication/e3-confirmatory-real-20260824/source/T4_dataset_composition.json",
+        "results/publication/e3-confirmatory-real-20260824/source/T8_semantic_verification.csv",
+        "results/publication/e3-confirmatory-real-20260824/source/F7_semantic_verification_quality.svg",
+        "results/publication/e3-confirmatory-real-20260824/source/raw_e3_execution.zip"
+      ],
+      "derives_to_artifact_ids": [
+        "T4"
+      ],
+      "disposition": "NOT_SUPPORTED",
       "experiment_id": "E3",
       "kind": "tables",
-      "omission_reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
-      "origin": "",
-      "output_id": "tables:T4_status:json",
-      "relative_path": "tables/T4_status.json",
-      "run_id": null,
-      "schema_version": null,
-      "sha256": "50a40d6ae4fa169e85a6aa6fb1ccac2c5a4950af5504304264ee454b7f951edc",
-      "source_closure_hash": null,
-      "source_hashes": []
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "tables:T4_dataset_composition:json",
+      "relative_path": "tables/T4_dataset_composition.json",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_T4_V1",
+      "sha256": "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a",
+      "source_closure_hash": "26d90fc9445e18b546df6f85f3d655c9c2d16694aa4e0a76e8980b52a60d90d5",
+      "source_hashes": [
+        "bf51e6cf917e2542745f0ce229e198f2a4dba37a9e0c29e906d500b395942147",
+        "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a",
+        "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a",
+        "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211",
+        "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3"
+      ]
     },
     {
       "artifact_id": "T6",
@@ -947,22 +1052,36 @@
     },
     {
       "artifact_id": "T8",
-      "config_hash": null,
-      "derivation_edge": "E3->T8:json",
-      "derived_from_input_paths": [],
-      "derives_to_artifact_ids": [],
-      "disposition": "WAITING_EXTERNAL",
+      "config_hash": "04d696f2ed84435272d0bf4a95316e4919e0f61534dc96eab07c4ef25ef9f5cc",
+      "derivation_edge": "E3->T8:csv",
+      "derived_from_input_paths": [
+        "results/publication/e3-confirmatory-real-20260824/verification_receipt.json",
+        "results/publication/e3-confirmatory-real-20260824/source/T4_dataset_composition.json",
+        "results/publication/e3-confirmatory-real-20260824/source/T8_semantic_verification.csv",
+        "results/publication/e3-confirmatory-real-20260824/source/F7_semantic_verification_quality.svg",
+        "results/publication/e3-confirmatory-real-20260824/source/raw_e3_execution.zip"
+      ],
+      "derives_to_artifact_ids": [
+        "T8"
+      ],
+      "disposition": "NOT_SUPPORTED",
       "experiment_id": "E3",
       "kind": "tables",
-      "omission_reason": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
-      "origin": "",
-      "output_id": "tables:T8_status:json",
-      "relative_path": "tables/T8_status.json",
-      "run_id": null,
-      "schema_version": null,
-      "sha256": "b9b23945db963565f69389d2113b1b27f03d15949323cc5ea9f941459d2695eb",
-      "source_closure_hash": null,
-      "source_hashes": []
+      "omission_reason": null,
+      "origin": "REAL_MODEL_EXECUTION",
+      "output_id": "tables:T8_semantic_verification:csv",
+      "relative_path": "tables/T8_semantic_verification.csv",
+      "run_id": "e3-confirmatory-real-20260824",
+      "schema_version": "POI_MPP_E3_T8_V1",
+      "sha256": "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a",
+      "source_closure_hash": "26d90fc9445e18b546df6f85f3d655c9c2d16694aa4e0a76e8980b52a60d90d5",
+      "source_hashes": [
+        "bf51e6cf917e2542745f0ce229e198f2a4dba37a9e0c29e906d500b395942147",
+        "0ece2525b8fd9f1cbf4ddb4d29bbc9640f2237d98971d7d833f8ec12ff02fe4a",
+        "87cb6687a03e375d84decd4b7282b4b7c0293ec777e4bdc24749327ef5f04e1a",
+        "42cf64100ee7ac17a6b21f3b7b8c4929f5c3f8c7b7879265ad7208652b315211",
+        "b160f2c5a274ce5ccfa94e75f709faa491266e568532340e321797beefab14b3"
+      ]
     },
     {
       "artifact_id": "T9",
@@ -1033,7 +1152,7 @@
       "relative_path": "tables/claim_matrix.csv",
       "run_id": null,
       "schema_version": null,
-      "sha256": "1dc5fd1ea270bacf1fd38efb892385edb80c01d081c021a0f51037a414239ebc",
+      "sha256": "42a4a11e6082ea390c3e8d884dd38ae302382fb253a93de0eaf4d85088aaf323",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1052,7 +1171,7 @@
       "relative_path": "tables/claim_matrix.json",
       "run_id": null,
       "schema_version": null,
-      "sha256": "7b4f18633847c850fafd330124b455d99be939a77428d77d43454a0d534f6965",
+      "sha256": "6ac2e0b9caf04f38294bf9bdfff70a6175a32d4beaac2e88925f6d0bb4ee9a96",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1071,7 +1190,7 @@
       "relative_path": "tables/omissions.csv",
       "run_id": null,
       "schema_version": null,
-      "sha256": "4919584b2db95e017dc3bf479fa167f55b70e362a9f5d18de18a04b24da900ec",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1090,11 +1209,11 @@
       "relative_path": "tables/omissions.json",
       "run_id": null,
       "schema_version": null,
-      "sha256": "cdf8370b3eaeeedcdaa0e0343bd2c78f47472aaab3a91128b4d3ff49b7fc4732",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
       "source_closure_hash": null,
       "source_hashes": []
     }
   ],
   "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4",
-  "self_digest": "c621ccacb6a0a0bf86083fecf99be775df9ca9a37e6c80580c2a3c3f3c721e0d"
+  "self_digest": "85a5c6be6b9e8d3cd20699eebd215b354f9e3d397e2509a9d933f939f93f7d52"
 }

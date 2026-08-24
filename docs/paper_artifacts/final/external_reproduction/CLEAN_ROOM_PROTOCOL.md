@@ -24,10 +24,13 @@ Record exact stdout, stderr, exit code, wall time, and SHA-256 for every output:
 npm run build:paper-docx
 ```
 
-Expected fail-closed states are not discrepancies: E3 is `WAITING_EXTERNAL`
-without authentic authority/result evidence; independent review and publication
-freeze remain open; E1 and E2 remain `INCONCLUSIVE`; simulation and local-Foundry
-scope ceilings remain unchanged.
+Expected fail-closed states are not discrepancies: the verified E3 artifacts must
+reproduce FAR 0.500 (1/2), FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage
+0.875 (7/8), and Brier calibration 0.178, with `C3=NOT_SUPPORTED` because FAR
+exceeds frozen `alpha_sem=0.25`. Evaluator identity, independence, expertise,
+and private-key custody still require out-of-band confirmation; independent
+review and publication freeze remain open; E1 and E2 remain `INCONCLUSIVE`;
+simulation and local-Foundry scope ceilings remain unchanged.
 
 ## Discrepancy handling
 

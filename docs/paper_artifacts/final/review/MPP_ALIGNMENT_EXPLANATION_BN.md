@@ -1,6 +1,6 @@
 # MPP alignment explanation (বাংলা ব্যাখ্যা)
 
-তারিখ: 2026-08-23
+তারিখ: 2026-08-24
 
 এই নোটটি ইংরেজি পেপারের বাইরে একটি ব্যাখ্যামূলক দলিল। এর উদ্দেশ্য হলো বর্তমান repository-র Minimum Publishable Prototype (MPP) ঠিক কীভাবে paper-এর সাথে মিলে, কোথায় শুধু architecture/protocol composition আছে, কোথায় primitive novelty এখনো provisional, এবং কোন claim এখনো evidence-বাঁধা অবস্থায় অসম্পূর্ণ আছে—সেটা পরিষ্কার করে বলা।
 
@@ -76,18 +76,23 @@ Novelty provisional থাকার কারণগুলো non-compensating:
 `publication/artifact_manifest.json`। এর SHA-256 হলো
 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`।
 
-এই canonical bundle-এ E1, E2, এবং E4-E8-এর table/figure artifact আছে; E3-এর
-T4, T8, ও F7 `WAITING_EXTERNAL` omission হিসেবে আছে। এই evidence state আর
-artifact regeneration-এর অপেক্ষার state নয়। কিন্তু bundle থাকা আর
-publication-ready হওয়া এক জিনিস নয়।
+এই canonical bundle-এ E1-E8-এর result surface আছে। E3-এর externally authorized
+`REAL_MODEL_EXECUTION` এবং detached post-execution artifact attestation
+cryptographically verify হয়েছে। ফলটি positive নয়: FAR 0.500 (1/2) frozen
+frozen `alpha_sem 0.25` (alpha_sem = 0.25) threshold ছাড়িয়েছে, তাই C3 `NOT_SUPPORTED`। FRR 0.167 (1/6),
+ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), এবং Brier 0.178। মোট n=8 এবং
+invalid n=2 হওয়ায় এই run general semantic reliability প্রতিষ্ঠা করে না।
 
-এখনো তিনটি independent blocker আছে:
+এখনো independent blocker আছে:
 
-- E3-এর external evaluator authority;
+- evaluator-এর real-world identity, independence, expertise এবং private-key
+  custody-এর accountable out-of-band confirmation;
+- external independent reproduction;
 - authenticated independent manual review; এবং
 - publication-freeze sentinel।
 
-AI output, AI approval, বা user approval—কোনোটিই independent review নয়।
+Cryptographic validity, AI output, AI approval, বা user approval—কোনোটিই
+independent scientific review নয়।
 
 ## ৫) claim-by-claim current status
 
@@ -101,8 +106,10 @@ AI output, AI approval, বা user approval—কোনোটিই independent
   detect হয়েছে; তিনটি exact surface, একটি empirical surface, Wilson interval
   [0.5101091635454027, 1.0], এবং এক honest control-এ false positive নেই। এটা
   general detection claim নয়।
-- `C3` / E3: `WAITING_EXTERNAL`; external evaluator authority না আসা পর্যন্ত
-  semantic performance evidence নেই।
+- `C3` / E3: `NOT_SUPPORTED`; externally attested real-model run-এ FAR 0.500
+  (1/2) frozen frozen `alpha_sem 0.25` (alpha_sem = 0.25) threshold ছাড়িয়েছে। FRR 0.167 (1/6), ABSTAIN 0.125
+  (1/8), coverage 0.875 (7/8), Brier 0.178; n=8, invalid n=2। এই negative
+  result general semantic reliability claim সমর্থন করে না।
 - `C4` / E4: `INCONCLUSIVE` declared playback simulation; executed
   reconstruction নয়।
 - `C5` / E5: `SUPPORTED`, কিন্তু শুধু declared reproducible-simulation
@@ -228,8 +235,9 @@ materially novel কি না, সেটা এখনো independently establis
 - E1, E2, E4, এবং E8 `INCONCLUSIVE`
 - E5 ও E6 declared simulation scope-এ `SUPPORTED`
 - E7 local Foundry scope-এ `SUPPORTED`
-- E3 `WAITING_EXTERNAL`
-- external evaluator authority, independent domain-expert review/signature, এবং publication-freeze sentinel এখনো required
+- E3 externally authorized এবং post-execution-attested real-model run সম্পন্ন; FAR `0.500 (1/2)` frozen `alpha_sem=0.25` অতিক্রম করায় C3 `NOT_SUPPORTED`
+- sample মাত্র 8টি, invalid মাত্র 2টি; তাই general semantic reliability প্রতিষ্ঠিত নয়
+- evaluator-এর real-world identity, independence, expertise ও private-key custody-এর out-of-band confirmation, independent domain-expert review/signature, এবং publication-freeze sentinel এখনো required
 - তাই paper-এ language অবশ্যই evidence-bounded থাকতে হবে; কোনো overall score, compensating score table, বা stronger-than-evidence success language ব্যবহার করা উচিত নয়
 
 বিস্তারিত non-compensating scorecard paper-এর বাইরে

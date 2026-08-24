@@ -8,7 +8,7 @@ import sys
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_paper_figure_builder_emits_all_seven_valid_png_derivatives(tmp_path: Path) -> None:
+def test_paper_figure_builder_emits_all_eight_valid_png_derivatives(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
@@ -23,6 +23,7 @@ def test_paper_figure_builder_emits_all_seven_valid_png_derivatives(tmp_path: Pa
     expected = {
         "F5_single_pass_cost.png",
         "F6_audit_soundness.png",
+        "F7_semantic_verification_quality.png",
         "F8_da_withholding.png",
         "F9_sybil_advantage.png",
         "F10_economic_security.png",

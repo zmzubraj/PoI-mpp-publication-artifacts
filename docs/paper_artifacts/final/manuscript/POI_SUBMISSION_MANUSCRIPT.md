@@ -6,7 +6,7 @@
 
 Auditing a useful AI response should not require a mandatory second full model execution or a full zero-knowledge proof of every operation on the common path. We propose Single-Pass Auditable Intelligence (SPAI), an EVM-compatible protocol architecture in which one model execution produces a response and committed execution and semantic audit surfaces. Concrete audit obligations are selected only after response-commitment finality; successfully audited receipts mature into bounded, epoch-local protocol weight. The architecture combines model and task binding, trace and evidence commitments, post-commit audit compilation, optimistic dispute, data-availability retention, task-budgeted credit, and receipt-state management.
 
-We evaluate a deliberately narrow Minimum Publishable Prototype (MPP) using a 1.5B open-weight model, local Foundry measurements, and reproducible experiments E1-E8. The current evidence is mixed and non-compensating. E1 and E2 are inconclusive real-model pilots; E4 and E8 are inconclusive simulations; E5 and E6 support only their frozen simulation scenarios; E7 supports local EVM boundedness; and E3 remains evidence-absent pending external evaluator authority. The strongest measured result is local Foundry boundedness: 15 operations or batch observations, a maximum observed gas value of 467,937, and a maximum configured-block-limit fraction of 0.0004358003. These results support feasibility of the narrow artifact-oriented MPP, not production consensus security, general semantic verification, or frontier-scale deployment.
+We evaluate a deliberately narrow Minimum Publishable Prototype (MPP) using a 1.5B open-weight model, local Foundry measurements, and reproducible experiments E1-E8. The current evidence is mixed and non-compensating. E1 and E2 are inconclusive real-model pilots; E4 and E8 are inconclusive simulations; E5 and E6 support only their frozen simulation scenarios; E7 supports local EVM boundedness; and an externally authorized, post-execution-attested E3 real-model run produced a negative result. E3 measured FAR 0.500 (1/2), FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), and Brier calibration 0.178. Because FAR exceeded the frozen `alpha_sem=0.25` threshold, C3 is `NOT_SUPPORTED`. The run contained only n=8 items, including invalid n=2, and does not establish general semantic reliability. The strongest positive measured result remains local Foundry boundedness: 15 operations or batch observations, a maximum observed gas value of 467,937, and a maximum configured-block-limit fraction of 0.0004358003. These results support feasibility of the narrow artifact-oriented MPP, not production consensus security, general semantic verification, or frontier-scale deployment.
 
 **Keywords:** proof of intelligence, verifiable AI inference, blockchain consensus, optimistic verification, evidence provenance, smart contracts
 
@@ -213,7 +213,7 @@ Within its approved scope, the MPP software is materially implemented: evidence 
 
 ### 4.3 Canonical publication state
 
-The canonical artifact manifest contains E1, E2, and E4-E8 result surfaces and records the E3 omission ledger. It does not make the manuscript publication-ready. E3 remains `WAITING_EXTERNAL`, and the independent-review and freeze-sentinel gates remain open. These gate states are part of the scientific interpretation rather than formatting or administrative details.
+The canonical artifact manifest contains E1-E8 result surfaces, including the externally attested negative E3 result, and contains no E3 omission after verified import. It does not make the manuscript publication-ready. E3 evaluator identity/independence/key-custody confirmation, independent review, and the freeze-sentinel gates remain open. These gate states are part of the scientific interpretation rather than formatting or administrative details.
 
 ## 5. Experimental design and artifact contract
 
@@ -231,7 +231,7 @@ That contract matters because the current manuscript includes both evidence-bear
 ### 6.1 Claim-level summary
 
 The canonical claim matrix records C1 `INCONCLUSIVE`, C2 `INCONCLUSIVE`, E3
-`WAITING_EXTERNAL`, C4 `INCONCLUSIVE`, C5 `SUPPORTED` within a declared
+C3 `NOT_SUPPORTED`, C4 `INCONCLUSIVE`, C5 `SUPPORTED` within a declared
 simulation, C6 `SUPPORTED` within a declared simulation, E7 local boundedness
 `SUPPORTED`, and E8 `INCONCLUSIVE`. Those dispositions are non-compensating.
 
@@ -241,7 +241,7 @@ Table 1. Canonical MPP evidence status. “Supported” is confined to the origi
 |---|---|---:|---|---|
 | E1 | Real-model execution | 2 paired observations | `INCONCLUSIVE` | Fixed-order cost pilot only |
 | E2 | Real-model execution | 4 attacks + 1 honest control | `INCONCLUSIVE` | Frozen 4-by-4 audit surfaces only |
-| E3 | Absent pending external authority | 0 | `WAITING_EXTERNAL` | No semantic-performance claim |
+| E3 | Externally attested negative real-model run | 8 | `NOT_SUPPORTED` | No semantic-performance claim |
 | E4 | Reproducible declared playback | 2 scenarios | `INCONCLUSIVE` | Declared-outcome playback only |
 | E5 | Reproducible simulation | 2 scenarios | `SUPPORTED` | Frozen watcher-economics scenarios only |
 | E6 | Reproducible simulation | 6 scenarios | `SUPPORTED` | Frozen identity/capacity scenarios only |
@@ -267,11 +267,20 @@ claim.
 
 ![Figure 6. E2 narrow audit-detection pilot. All four attacked observations were detected across three exact and one empirical floating-point surface; the Wilson interval is 0.510-1.000. The frozen narrow design remains INCONCLUSIVE. Source: canonical F6 JSON and T7.](../visuals_algorithms/rendered/quantitative/F6_audit_soundness.png)
 
-### 6.3 E3-E6: authority boundary and declared simulations
+### 6.3 E3-E6: negative semantic result and declared simulations
 
-E3 has no evidence artifact. T4, T8, and F7 are `WAITING_EXTERNAL` because
-external evaluator authority has not been supplied. Semantic performance must
-not be reported before that gate is resolved.
+E3 (T4, T8, F7) is an externally authorized and post-execution-attested
+`REAL_MODEL_EXECUTION` run. It measured FAR 0.500 (1/2), FRR 0.167 (1/6),
+ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), and Brier calibration 0.178. The
+frozen decision rule is `alpha_sem=0.25`; because FAR exceeded that threshold,
+C3 is `NOT_SUPPORTED`. The sample contained only n=8 items, including invalid
+n=2, so the run does not establish general semantic reliability. The cryptographic validity
+authenticates the signed authority/attestation bytes and exact artifact
+hashes; it does not prove the evaluator's real-world identity, independence,
+expertise, or private-key custody, which require accountable out-of-band
+confirmation.
+
+![Figure 7. E3 externally attested semantic-verification metrics. FAR was 0.500 on only two invalid items and exceeded the frozen 0.25 threshold; C3 is NOT_SUPPORTED. The eight-item run is a negative bounded result, not evidence of general semantic reliability. Source: canonical F7 SVG, T8, T4, and the verified import receipt.](../visuals_algorithms/rendered/quantitative/F7_semantic_verification_quality.png)
 
 E4 (T9, F8) is an `INCONCLUSIVE` declared playback simulation, not executed
 reconstruction evidence. E5 (T10) is `SUPPORTED` only for its declared
@@ -337,7 +346,7 @@ Second, novelty remains provisional. A bounded review identified CommitLLM [5] a
 
 Third, semantic claims are narrow. The implemented MPP is limited to objective and grounded tasks, not open-ended semantic competence.
 
-Fourth, empirical support is heterogeneous. E1, E2, E4, and E8 are `INCONCLUSIVE`; E5 and E6 are supported only within declared simulation scenarios; and E7 is supported only for local Foundry boundedness. E3 is evidence-absent and `WAITING_EXTERNAL`.
+Fourth, empirical support is heterogeneous. E1, E2, E4, and E8 are `INCONCLUSIVE`; E5 and E6 are supported only within declared simulation scenarios; and E7 is supported only for local Foundry boundedness. E3 is an externally attested real-model run, `NOT_SUPPORTED` (FAR 0.500 > alpha_sem 0.25).
 
 Fifth, the canonical bundle remains not publication-ready because it preserves unresolved gates rather than relabeling them as success. External evaluator authority, authenticated independent manual review, and the publication-freeze sentinel remain required. Neither AI production nor user approval is independent review.
 
@@ -357,7 +366,7 @@ The following surfaces are deferred and should remain labeled as future work rat
 
 The proposed PoI architecture addresses a real systems problem: how to make useful AI responses auditable without requiring a second full frontier-model execution or a full common-path proof for each accepted response. The architecture combines response commitment, execution and semantic audit surfaces, post-commit randomness, optimistic dispute, DA retention, bounded task credit, and EVM-compatible receipt management into a coherent protocol proposal.
 
-The current repository substantiates that this architecture can be reduced into a disciplined first-publication MPP. The strongest present repository-grounded result is local EVM boundedness (E7). E1 and E2 have canonical but inconclusive real-model pilot artifacts; E4 and E8 are inconclusive simulations; E5 and E6 are supported only within their declared simulations; and E3 remains blocked for external authority. The manuscript must preserve each boundary.
+The current repository substantiates that this architecture can be reduced into a disciplined first-publication MPP. The strongest present positive repository-grounded result is local EVM boundedness (E7). E1 and E2 have canonical but inconclusive real-model pilot artifacts; E4 and E8 are inconclusive simulations; E5 and E6 are supported only within their declared simulations; and E3 is a canonical externally attested negative real-model result with C3 `NOT_SUPPORTED`. The manuscript must preserve each boundary.
 
 The correct current interpretation is therefore not that the architecture is fully validated, and not that it is merely conceptual. It is that a coherent PoI MPP has been implemented with strong fail-closed artifact discipline, while the central publication evidence package remains only partially complete.
 
@@ -365,7 +374,7 @@ The correct current interpretation is therefore not that the architecture is ful
 
 The canonical report bundle is rooted at `publication/artifact_manifest.json`, SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`. It contains machine-readable tables, quantitative SVG and JSON outputs, the claim matrix, and the omission ledger. Conceptual diagrams are retained as editable Mermaid source, and Algorithms 1-5 are retained as manuscript-ready pseudocode and detailed source specifications. Paper-only PNGs are deterministic presentation derivatives generated from canonical figure JSON by `scripts/build_paper_figures.py`; they do not replace the canonical evidence artifacts.
 
-The bundle is intentionally not frozen for submission. E3 external evaluator authority, authenticated independent manual review, and the freeze sentinel remain open. AI production, AI review, user approval, clean tests, and matching hashes do not by themselves constitute independent scientific review or authorize submission.
+The bundle is intentionally not frozen for submission. E3 pre-execution authority and post-execution artifact attestation verify cryptographically, but real-world evaluator identity, independence, expertise, and private-key custody still require accountable out-of-band confirmation. Authenticated independent manual review and the freeze sentinel remain open. AI production, AI review, user approval, clean tests, and matching hashes do not by themselves constitute independent scientific review or authorize submission.
 
 ## References
 

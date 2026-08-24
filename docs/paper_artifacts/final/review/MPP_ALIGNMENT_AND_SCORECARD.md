@@ -1,12 +1,11 @@
 # MPP Alignment and Evidence-Bounded Scorecard
 
-Date: Sunday, August 23, 2026
+Date: Tuesday, August 25, 2026
 
 ## Scope and authority
 
 This assessment reconciles the manuscript-facing material with the canonical
-`publication/artifact_manifest.json` (SHA-256
-`7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`), its
+`publication/artifact_manifest.json`, its
 tables, figures, claim matrix, and omission ledger. It is a repository-grounded
 editorial assessment, not an independent-human review, a prior-art verdict, or
 a publication-acceptance judgment.
@@ -20,10 +19,12 @@ dispute VM, production data availability, or a production consensus client.
 
 The manuscript and repository are aligned only if they retain the canonical
 dispositions and their scope ceilings. A canonical publication bundle exists,
-but the work is **not publication-ready**: E3 requires external evaluator
-authority, authenticated independent manual review is absent, and the
-publication-freeze sentinel is absent. AI work, AI approval, and user approval
-are not independent review.
+but the work is **not publication-ready**: E3 authority and post-execution
+artifact attestation are cryptographically verified and C3 is
+`NOT_SUPPORTED`; accountable identity/independence/key-custody confirmation,
+authenticated independent manual review, external reproduction, and the
+publication-freeze sentinel remain open. AI work, AI approval, user approval,
+and signature validity are not independent scientific review.
 
 ## Non-compensating scorecard
 
@@ -32,9 +33,9 @@ are not independent review.
 | Primitive novelty | `PROVISIONAL_PENDING_REPRODUCIBLE_PRIOR_ART_SEARCH` | No reproducible strongest-prior-art package or independently challenged novelty case is present. |
 | Architecture coherence | `ALIGNED_WITH_NARROW_MPP_SCOPE` | The paper's single-pass, post-commit-audit, receipt, and next-epoch path matches the bounded evidence and protocol kernels. |
 | Implementation maturity | `MPP_SOFTWARE_IMPLEMENTED_WITH_EVIDENCE_GATES` | The bounded software and artifact pipeline are implemented; this does not upgrade scientific claim maturity. |
-| Empirical evidence | `HETEROGENEOUS_AND_NON-COMPENSATING` | E1/E2/E4/E8 are inconclusive; E5/E6 are supported only in declared simulations; E7 is supported only in local Foundry scope; E3 has no evidence. |
+| Empirical evidence | `HETEROGENEOUS_AND_NON-COMPENSATING` | E1/E2/E4/E8 are inconclusive; E5/E6 are supported only in declared simulations; E7 is supported only in local Foundry scope; E3 is an externally attested negative real-model result with C3 `NOT_SUPPORTED`. |
 | Reproducibility | `CANONICAL_ARTIFACTS_PRESENT_FREEZE_INCOMPLETE` | Canonical manifest, artifacts, claim matrix, and omission ledger exist, but the freeze sentinel and independent review gates are not closed. |
-| Publication readiness | `NOT_PUBLICATION_READY` | E3 external authority, independent manual review, and freeze sentinel are independent blockers. |
+| Publication readiness | `NOT_PUBLICATION_READY` | Evaluator identity/independence/key custody, external reproduction, independent manual review, and the freeze sentinel are independent blockers. |
 
 ## Claim-by-claim evidence status
 
@@ -42,7 +43,7 @@ are not independent review.
 |---|---|---|---|
 | C1 / E1 | T6, F5 | `INCONCLUSIVE` | Fixed-order real-model pilot, two paired observations and six rows: mean two-run 5197.17125 ms; MPP 2678.932229 ms; delta 2518.239021 ms; bootstrap interval [2440.923209, 2595.554833]. Do not state a general cost advantage. |
 | C2 / E2 | T7, F6 | `INCONCLUSIVE` | Narrow real-model pilot: 4/4 attacked observations detected, three exact plus one empirical surface, Wilson interval [0.5101091635454027, 1.0], one honest control with no false positive. Do not state general detection effectiveness. |
-| C3 / E3 | T4, T8, F7 | `WAITING_EXTERNAL` | No evidence. Do not report semantic performance before external evaluator authority. |
+| C3 / E3 | T4, T8, F7 | `NOT_SUPPORTED` | Externally authorized and post-execution-attested `REAL_MODEL_EXECUTION`: FAR 0.500 (1/2), FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178. FAR exceeds `alpha_sem = 0.25`; n=8, invalid n=2; no general semantic-reliability claim. |
 | C4 / E4 | T9, F8 | `INCONCLUSIVE` | Declared playback simulation; not executed reconstruction evidence. |
 | C5 / E5 | T10 | `SUPPORTED` | Only the declared reproducible-simulation scenarios are supported; no figure exists. |
 | C6 / E6 | T11, F9, F10 | `SUPPORTED` | Only the declared reproducible-simulation scenarios are supported; not open-network Sybil resistance. |
@@ -73,7 +74,7 @@ Replace numerical feasibility or readiness scores with these disclosures:
 | Overall protocol feasibility | `COHERENT_ARCHITECTURE_PENDING_NOVELTY_AND_EVIDENCE_GATES` |
 | Common-path cost efficiency | `INCONCLUSIVE_FIXED_ORDER_REAL_MODEL_PILOT` |
 | Execution-audit assurance | `INCONCLUSIVE_NARROW_REAL_MODEL_PILOT` |
-| Semantic verification strength | `WAITING_EXTERNAL_EVALUATOR_AUTHORITY` |
+| Semantic verification strength | `NOT_SUPPORTED_AT_FROZEN_ALPHA_SEM_0_25` |
 | Data-availability assurance | `INCONCLUSIVE_DECLARED_PLAYBACK_SIMULATION` |
 | Watcher/dispute economics | `SUPPORTED_DECLARED_SIMULATION_ONLY` |
 | Sybil/task-budget neutrality | `SUPPORTED_DECLARED_SIMULATION_ONLY` |
@@ -85,7 +86,9 @@ Replace numerical feasibility or readiness scores with these disclosures:
 
 The paper must not let a `SUPPORTED` simulation result imply field viability or
 let local Foundry measurement imply mainnet economics. It must retain E3's
-absence of evidence and never equate AI/user approval with independent review.
-The canonical bundle materially improves provenance, but it does not close the
-external-authority, independent-review, or freeze-sentinel gates. Therefore the
-current final disposition is `NOT_PUBLICATION_READY`.
+negative result and small-sample boundary and never equate AI/user approval or
+cryptographic validity with independent review. The canonical bundle materially
+improves provenance, but it does not close accountable evaluator-identity and
+key-custody confirmation, external reproduction, independent review, or the
+freeze-sentinel gate. Therefore the current final disposition is
+`NOT_PUBLICATION_READY`.

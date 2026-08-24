@@ -180,7 +180,9 @@ def test_e3_authority_verifier_accepts_real_external_detached_signature(tmp_path
     assert result["result_attestation_status"] == "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION"
 
 
-def test_e3_authority_verifier_accepts_documented_repo_relative_request_path(tmp_path: Path) -> None:
+def test_e3_authority_verifier_accepts_documented_repo_relative_request_path(
+    tmp_path: Path,
+) -> None:
     request_path = (
         REPO_ROOT
         / "docs"

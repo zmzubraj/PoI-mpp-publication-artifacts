@@ -1,9 +1,10 @@
 limitation_id,statement,affected_surface,current_status,current_implication
 L1,"Canonical E1 E2 and E4-E8 artifacts exist but their recorded dispositions and scope ceilings are non-compensating.",E1_to_E8,Open,"Preserve INCONCLUSIVE simulation-only or local-Foundry-only language exactly."
-L2,"E3 T4 T8 and F7 remain WAITING_EXTERNAL because WAITING_EXTERNAL_EVALUATOR_AUTHORITY is unresolved.",Semantic_verification_path,Open,"No semantic performance claim is admissible."
+L2,"E3 completed externally authorized and post-execution-attested REAL_MODEL_EXECUTION, but C3 is NOT_SUPPORTED because FAR 0.500 (1/2) exceeded alpha_sem 0.25; n=8 and invalid n=2.",Semantic_verification_path,Mitigated,"Preserve the negative result; no general semantic-reliability claim is admissible."
 L3,"The publication-freeze sentinel is absent.",Freeze_state,Open,"The canonical bundle is not publication-ready."
 L4,"Accountable external manual scientific review is absent.",Independent_review_gate,Open,"No independent-review completion claim is admissible."
 L5,"E7 is a local Foundry measurement surface rather than an Ethereum mainnet cost claim.",C7_scope,Open,"The paper may claim local boundedness evidence only."
 L6,"E8 is a 10-row reproducible simulation surface and the current disposition is INCONCLUSIVE.",E8_scope,Open,"The paper must preserve simulation-bounded and inconclusive language."
 L7,"The MPP does not claim production 70B/600B deployment, full MoE serving, full per-response zkML, a production decentralized DA network, or a production L1 consensus client.",Deployment_scope,Open,"Those topics remain future or deferred work."
 L8,"Semantic verification is operational and task-conditioned rather than a universal proof of intelligence or truth.",Semantic_boundary,Open,"Open-ended or underdetermined tasks must remain capped or abstained."
+L9,"E3 has only n=8 items and invalid n=2; observed FRR 0.167, ABSTAIN 0.125, coverage 0.875, and Brier 0.178 are descriptive for the frozen set.",E3_sample_size,Open,"This run does not establish general semantic reliability."

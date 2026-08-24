@@ -2,7 +2,7 @@
 
 Status: `CLAIM_NARROWED`
 
-Audit date: 2026-08-25
+Audit date: 2026-08-24
 
 No new E1 or E2 execution was authorized by a frozen confirmatory design with a
 prespecified precision rationale, broader model/task/attack coverage, and an

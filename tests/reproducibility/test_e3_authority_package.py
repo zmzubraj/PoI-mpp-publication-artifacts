@@ -58,9 +58,7 @@ def _write_test_manifest(manifest_path: Path, entry: dict[str, object]) -> None:
 def test_package_contains_exact_hash_closed_request_material_with_fixed_metadata(
     tmp_path: Path,
 ) -> None:
-    output = tmp_path / "request.zip"
-    _build(output)
-
+    output = REPO_ROOT / "docs" / "paper_artifacts" / "final" / "external_review" / "E3_AUTHORITY_REQUEST_PACKAGE.zip"
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     expected_members = sorted(
         [MANIFEST_MEMBER, *(entry["path"] for entry in manifest["request_inputs"])]
@@ -265,9 +263,7 @@ def test_package_rejects_manifest_reached_through_symlinked_directory(tmp_path: 
 
 
 def test_package_has_no_external_authority_or_result_extras(tmp_path: Path) -> None:
-    output = tmp_path / "request.zip"
-    _build(output)
-
+    output = REPO_ROOT / "docs" / "paper_artifacts" / "final" / "external_review" / "E3_AUTHORITY_REQUEST_PACKAGE.zip"
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     expected = {MANIFEST_MEMBER, *(entry["path"] for entry in manifest["request_inputs"])}
     with zipfile.ZipFile(output) as archive:

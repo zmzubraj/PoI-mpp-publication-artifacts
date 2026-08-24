@@ -4,12 +4,11 @@ These files are unsigned request and validation templates only.
 
 They do not satisfy any publication, authority, or freeze gate by themselves.
 
-In particular, these files do **not** provide:
+In particular, these repository files do **not by themselves** provide:
 
-- an external evaluator authority token for E3;
+- out-of-band proof of the E3 evaluator's real-world identity, independence, expertise, or private-key custody;
 - an independent human review outcome;
-- a detached signature;
-- a trusted allowed-signers registry;
+- a repository-local detached signature or trusted allowed-signers registry (the verified trust inputs remain external);
 - a populated manual review record;
 - a publication-complete verdict.
 
@@ -21,7 +20,7 @@ Current evidence boundary:
 
 - `C1`: canonical real-model fixed-order pilot / inconclusive
 - `C2`: canonical real-model narrow pilot / inconclusive
-- `C3`: waiting external evaluator authority
+- `C3`: `NOT_SUPPORTED`; externally authorized and post-execution-attested real-model E3 measured FAR 0.500 (1/2), FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), and Brier calibration 0.178; `FAR > alpha_sem=0.25`
 - `C4`: declared-outcome-playback simulation / inconclusive
 - `C5`-`C6`: supported within canonical reproducible-simulation scope only
 - `C7`: supported by local Foundry measurement
@@ -56,9 +55,9 @@ The candidate `manifest.json` and `verification_report.json` are deliberately no
 
 ## Gate conditions these templates are designed to support
 
-### E3 external evaluator authority
+### E3 authority and attested result
 
-The current repository state explicitly retains `WAITING_EXTERNAL_EVALUATOR_AUTHORITY` for the real confirmation path. An actual external authority must be identified and verified outside the bundle, must review the deterministic E3 request manifest, and must issue a real signed `APPROVED` or `LIMITED_SCOPE` pre-execution authorization. Until that happens, E3 remains incomplete.
+Canonical verification against signed revision `ab78c6f` establishes cryptographic validity of an `APPROVED` pre-execution authority record and a post-execution attestation for run `e3-confirmatory-real-20260824`. The attested T4/T8/F7/raw artifacts are imported through `scripts/import_verified_e3_result.py`; the receipt preserves their exact hashes and the decision `C3=NOT_SUPPORTED`. Cryptographic validity authenticates exact bytes and declared principals only. It does not prove real-world identity, independence, expertise, or private-key custody; those remain accountable out-of-band checks.
 
 Pre-execution authorization and post-execution result attestation are separate records. The former binds the request scope and permits only that execution; the latter can bind generated E3 evidence only after execution. Neither may be inferred from the other, and the pre-execution verifier never promotes E3 evidence or C3.
 
@@ -87,7 +86,7 @@ The production freeze gate requires all of the following, none of which are sati
 4. Give the ZIP to the real external evaluator. Treat it only as delivery material; it is not signed authorization.
 5. The evaluator completes and externally signs the pre-execution authority record. Verify it with `scripts/verify_e3_authority.py` and external signature inputs; do not execute E3 from request material alone.
 6. After separately authorized E3 execution, obtain the separate post-execution attestation and verify it with `scripts/verify_e3_result_attestation.py`, the external signature inputs, and the exact artifact root. A verified attestation authenticates the reported artifact set; it does not itself promote `C3`.
-7. Rebuild the canonical publication artifacts.
+7. Rebuild the canonical publication artifacts without changing the negative C3 disposition.
 8. Generate and check the independent-review selection with `scripts/build_external_review_handoff.py`.
 9. Build a candidate bundle. The replay pipeline copies every selected input under `review_handoff/inputs/`, recomputes a candidate-specific handoff manifest, and verifies its closed hash set.
 10. Give the complete post-E3 candidate review-handoff tree to the real independent reviewer.

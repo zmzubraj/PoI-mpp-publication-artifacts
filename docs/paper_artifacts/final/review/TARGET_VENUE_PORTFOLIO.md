@@ -69,8 +69,7 @@ Official access/fee source:
 
 - Open access options: https://www.sciencedirect.com/journal/blockchain-research-and-applications/publish/open-access-options
 
-Current blocking fit issue: the manuscript architecture fits, but E3 remains `WAITING_EXTERNAL`, E1/E2 remain inconclusive pilots, independently signed
-domain review is absent, and author declarations are unapproved. The current
+Current blocking fit issue: the manuscript architecture fits, but C3 is `NOT_SUPPORTED` by the externally attested E3 run, E1/E2 remain inconclusive pilots, evaluator identity, independence, and private-key custody still require accountable out-of-band confirmation, independently signed domain review is absent, and author declarations are unapproved. The current
 bundle therefore does not satisfy the scientific or accountable-human submission
 gate for this journal.
 
@@ -100,8 +99,8 @@ Official sources:
 - Scope and call: https://www.computer.org/digital-library/journals/tq/cfp-dependable-secure-computing
 - Author information: https://www.computer.org/csdl/journal/tq/write-for-us/15068
 
-Current disposition: aspirational only. The absent E3 evidence, inconclusive E1
-and E2 designs, bounded prior-art search, and lack of external replication do not
+Current disposition: aspirational only. The negative and very small E3 result,
+inconclusive E1 and E2 designs, bounded prior-art search, and lack of external replication do not
 currently support a TDSC submission claim.
 
 ## Broad open-access computing candidate
