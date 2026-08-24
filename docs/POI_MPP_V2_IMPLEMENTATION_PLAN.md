@@ -749,3 +749,31 @@ Verification evidence:
 - independent read-only static review: initial four findings remediated; final authority-decision follow-up passed.
 
 This checkpoint closes only the Phase-1 engineering contract. It does not establish semantic reliability, external evaluator identity or independence, a 500-item confirmatory dataset, authorized C3-v2 execution, independent reproduction, or submission readiness.
+
+---
+
+## 17. Implementation checkpoint — Phase 2
+
+**Checkpoint date:** 2026-08-25
+**Engineering gate:** `COMPLETE`
+**Scientific claim effect:** none; C3-v1 remains `NOT_SUPPORTED` and C3-v2 remains prospective.
+
+Implemented and fail-closed:
+
+- immutable semantic-authority registry snapshots with canonical entry ordering, revision/hash binding, duplicate authority/key rejection, and task-policy circularity avoidance;
+- a canonical structured external cryptographic-verification receipt bound to the authority record digest, key, detached signature, allowed-signers material, verifier output, and registry snapshot;
+- `SemanticPolicyV2` with frozen claim/dataset/registry/model/runtime/task/prompt/calibration bindings, development-only calibration, confirmatory `REAL_MODEL_EXECUTION` origin, exact metric/artifact scope, tri-state partitions, and output/trace agreement;
+- `SemanticTraceArtifactV1` committed through the protocol response commitment and rebound to the protocol `TaskSpec` and `ModelManifest`;
+- grounded verification that rejects empty inputs, malformed wording, forged annotations, synthetic/non-real evidence, trust/scope drift, citation failures, contradictions, numerical errors, policy drift, trace mismatch, and commitment-lineage mismatch;
+- explicit `SEMANTIC_PUBLICATION` receipt mode, with mandatory semantic bindings and actual `GroundedVerificationResultV2` equality across decision, result digest, task root, response hash, and commitment hash;
+- deterministic `ACCEPT`, `REJECT`, and `ABSTAIN` receipt consequences; `NOT_SUPPORTED` is forced to `REJECT` and cannot activate.
+
+Verification evidence:
+
+- integrated semantic/evidence/protocol/Python-Solidity parity suite: `274 passed in 2.52s`;
+- Foundry `HashVectors`: `15 passed`;
+- Python `compileall`: passed;
+- scoped `git diff --check`: passed;
+- independent read-only engineering review: initial trust/trace/receipt findings were remediated; a fresh current-tree review reported no blocking Phase-2 findings.
+
+This checkpoint closes only the Phase-2 engineering kernel. It does not create development annotations, freeze a 500-item confirmatory dataset, authorize or execute C3-v2, establish evaluator independence, upgrade C3-v1, complete independent reproduction, or make the manuscript submission-ready.

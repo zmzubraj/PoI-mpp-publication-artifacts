@@ -11,7 +11,13 @@ from poi_mpp.protocol.receipt import (
     RecordDataAvailability,
     SlashReceipt,
 )
-from poi_mpp.protocol.types import AuditDecision, Receipt, ReceiptState, TransitionContext
+from poi_mpp.protocol.types import (
+    AuditDecision,
+    Receipt,
+    ReceiptState,
+    ReceiptVerificationMode,
+    TransitionContext,
+)
 
 
 class InvalidTransition(ValueError):
@@ -23,16 +29,74 @@ def _require_pending(receipt: Receipt, event_name: str) -> None:
         raise InvalidTransition(f"{event_name} requires a pending receipt")
 
 
-def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContext) -> Receipt:
+def transition(
+    receipt: Receipt,
+    event: ProtocolEvent,
+    context: TransitionContext,
+    *,
+    semantic_verification_result: object | None = None,
+) -> Receipt:
     if isinstance(event, RecordAudit):
         _require_pending(receipt, "RecordAudit")
         if receipt.audit_decision is not None:
             raise InvalidTransition("audit decision is already recorded")
         if receipt.da_decision is not None:
             raise InvalidTransition("audit decision cannot be recorded after data availability")
+        receipt_is_semantic = (
+            receipt.verification_mode is ReceiptVerificationMode.SEMANTIC_PUBLICATION
+        )
+        event_is_semantic = event.semantic_task_root is not None
+        if receipt_is_semantic != event_is_semantic:
+            raise InvalidTransition("semantic audit binding requirement mismatch")
+        if receipt_is_semantic:
+            if semantic_verification_result is None:
+                raise InvalidTransition("semantic verification result is required")
+            from poi_mpp.auditor.semantic.verifier_v2 import (
+                GroundedVerificationResultV2,
+                audit_decision_from_verification,
+            )
+
+            if not isinstance(
+                semantic_verification_result,
+                GroundedVerificationResultV2,
+            ):
+                raise InvalidTransition("semantic verification result type is invalid")
+            if event.decision is not audit_decision_from_verification(
+                semantic_verification_result
+            ):
+                raise InvalidTransition("semantic audit decision mismatch")
+            if event.verification_result_digest != (
+                f"0x{semantic_verification_result.result_digest}"
+            ):
+                raise InvalidTransition("semantic verification result digest mismatch")
+            if event.semantic_task_root != semantic_verification_result.task_root:
+                raise InvalidTransition("semantic verification result task_root mismatch")
+            if event.semantic_response_hash != (
+                f"0x{semantic_verification_result.response_hash}"
+            ):
+                raise InvalidTransition("semantic verification result response_hash mismatch")
+            if event.semantic_commitment_hash != (
+                semantic_verification_result.response_commitment_hash
+            ):
+                raise InvalidTransition("semantic verification result commitment_hash mismatch")
+            if event.semantic_task_root != receipt.semantic_task_root:
+                raise InvalidTransition("semantic audit task_root mismatch")
+            if event.semantic_response_hash != receipt.semantic_response_hash:
+                raise InvalidTransition("semantic audit response_hash mismatch")
+            if event.semantic_commitment_hash != receipt.commitment_hash:
+                raise InvalidTransition("semantic audit commitment_hash mismatch")
+        elif semantic_verification_result is not None:
+            raise InvalidTransition("legacy receipts cannot consume semantic verification results")
+        audit_update = {
+            "audit_verification_result_digest": event.verification_result_digest,
+        }
         if event.decision is AuditDecision.ACCEPT:
             return receipt.model_copy(
-                update={"audit_decision": AuditDecision.ACCEPT, "audit_accepted": True}
+                update={
+                    "audit_decision": AuditDecision.ACCEPT,
+                    "audit_accepted": True,
+                    **audit_update,
+                }
             )
         if event.decision is AuditDecision.ABSTAIN:
             return receipt.model_copy(
@@ -41,6 +105,7 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
                     "audit_decision": AuditDecision.ABSTAIN,
                     "audit_accepted": False,
                     "data_availability_passed": False,
+                    **audit_update,
                 }
             )
         return receipt.model_copy(
@@ -49,6 +114,7 @@ def transition(receipt: Receipt, event: ProtocolEvent, context: TransitionContex
                 "audit_decision": AuditDecision.REJECT,
                 "audit_accepted": False,
                 "data_availability_passed": False,
+                **audit_update,
             }
         )
     if isinstance(event, RecordDataAvailability):

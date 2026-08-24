@@ -54,6 +54,11 @@ class ReceiptState(IntEnum):
     SLASHED = 8
 
 
+class ReceiptVerificationMode(IntEnum):
+    LEGACY_PROTOCOL = 0
+    SEMANTIC_PUBLICATION = 1
+
+
 def _normalize_word_hex(value: str, field_name: str) -> str:
     if not isinstance(value, str) or not _WORD_HEX.fullmatch(value):
         raise ValueError(f"{field_name} must be a 32-byte lowercase hex word")
@@ -307,6 +312,10 @@ class Receipt(_FrozenProtocolModel):
     activated_epoch: int | None
     challenge_reason: str | None = None
     slash_reason: str | None
+    semantic_task_root: str | None = None
+    semantic_response_hash: str | None = None
+    audit_verification_result_digest: str | None = None
+    verification_mode: ReceiptVerificationMode = ReceiptVerificationMode.LEGACY_PROTOCOL
 
     @field_validator("worker_id")
     @classmethod
@@ -318,6 +327,19 @@ class Receipt(_FrozenProtocolModel):
     def require_word_hash(cls, value: str, info: ValidationInfo) -> str:
         return _normalize_word_hex(value, info.field_name)
 
+    @field_validator(
+        "semantic_task_root",
+        "semantic_response_hash",
+        "audit_verification_result_digest",
+    )
+    @classmethod
+    def require_optional_word_hash(
+        cls, value: str | None, info: ValidationInfo
+    ) -> str | None:
+        if value is None:
+            return None
+        return _normalize_word_hex(value, info.field_name)
+
     @field_validator("receipt_id", "task_id", "epoch_issued", "challenge_deadline")
     @classmethod
     def require_nonnegative_int(cls, value: int, info: ValidationInfo) -> int:
@@ -327,6 +349,25 @@ class Receipt(_FrozenProtocolModel):
 
     @model_validator(mode="after")
     def validate_state(self) -> "Receipt":
+        semantic_bindings = (self.semantic_task_root, self.semantic_response_hash)
+        if self.verification_mode is ReceiptVerificationMode.SEMANTIC_PUBLICATION:
+            if not all(value is not None for value in semantic_bindings):
+                raise ValueError(
+                    "semantic publication receipts require task and response bindings"
+                )
+        elif any(value is not None for value in semantic_bindings):
+            raise ValueError("legacy receipts cannot carry semantic bindings")
+        if (
+            self.verification_mode is ReceiptVerificationMode.LEGACY_PROTOCOL
+            and self.audit_verification_result_digest is not None
+        ):
+            raise ValueError("legacy receipts cannot carry a semantic verification digest")
+        if (
+            self.verification_mode is ReceiptVerificationMode.SEMANTIC_PUBLICATION
+            and self.audit_decision is not None
+            and self.audit_verification_result_digest is None
+        ):
+            raise ValueError("semantic audit decisions require a verification result digest")
         if self.audit_decision is AuditDecision.ACCEPT and not self.audit_accepted:
             raise ValueError("audit_accepted must be true when audit_decision is ACCEPT")
         if self.audit_decision in {AuditDecision.REJECT, AuditDecision.ABSTAIN} and self.audit_accepted:
