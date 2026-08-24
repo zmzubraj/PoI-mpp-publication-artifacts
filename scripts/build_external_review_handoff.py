@@ -48,6 +48,12 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/review/PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md",
     "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
     "docs/paper_artifacts/final/review/TARGET_VENUE_PORTFOLIO.md",
+    "docs/paper_artifacts/final/review/E1_E2_CLAIM_NARROWING_AUDIT.md",
+    "docs/paper_artifacts/final/external_reproduction/README.md",
+    "docs/paper_artifacts/final/external_reproduction/CLEAN_ROOM_PROTOCOL.md",
+    "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
+    "docs/paper_artifacts/final/external_reproduction/discrepancy_report.schema.json",
+    "docs/paper_artifacts/final/external_reproduction/external_reproduction_attestation.schema.json",
     "docs/paper_artifacts/final/external_review/README.md",
     "docs/paper_artifacts/final/external_review/ACCOUNTABLE_AUTHOR_SUBMISSION_INPUT.md",
     "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
@@ -111,6 +117,8 @@ def _role(relative_path: str) -> str:
         return "EDITABLE_MANUSCRIPT_TABLE"
     if "/visuals_algorithms/" in relative_path or relative_path.startswith("docs/algorithms/"):
         return "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE"
+    if "/external_reproduction/" in relative_path:
+        return "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA"
     if "/external_review/" in relative_path:
         return "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA"
     if "/review/" in relative_path:

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "discrepancies": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_or_command": {"minLength": 1, "type": "string"},
+          "expected": {"minLength": 1, "type": "string"},
+          "observed": {"minLength": 1, "type": "string"},
+          "severity": {"enum": ["INFO", "MATERIAL", "BLOCKING"]},
+          "status": {"enum": ["OPEN", "EXPLAINED", "RESOLVED"]}
+        },
+        "required": ["artifact_or_command", "expected", "observed", "severity", "status"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "reproduction_manifest_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "schema_version": {"const": "POI_MPP_REPRODUCTION_DISCREPANCY_REPORT_V1"}
+  },
+  "required": ["schema_version", "reproduction_manifest_sha256", "discrepancies"],
+  "type": "object"
+}
