@@ -20,6 +20,14 @@ AUTHOR_FORM = (
     / "external_review"
     / "ACCOUNTABLE_AUTHOR_SUBMISSION_INPUT.md"
 )
+FINAL_APPROVAL_CHECKLIST = (
+    REPO_ROOT
+    / "docs"
+    / "paper_artifacts"
+    / "final"
+    / "external_review"
+    / "FINAL_PDF_PORTAL_APPROVAL_CHECKLIST.md"
+)
 
 
 def test_target_venue_portfolio_is_dated_bounded_and_source_linked() -> None:
@@ -84,3 +92,15 @@ def test_accountable_author_form_is_explicitly_unapproved_and_complete() -> None
         "Accountable approval",
     ):
         assert field in content
+
+
+def test_final_pdf_portal_checklist_is_fail_closed_and_accountable() -> None:
+    content = FINAL_APPROVAL_CHECKLIST.read_text(encoding="utf-8")
+
+    assert "Status: `WAITING_ACCOUNTABLE_AUTHOR_FINAL_APPROVAL`" in content
+    assert "Rendered PDF SHA-256: `UNRESOLVED`" in content
+    assert "Submission package SHA-256: `UNRESOLVED`" in content
+    assert "portal preview" in content
+    assert "declarations" in content
+    assert "does not authorize submission" in content
+    assert "Publication freeze sentinel must remain blocked" in content

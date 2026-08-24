@@ -50,6 +50,10 @@ def test_external_review_handoff_binds_exact_review_inputs(tmp_path: Path) -> No
     assert "docs/paper_artifacts/final/review/TARGET_VENUE_PORTFOLIO.md" in paths
     assert "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip" in paths
     assert "docs/paper_artifacts/final/external_review/ACCOUNTABLE_AUTHOR_SUBMISSION_INPUT.md" in paths
+    assert (
+        "docs/paper_artifacts/final/external_review/FINAL_PDF_PORTAL_APPROVAL_CHECKLIST.md"
+        in paths
+    )
     assert "docs/paper_artifacts/final/review/E1_E2_CLAIM_NARROWING_AUDIT.md" in paths
     assert (
         "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json"

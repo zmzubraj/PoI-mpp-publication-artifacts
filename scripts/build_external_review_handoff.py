@@ -59,6 +59,7 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/external_reproduction/external_reproduction_attestation.schema.json",
     "docs/paper_artifacts/final/external_review/README.md",
     "docs/paper_artifacts/final/external_review/ACCOUNTABLE_AUTHOR_SUBMISSION_INPUT.md",
+    "docs/paper_artifacts/final/external_review/FINAL_PDF_PORTAL_APPROVAL_CHECKLIST.md",
     "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
     "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
     "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip",
