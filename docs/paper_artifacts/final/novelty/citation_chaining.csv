@@ -1,0 +1,9 @@
+seed_item,direction,candidate_link,source_snapshot,verification_status,evidence_note
+opML,forward,opp/ai,OpenAlex query and known-item metadata,UNVERIFIED_METADATA_LINK,same author cluster and adjacent optimistic blockchain-AI follow-on; direct citation edge not proven by frozen snapshot
+opML,forward,EigenAI,OpenAlex/arXiv metadata,UNVERIFIED_METADATA_LINK,later optimistic or deterministic public-audit architecture; direct citation edge not proven
+zkGPT,backward,SecTL,Crossref query metadata,UNVERIFIED_METADATA_LINK,older secure verifiable-inference work; reference-list edge requires full-text verification
+zkGPT,forward,VeriLoRA,OpenAlex known-item metadata,UNVERIFIED_METADATA_LINK,newer ZK LLM verification expansion; citing edge not frozen
+SVIP,forward,Hollow-LLM Attack,OpenAlex/arXiv metadata,UNVERIFIED_METADATA_LINK,defeating evidence in the same verification problem family; citing edge not frozen
+CommitLLM,forward,TensorCommitments,GitHub/arXiv metadata,UNVERIFIED_METADATA_LINK,later lightweight verification method; citing edge not frozen
+CommitLLM,backward,Freivalds-style verification lineage,official repository metadata,PARTIAL_METHOD_LINEAGE,method family is stated by project but exhaustive reference reconciliation remains open
+PoI manuscript,backward,HotStuff and weighted-BFT lineage,current manuscript reference audit,VERIFIED_MANUSCRIPT_REFERENCE,existing manuscript citation establishes consensus background only

@@ -180,3 +180,21 @@ The evidence-origin rules are strong, but authorship, conflicts, funding, AI-use
 | 2026-08-24 | citation cleanup, seven canonical quantitative figures, pinned DOCX dependency, candidate-only replay correction | KQ-10, KQ-11, KQ-12 and delivery checks | retained citations have no unresolved item; delivery and replay evidence improved; readiness remains `NOT_READY` | E3 authority/evidence, independent signed review, venue package, freeze sentinel |
 | 2026-08-25 | official three-venue portfolio and accountable-author decision package | KQ-16 and venue-package requirement | venue-rule knowledge moved from `UNKNOWN` to `PARTIAL`; readiness remains `NOT_READY` | accountable venue selection, E3 authority/evidence, independent signed review, declarations, template/checklist, freeze sentinel |
 | 2026-08-25 | permanent E1/E2 claim-narrowing audit and deterministic external-reproduction handoff | KQ-03, KQ-04, independent reproduction | current claims are explicitly narrowed; external reproduction remains `WAITING_EXTERNAL`; readiness remains `NOT_READY` | real external team execution, authenticated attestation, E3 authority/evidence, independent review, declarations, freeze sentinel |
+
+## P1/P2 gate table
+
+This table is operational, not a readiness promotion. `COMPLETE` means the local
+artifact requested for that row exists and passed its bounded mechanical checks;
+it does not replace external or accountable-human decisions.
+
+| Item | Current state | Evidence boundary | Exact next human or external action |
+|---|---|---|---|
+| strongest-prior-art novelty case | `WAITING_EXTERNAL` | dated bounded primary package is reproducible; novelty remains `NOVELTY_UNRESOLVED`; differently owned AI challenge is developmental only | qualified independent search owner reviews the frozen package, expands access-limited patent/standards/full-text surfaces, signs the exact reviewed hashes, and reconciles any stronger predecessor |
+| E1 general efficiency | `INCONCLUSIVE/CLAIM_NARROWED` | two-pair fixed-order real-model pilot only | retain narrow pilot language, or separately authorize a frozen counterbalanced confirmatory design before any new run |
+| E2 broad soundness | `INCONCLUSIVE/CLAIM_NARROWED` | one model/task/layer/token surface; four attacks plus one control | retain narrow pilot language, or predeclare broader tasks/models/attacks and independent replication before execution |
+| independent external reproduction | `WAITING_EXTERNAL` | deterministic unsigned clean-room package exists | external team verifies identity/independence, executes the exact package, and returns authenticated logs, discrepancy report, and detached signature |
+| venue and article type | `WAITING_USER` | dated three-venue portfolio exists; recommendation is non-binding | accountable author selects venue/article type and approves a current-rule refresh |
+| authorship and declarations | `WAITING_USER` | fail-closed structured author input form exists | all accountable authors provide and approve factual authorship, CRediT, funding, conflicts, ethics/N/A, availability, AI-use, and final-approval records |
+| venue-specific package | `BLOCKED` | no venue has been selected; therefore no official template is authoritative | after venue selection, obtain and hash the official template, apply current limits/anonymity/checklists, and build the source/supplement/cover-letter package |
+| final figures and tables | `WAITING_EXTERNAL` | hashes, editable sources, captions, and developmental integrity/accessibility ledger exist | qualified independent human verifies scientific fidelity, grayscale/color-vision behavior, final-size typography, denominators/units, and signs the record |
+| final PDF and portal approval | `WAITING_USER` | unsigned fail-closed checklist exists | accountable author reviews exact PDF, declarations, uploads, and portal preview bound to hashes, then records approval; do not submit beforehand |

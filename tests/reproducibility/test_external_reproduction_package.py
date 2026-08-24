@@ -29,6 +29,9 @@ def test_external_reproduction_manifest_is_deterministic_and_fail_closed() -> No
     paths = {item["path"] for item in payload["inputs"]}
     assert "docs/paper_artifacts/final/review/FIGURE_TABLE_FIDELITY_LEDGER.csv" in paths
     assert "docs/paper_artifacts/final/review/FIGURE_TABLE_INTEGRITY_QA.md" in paths
+    assert "docs/paper_artifacts/final/novelty/NOVELTY_MANIFEST.json" in paths
+    assert "docs/paper_artifacts/final/novelty/NOVELTY_CASE.md" in paths
+    assert "scripts/build_novelty_package.py" in paths
 
 
 def test_external_reproduction_handoff_requires_real_identity_and_signature() -> None:

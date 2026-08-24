@@ -1,0 +1,246 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/Hx8VcHLO1Hzn1wjJ+nN7oDVHJAo</id>
+  <title>arXiv Query: search_query=all:"verifiable llm inference"&amp;id_list=&amp;start=0&amp;max_results=10</title>
+  <updated>2026-08-24T18:35:07Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:%22verifiable+llm+inference%22&amp;start=0&amp;max_results=10&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>8</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2602.12630v1</id>
+    <title>TensorCommitments: A Lightweight Verifiable Inference for Language Models</title>
+    <updated>2026-02-13T05:23:31Z</updated>
+    <link href="https://arxiv.org/abs/2602.12630v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2602.12630v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Most large language models (LLMs) run on external clouds: users send a prompt, pay for inference, and must trust that the remote GPU executes the LLM without any adversarial tampering. We critically ask how to achieve verifiable LLM inference, where a prover (the service) must convince a verifier (the client) that an inference was run correctly without rerunning the LLM. Existing cryptographic works are too slow at the LLM scale, while non-cryptographic ones require a strong verifier GPU. We propose TensorCommitments (TCs), a tensor-native proof-of-inference scheme. TC binds the LLM inference to a commitment, an irreversible tag that breaks under tampering, organized in our multivariate Terkle Trees. For LLaMA2, TC adds only 0.97% prover and 0.12% verifier time over inference while improving robustness to tailored LLM attacks by up to 48% over the best prior work requiring a verifier GPU.</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-02-13T05:23:31Z</published>
+    <arxiv:comment>23 pages, 8 figures, under review</arxiv:comment>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Oguzhan Baser</name>
+    </author>
+    <author>
+      <name>Elahe Sadeghi</name>
+    </author>
+    <author>
+      <name>Eric Wang</name>
+    </author>
+    <author>
+      <name>David Ribeiro Alves</name>
+    </author>
+    <author>
+      <name>Sam Kazemian</name>
+    </author>
+    <author>
+      <name>Hong Kang</name>
+    </author>
+    <author>
+      <name>Sandeep P. Chinchali</name>
+    </author>
+    <author>
+      <name>Sriram Vishwanath</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2606.16352v1</id>
+    <title>Communication-Efficient Verifiable Attention for LLM Inference</title>
+    <updated>2026-06-15T07:50:15Z</updated>
+    <link href="https://arxiv.org/abs/2606.16352v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2606.16352v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Computation integrity of remote large language model (LLM) serving can be questionable. For conventional deep neural networks (DNNs), the existing TEE-shielded DNN partitioning (TSDP) approach uses Trusted Execution Environment (TEE) to compute non-linear components and verify the integrity of linear components offloaded to an untrusted GPU. However, directly applying TSDP to Transformer-based LLMs incurs significant TEE computation and TEE-GPU communication overhead. This paper presents Communication-efficient TEE-GPU Attention (\textsc{VeriAttn}) for accelerating verifiable LLM inference. \textsc{VeriAttn} offloads both linear and non-linear computations of attention to the GPU, while TEE performs verification. Moreover, for prefill, \textsc{VeriAttn} uses a two-level pipeline to overlap data movement, TEE pre-/post-processing, and GPU computation. For decoding, when the key-value cache exceeds available GPU memory, \textsc{VeriAttn} partitions attention across TEE and GPU to reduce repeated key-value transfers. Evaluation on an Intel TDX platform shows that \textsc{VeriAttn} achieves 2.60-3.38$\times$ and 3.86-5.42$\times$ acceleration over TSDP for 6k-token prompts and 10k-token outputs during prefill and decoding, respectively.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-06-15T07:50:15Z</published>
+    <arxiv:comment>19 pages, 16 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Ziqun Chen</name>
+    </author>
+    <author>
+      <name>Ming Wu</name>
+    </author>
+    <author>
+      <name>Michael Heinrich</name>
+    </author>
+    <author>
+      <name>Jason Zeng</name>
+    </author>
+    <author>
+      <name>Huiying Lan</name>
+    </author>
+    <author>
+      <name>Tianwei Zhang</name>
+    </author>
+    <author>
+      <name>Rui Tan</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2511.02620v3</id>
+    <title>Verifying LLM Inference to Detect Model Weight Exfiltration</title>
+    <updated>2026-03-12T19:24:14Z</updated>
+    <link href="https://arxiv.org/abs/2511.02620v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2511.02620v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>As large AI models become increasingly valuable assets, the risk of model weight exfiltration from inference servers grows accordingly. An attacker controlling an inference server may exfiltrate model weights by hiding them within ordinary model responses, a strategy known as steganography. This work investigates how to verify LLM model inference to defend against such attacks and, more broadly, to detect anomalous or buggy behavior during inference. We formalize model weight exfiltration as a security game, propose a verification framework that can provably mitigate steganographic exfiltration, and specify the trust assumptions associated with our scheme. To enable verification, we characterize valid sources of non-determinism in large language model inference and introduce two practical estimators for them. We evaluate our detection framework on several open-weight models ranging from 3B to 30B parameters. On MOE-Qwen-30B, our detector reduces exfiltratable information to &lt;0.5% with false-positive rate of &lt;0.01%, corresponding to a &gt;200x slowdown for adversaries. Overall, this work further establishes a foundation for defending against model weight exfiltration and demonstrates that strong protection can be achieved with minimal additional cost to inference providers. Our code is made public at: https://github.com/RoyRin/inference_verification_for_model_weight_exfiltration .</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-11-04T14:51:44Z</published>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Roy Rinberg</name>
+    </author>
+    <author>
+      <name>Adam Karvonen</name>
+    </author>
+    <author>
+      <name>Alexander Hoover</name>
+    </author>
+    <author>
+      <name>Daniel Reuter</name>
+    </author>
+    <author>
+      <name>Keri Warr</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2410.22307v3</id>
+    <title>SVIP: Towards Verifiable Inference of Open-source Large Language Models</title>
+    <updated>2026-01-31T07:38:35Z</updated>
+    <link href="https://arxiv.org/abs/2410.22307v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2410.22307v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The ever-increasing size of open-source Large Language Models (LLMs) renders local deployment impractical for individual users. Decentralized computing has emerged as a cost-effective solution, allowing individuals and small companies to perform LLM inference for users using surplus computational power. However, a computing provider may stealthily substitute the requested LLM with a smaller, less capable model without consent from users, thereby benefiting from cost savings. We introduce SVIP, a secret-based verifiable LLM inference protocol. Unlike existing solutions based on cryptographic or game-theoretic techniques, our method is computationally effective and does not rest on strong assumptions. Our protocol requires the computing provider to return both the generated text and processed hidden representations from LLMs. We then train a proxy task on these representations, effectively transforming them into a unique model identifier. With our protocol, users can reliably verify whether the computing provider is acting honestly. A carefully integrated secret mechanism further strengthens its security. We thoroughly analyze our protocol under multiple strong and adaptive adversarial scenarios. Our extensive experiments demonstrate that SVIP is accurate, generalizable, computationally efficient, and resistant to various attacks. Notably, SVIP achieves false negative rates below 5% and false positive rates below 3%, while requiring less than 0.01 seconds per prompt query for verification.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-10-29T17:52:45Z</published>
+    <arxiv:comment>21 pages</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Yifan Sun</name>
+    </author>
+    <author>
+      <name>Yuhang Li</name>
+    </author>
+    <author>
+      <name>Yue Zhang</name>
+    </author>
+    <author>
+      <name>Yuchen Jin</name>
+    </author>
+    <author>
+      <name>Huan Zhang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2608.09055v1</id>
+    <title>Repeated-Game Security for Restaking-Based Verifiable Inference</title>
+    <updated>2026-08-10T03:03:56Z</updated>
+    <link href="https://arxiv.org/abs/2608.09055v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2608.09055v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Restaking-based protocols enable verifiable LLM inference without the high proving cost of zkML or the hardware trust assumptions of TEEs. Their security is commonly justified by a one-round slashing condition: a rational provider should not cheat when the expected penalty exceeds the cost saving from dishonest inference. This paper shows that this condition can overstate security when inference is supplied repeatedly under the same stake. We model verifiable inference as a discounted repeated game and identify a repeated-game gap caused by proportional slashing: detected deviations reduce future penalty exposure, while cost savings are earned again across queries.
+  We derive the gap in closed form, show that it persists under minimum-stake ejection, and extend it to memoryless bounded-slashing protocols covering deployed designs. We propose a deployable mechanism combining history-dependent challenges, reputation-weighted slashing, and stake vesting. The mechanism restores infinite-horizon subgame-perfect incentive compatibility against stationary mixed-strategy deviations above an explicit discount-factor threshold without per-query cryptographic verification.
+  Evaluation across nine open-weight model pairs from 0.5B to 14B parameters shows that the audit signal has the required concave detectability response. A Stackelberg audit-budget analysis shows that improved signal responsiveness reduces the baseline audit rate by 2.6x at discount factor 0.95. Calibrated to deployed parameters, surveyed protocols pass one-round incentive compatibility but admit repeated-game deviations for discount factors between 0.92 and 0.98, with deviation-profit fractions of 1.5%--8%. Our mechanism reduces deviation profits by 31%--54% while maintaining low-latency economic verification.</summary>
+    <category term="cs.GT" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-08-10T03:03:56Z</published>
+    <arxiv:comment>Length: 29 pages total (15 pages main text, plus appendix and references). Figures: 5. Artifact: https://anonymous.4open.science/r/Repeated-Slashing-8031/README.md</arxiv:comment>
+    <arxiv:primary_category term="cs.GT"/>
+    <author>
+      <name>Zhenhang Shang</name>
+    </author>
+    <author>
+      <name>Yingzhe Yu</name>
+    </author>
+    <author>
+      <name>Kani Chen</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2608.17546v2</id>
+    <title>REST API Testing with Verified LLM-Inferred Dependencies and Response-Driven Refinement</title>
+    <updated>2026-08-20T01:07:24Z</updated>
+    <link href="https://arxiv.org/abs/2608.17546v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2608.17546v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Testing RESTful APIs requires generating sequences of API calls that satisfy dependencies among operations, parameters, and runtime-created resources. Recent LLM-based approaches infer such dependencies and generate test sequences from OpenAPI specifications, but they often treat LLM-inferred relationships as correct without execution-based validation. This can introduce spurious dependencies, miss feasible operation chains, and produce infeasible tests. In this paper, we propose APIPilot}, an execution-validated framework for REST API testing. APIPilot first derives candidate producer-consumer dependencies from OpenAPI specifications using structural heuristics and LLM-based semantic reasoning. It then treats these dependencies as hypotheses and validates them through concrete API executions before using them for test generation. The validated dependencies are organized into a dependency graph from which APIPilot constructs coverage-aware workflows via bounded top-k graph traversal, separating semantic dependency inference from sequence construction. To improve subsequent tests, APIPilot further performs response-driven refinement: runtime responses are analyzed to update resource pools, adjust input-generation constraints, and prune or revise invalid dependency mappings. Empirical evaluation on 16 real-world REST API services shows that APIPilot achieves 92.3% operation coverage, up to 58.6% code coverage, and an 88.1% workflow execution success rate, outperforming both LLM-based and traditional REST API testing baselines. APIPilot also detects 197 unique 5xx failures and specification-execution mismatches, demonstrating the benefit of grounding dependency inference in execution feedback.</summary>
+    <category term="cs.SE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-08-18T09:07:10Z</published>
+    <arxiv:comment>Under review</arxiv:comment>
+    <arxiv:primary_category term="cs.SE"/>
+    <author>
+      <name>Tu Nguyen</name>
+    </author>
+    <author>
+      <name>Thanh Nguyen</name>
+    </author>
+    <author>
+      <name>Huy Nguyen</name>
+    </author>
+    <author>
+      <name>Viet Nguyen</name>
+    </author>
+    <author>
+      <name>Tien N. Nguyen</name>
+    </author>
+    <author>
+      <name>Vu Nguyen</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2603.18046v2</id>
+    <title>NanoZK: Privacy-Preserving Verifiable Inference for Large Language Models via Layerwise Zero-Knowledge Proofs</title>
+    <updated>2026-07-18T02:49:54Z</updated>
+    <link href="https://arxiv.org/abs/2603.18046v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2603.18046v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We present NanoZK, a zero-knowledge proof system for verifiable LLM inference: clients and third-party auditors check that a provider executed the advertised model on a committed input without learning weights or activations. NanoZK introduces a layerwise proof framework that decomposes transformer inference into independently provable layers linked by a SHA-256 commitment chain, yielding constant-size sub-circuit proofs (3.5-3.7 KB; about 83 KB total at L=12), comparable in total size to and substantially more parallelizable than prior ZKML's monolithic 101-126 KB proofs. We prove compositional soundness and zero-knowledge under standard assumptions, design 16-bit lookup-table approximations for softmax, GELU, and normalization with measured perplexity degradation below 1e-4 across six model/dataset combinations, and add a Fisher-information-guided audit-budget triage as an efficiency tool (full soundness still requires verifying every layer). On CPU the MLP sub-circuit proves in about 6.3 s prove-only (about 43 s setup plus prove) with about 22 ms verification at any width; attention prove-only time scales from 0.9 s (d=16) to 184 s (d=256); full-block end-to-end proofs are measured to d=128, with a projected GPU time of about 68 s per block at d=768 from measured O(d^2) MSM scaling and a conservative 15-30x GPU-MSM speedup range based on Icicle's published 30x result for n &gt;= 2^20 and extrapolated to the smaller-n regime. Privacy scope: NanoZK hides weights and activations from verifiers and auditors but does not hide the prompt from the prover; this is complementary to HE/MPC.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-03-17T04:14:45Z</published>
+    <arxiv:comment>Extended version. The first 12 pages correspond to the ICICS 2026 (Springer LNCS) camera-ready paper. This version supersedes the earlier ICLR 2026 VeriFAI Workshop preprint and adds full security proofs, Halo2 circuit details, lookup-table derivations, extended experiments, verifier-cost analysis, GPU scaling, reproducibility instructions, and appendices omitted from the proceedings</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Zhaohui Wang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2501.16007v2</id>
+    <title>TOPLOC: A Locality Sensitive Hashing Scheme for Trustless Verifiable Inference</title>
+    <updated>2025-05-30T23:07:40Z</updated>
+    <link href="https://arxiv.org/abs/2501.16007v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2501.16007v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Large language models (LLMs) have proven to be very capable, but access to frontier models currently relies on inference providers. This introduces trust challenges: how can we be sure that the provider is using the model configuration they claim? We propose TOPLOC, a novel method for verifiable inference that addresses this problem. TOPLOC leverages a compact locality-sensitive hashing mechanism for intermediate activations, which can detect unauthorized modifications to models, prompts, or precision with 100% accuracy, achieving no false positives or negatives in our empirical evaluations. Our approach is robust across diverse hardware configurations, GPU types, and algebraic reorderings, which allows for validation speeds significantly faster than the original inference. By introducing a polynomial encoding scheme, TOPLOC minimizes the memory overhead of the generated proofs by $1000\times$, requiring only 258 bytes of storage per 32 new tokens, compared to the 262 KB requirement of storing the token embeddings directly for Llama 3.1-8B-Instruct. Our method empowers users to verify LLM inference computations efficiently, fostering greater trust and transparency in open ecosystems and laying a foundation for decentralized, verifiable and trustless AI services.</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.DC" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-01-27T12:46:45Z</published>
+    <arxiv:comment>16 pages, 11 tables, 3 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Jack Min Ong</name>
+    </author>
+    <author>
+      <name>Matthew Di Ferrante</name>
+    </author>
+    <author>
+      <name>Aaron Pazdera</name>
+    </author>
+    <author>
+      <name>Ryan Garner</name>
+    </author>
+    <author>
+      <name>Sami Jaghouar</name>
+    </author>
+    <author>
+      <name>Manveer Basra</name>
+    </author>
+    <author>
+      <name>Max Ryabinin</name>
+    </author>
+    <author>
+      <name>Johannes Hagemann</name>
+    </author>
+  </entry>
+</feed>

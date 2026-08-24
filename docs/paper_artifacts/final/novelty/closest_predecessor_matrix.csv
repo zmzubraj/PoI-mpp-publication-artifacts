@@ -1,0 +1,13 @@
+work_id,source_class,execution_commit_audit,optimistic_dispute,semantic_evidence_binding,receipt_credit_weight_lifecycle,local_evm_artifacts,scope_overlap,closest_predecessor_assessment
+CommitLLM,official project repository / grey literature,YES,CHALLENGE_TIME_AUDIT,NO,NO,NO,HIGH,closest implementation-level predecessor for committed open-weight inference and challenge-time audit
+opML,arXiv preprint,YES,YES,NO,NO,NO,HIGH,directly weakens any claim of new optimistic fraud-proof primitive for ML inference
+EigenAI,arXiv preprint,DETERMINISTIC_RE_EXECUTION,YES,NO,PARTIAL,NO,HIGH,direct overlap on deterministic inference plus public audit and cryptoeconomic enforcement
+zkGPT,peer-reviewed conference paper,ZK_ONLY,NO,NO,NO,NO,MEDIUM,strong adjacent verifier baseline but different common-path economics
+SVIP,arXiv preprint,YES,NO,NO,NO,NO,MEDIUM,adjacent open-source LLM verifiable inference surface
+Optimistic TEE-Rollups,arXiv preprint,YES,YES,PARTIAL,PARTIAL,BLOCKCHAIN_ONLY,MEDIUM,adjacent hybrid AI-blockchain composition even though TEE lane is deferred here
+TensorCommitments,arXiv preprint,YES,NO,NO,NO,NO,MEDIUM,new 2026 adjacent method showing fast-moving surface
+Communication-Efficient Verifiable Attention,arXiv preprint,PARTIAL,NO,NO,NO,NO,LOW,adjacent attention-verification primitive not full protocol overlap
+US11562228B2 / US11983608B2,public patent-family index,TRAINING_VERIFICATION,YES,NO,NO,BLOCKCHAIN_NATIVE,MEDIUM,pre-existing efficient blockchain-native ML verification and independent-auditor concepts
+US20250165967A1,public patent index,FHE_MODEL_VERIFICATION,SMART_CONTRACT_TRANSACTION,NO,PARTIAL,BLOCKCHAIN_NATIVE,MEDIUM,pre-existing model verification plus economic transaction surface
+IEEE 3127-2025,active IEEE guide,AUDITABILITY_GUIDANCE,NO,NO,NO,BLOCKCHAIN_ML,LOW,standardization adjacency for blockchain-based ML auditability and traceability
+Proof-of-Learning,peer-reviewed/conference metadata,NO,NO,NO,ML_DERIVED_CONSENSUS,YES,MEDIUM,prior ML-derived blockchain consensus authority weakens an empty consensus-integration lane

@@ -1,0 +1,134 @@
+{
+  "authority_boundary": "This package records a bounded primary search only. It does not prove universal novelty, close patents or standards exhaustively, or satisfy the required differently owned independent challenge.",
+  "cutoff_date": "2026-08-25",
+  "independent_challenge_status": "WAITING_EXTERNAL_INDEPENDENT_CHALLENGE",
+  "known_item_recovery": {
+    "CommitLLM": "RECOVERED",
+    "EigenAI": "RECOVERED",
+    "opML": "RECOVERED",
+    "zkGPT": "RECOVERED"
+  },
+  "package_input_count": 7,
+  "package_inputs": [
+    {
+      "path": "docs/paper_artifacts/final/novelty/README.md",
+      "sha256": "711ff238d974bdcbc98faa016e08ed577cf948c68fb69abeaf4483443272107b",
+      "size_bytes": 1504
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/NOVELTY_CASE.md",
+      "sha256": "7ab87d4cd638669dc28fd626fc1bb398a7f3ee4c36e547ad1ccbfdd348de2965",
+      "size_bytes": 3783
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/SEARCH_QUERIES.md",
+      "sha256": "731579a569e6558c975a8862aaf8f940ccd29e2d9737387c743dcf51bab4b34f",
+      "size_bytes": 5956
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/screening_ledger.csv",
+      "sha256": "e927f6f9464095e16a60d44c98f27a58b8b9a3cbc8d15030c6cce14d8db68052",
+      "size_bytes": 9680
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/closest_predecessor_matrix.csv",
+      "sha256": "4b924fbfd65b587061e12b468f9eba63bf504e82fc9c550446496e3e7cf874a1",
+      "size_bytes": 2067
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/citation_chaining.csv",
+      "sha256": "374e196ce11bc078b2cea07e89fb63322531748d8180d8f8ad1511daf23cd71d",
+      "size_bytes": 1445
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/contradiction_ledger.csv",
+      "sha256": "e180e7f612460607a0e669bcfe7f04b754d5190a5a7db25a1c240598ee285fd5",
+      "size_bytes": 2214
+    }
+  ],
+  "raw_snapshot_count": 15,
+  "raw_snapshots": [
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/arxiv_eigenai_abs_2026-08-25.html",
+      "sha256": "f7443891dfae1d95e3ced72be7a7d439bb31974e775e0e9e7f0d6d66a8ebc693",
+      "size_bytes": 41211
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/arxiv_opml_abs_2026-08-25.html",
+      "sha256": "4748162d23b0293479520f4c6275d94346fec1240e05a9c2833ec64cacf82488",
+      "size_bytes": 40601
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/arxiv_optimistic_tee_rollups_abs_2026-08-25.html",
+      "sha256": "9bd5358d870d717edaf02c67bb85920cd212e9464def59c9ffbb2eae9e862263",
+      "size_bytes": 43318
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/arxiv_query_optimistic_machine_learning_blockchain_2026-08-25.xml",
+      "sha256": "979aeda89ca33e9752b48a235a51afae14cf387daa618d6d276a6e70b4e4ba3f",
+      "size_bytes": 766
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/arxiv_query_verifiable_llm_inference_2026-08-25.xml",
+      "sha256": "d201d131057ccfd6d85df78240cd52fd15689b4acc4848f3caef47a15e5baa56",
+      "size_bytes": 20984
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/crossref_query_optimistic_machine_learning_blockchain_2026-08-25.json",
+      "sha256": "ea9b1fd12c3f483dd94c5ff5bf7376b89d3b04711be9a038d16c5adceb0993e6",
+      "size_bytes": 36285
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/crossref_query_verifiable_llm_inference_2026-08-25.json",
+      "sha256": "c83ce9a2a5b855627358dfb4ed92d608be98af8863b8f672c1e2de474ba0311d",
+      "size_bytes": 34272
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/github_commitllm_repo_2026-08-25.json",
+      "sha256": "7299a88274254c59d30ec996adefce1ad003a0c645fa91731faf344952405a82",
+      "size_bytes": 7111
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/openalex_adjacent_svip_2026-08-25.json",
+      "sha256": "968d9ea852247e7c2da3e02185b6e225df5034e1eaa83ed6f34013c5203a2d0a",
+      "size_bytes": 79882
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/openalex_known_item_eigenai_2026-08-25.json",
+      "sha256": "81cc33f385d958857a7b078feeb682c2c5319042701ca42029b1e2c2ca728093",
+      "size_bytes": 77709
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/openalex_known_item_opml_2026-08-25.json",
+      "sha256": "b52630ad4998296cbbdb9c865a203c71e3c17d9803839500bee9fe0b200b6762",
+      "size_bytes": 57103
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/openalex_known_item_zkgpt_2026-08-25.json",
+      "sha256": "1e54e89430ab563ceb3b270cc0bd52d96d8f297f7b2714cd0aea9c15e29dff53",
+      "size_bytes": 89280
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/openalex_query_optimistic_machine_learning_blockchain_2026-08-25.json",
+      "sha256": "ca48d25622f3f086a84746100c97b95b86f9597bc6048b37c835e645720d997b",
+      "size_bytes": 216083
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/openalex_query_verifiable_llm_inference_2026-08-25.json",
+      "sha256": "83e41fd23af8cdfcaf24e7118bde39c57bd666ea5db530fae5a1e0dd02ed3a4d",
+      "size_bytes": 279966
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/raw/usenix_zkgpt_2026-08-25.html",
+      "sha256": "db83a0693c2b9fe7ca339eed377dab56bb29b338feb1ab00eabe113d35622554",
+      "size_bytes": 41091
+    }
+  ],
+  "schema_version": "POI_MPP_NOVELTY_PACKAGE_V1",
+  "scope_freeze": {
+    "deferred": "70B/MoE, confidential GPU/TEE, and production-grade dispute VM",
+    "included": "1B-8B open-weight model + local EVM/Foundry + E1-E8 reproducible artifacts"
+  },
+  "self_digest": "198afbc0fb1c00246bcd0c9b9c34c179e64605704c61a3e8d6eeec0047c1652f",
+  "status": "NOVELTY_UNRESOLVED"
+}

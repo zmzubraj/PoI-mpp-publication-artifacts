@@ -52,6 +52,14 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/review/FIGURE_TABLE_FIDELITY_LEDGER.csv",
     "docs/paper_artifacts/final/review/FIGURE_TABLE_INTEGRITY_QA.md",
     "docs/paper_artifacts/final/review/figure_table_external_review_record.schema.json",
+    "docs/paper_artifacts/final/novelty/README.md",
+    "docs/paper_artifacts/final/novelty/NOVELTY_CASE.md",
+    "docs/paper_artifacts/final/novelty/SEARCH_QUERIES.md",
+    "docs/paper_artifacts/final/novelty/screening_ledger.csv",
+    "docs/paper_artifacts/final/novelty/closest_predecessor_matrix.csv",
+    "docs/paper_artifacts/final/novelty/citation_chaining.csv",
+    "docs/paper_artifacts/final/novelty/contradiction_ledger.csv",
+    "docs/paper_artifacts/final/novelty/NOVELTY_MANIFEST.json",
     "docs/paper_artifacts/final/external_reproduction/README.md",
     "docs/paper_artifacts/final/external_reproduction/CLEAN_ROOM_PROTOCOL.md",
     "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
@@ -79,6 +87,7 @@ EXACT_INPUTS = (
     "scripts/build_e3_authority_request.py",
     "scripts/build_e3_authority_package.py",
     "scripts/build_external_review_handoff.py",
+    "scripts/build_novelty_package.py",
     "scripts/verify_e3_authority.py",
     "scripts/verify_e3_result_attestation.py",
     "src/poi_mpp/experiments/e3_semantic.py",
@@ -121,6 +130,8 @@ def _role(relative_path: str) -> str:
         return "EDITABLE_MANUSCRIPT_TABLE"
     if "/visuals_algorithms/" in relative_path or relative_path.startswith("docs/algorithms/"):
         return "FIGURE_OR_ALGORITHM_SOURCE_OR_DERIVATIVE"
+    if "/novelty/" in relative_path:
+        return "PRIMARY_NOVELTY_EVIDENCE_PACKAGE"
     if "/external_reproduction/" in relative_path:
         return "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA"
     if "/external_review/" in relative_path:

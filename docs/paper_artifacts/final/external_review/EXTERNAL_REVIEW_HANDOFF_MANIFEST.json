@@ -6,7 +6,7 @@
     "independent_domain_expert_review": "WAITING_EXTERNAL",
     "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE"
   },
-  "review_input_count": 103,
+  "review_input_count": 112,
   "review_inputs": [
     {
       "path": "Makefile",
@@ -89,8 +89,8 @@
     {
       "path": "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA",
-      "sha256": "270e737474ed6522fa6376bbede3d66cad912c104232c1ab0b60748537ff850d",
-      "size_bytes": 29293
+      "sha256": "9aa3a81d3f1b1290f46d580419a2690cac26cf05e06b1543d746c24f418cefc1",
+      "size_bytes": 31022
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/README.md",
@@ -195,9 +195,57 @@
       "size_bytes": 5659
     },
     {
+      "path": "docs/paper_artifacts/final/novelty/NOVELTY_CASE.md",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "7ab87d4cd638669dc28fd626fc1bb398a7f3ee4c36e547ad1ccbfdd348de2965",
+      "size_bytes": 3783
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/NOVELTY_MANIFEST.json",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "38fd3f71f070b95422d51e0210d20bbec8d55c2879688e6cdbdd39e346336328",
+      "size_bytes": 5710
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/README.md",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "711ff238d974bdcbc98faa016e08ed577cf948c68fb69abeaf4483443272107b",
+      "size_bytes": 1504
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/SEARCH_QUERIES.md",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "731579a569e6558c975a8862aaf8f940ccd29e2d9737387c743dcf51bab4b34f",
+      "size_bytes": 5956
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/citation_chaining.csv",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "374e196ce11bc078b2cea07e89fb63322531748d8180d8f8ad1511daf23cd71d",
+      "size_bytes": 1445
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/closest_predecessor_matrix.csv",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "4b924fbfd65b587061e12b468f9eba63bf504e82fc9c550446496e3e7cf874a1",
+      "size_bytes": 2067
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/contradiction_ledger.csv",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "e180e7f612460607a0e669bcfe7f04b754d5190a5a7db25a1c240598ee285fd5",
+      "size_bytes": 2214
+    },
+    {
+      "path": "docs/paper_artifacts/final/novelty/screening_ledger.csv",
+      "role": "PRIMARY_NOVELTY_EVIDENCE_PACKAGE",
+      "sha256": "e927f6f9464095e16a60d44c98f27a58b8b9a3cbc8d15030c6cce14d8db68052",
+      "size_bytes": 9680
+    },
+    {
       "path": "docs/paper_artifacts/final/review/E1_E2_CLAIM_NARROWING_AUDIT.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "10bd3cd5f1bb72e9c3b4fc5d8ae2844fc78885d1ab19acb63d02acc18b394e35",
+      "sha256": "ca69050911d8c13cbde215e1664c3c3422f4174c9a8bc339d548a06d0e1e3431",
       "size_bytes": 2331
     },
     {
@@ -227,14 +275,14 @@
     {
       "path": "docs/paper_artifacts/final/review/PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "f8335c237a3433c09940320d5f4423f5cee0c3752b2d7067a6a55395eff47849",
-      "size_bytes": 1283
+      "sha256": "10f0acc52c460f2eb0d08e15e3a5d1410c3f5d1c8cf1da87f43c19bddf6e8deb",
+      "size_bytes": 4633
     },
     {
       "path": "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "2eb14a7cd5e3ab1922e535215545febdac318c30fe89db641ac0e1d4ea6a91df",
-      "size_bytes": 23966
+      "sha256": "a99542ac84b2164edb3a2e7842248f85d493a3778bcb0b263d724b19dd27a4eb",
+      "size_bytes": 26701
     },
     {
       "path": "docs/paper_artifacts/final/review/TARGET_VENUE_PORTFOLIO.md",
@@ -587,8 +635,14 @@
     {
       "path": "scripts/build_external_review_handoff.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "acb3478e89c30d48687662b0b75f97ba44bd6cc7224208d190eeebb966e5f257",
-      "size_bytes": 10322
+      "sha256": "65b7a3534e959903ddfab5952d3dd3bf5fbf9e7781ec612208d96c01c302c740",
+      "size_bytes": 10950
+    },
+    {
+      "path": "scripts/build_novelty_package.py",
+      "role": "REPRODUCIBILITY_GENERATOR",
+      "sha256": "ea4e617ba73579167a9deed35bb958a957ca89deee776089ab89b507bbaed341",
+      "size_bytes": 5886
     },
     {
       "path": "scripts/build_paper_docx.js",
@@ -628,6 +682,6 @@
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "3c3c06ce0398d7195c61c799bd3743d92275eb1e02ac2c7fef50e0a9f2f37b63",
+  "self_digest": "34807c7d81cd039be711f3dcf124f46a7c772dced7495f804eb96f255b1095eb",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

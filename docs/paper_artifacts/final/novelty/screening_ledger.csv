@@ -1,0 +1,66 @@
+record_id,surface,query_id,title_or_page,year,decision,include_exclude_reason,novelty_axis
+Q1-01,OpenAlex,Q1,Security and Privacy on Blockchain,2019,EXCLUDE,broad survey not claim-matched,none
+Q1-02,OpenAlex,Q1,A Survey on Consensus Mechanisms and Mining Strategy Management in Blockchain Networks,2019,EXCLUDE,broad consensus survey not AI-inference verification,none
+Q1-03,OpenAlex,Q1,Optimizing Academic Certificate Management With Blockchain and Machine Learning,2024,EXCLUDE,application-specific fraud detection not PoI lifecycle,none
+Q1-04,OpenAlex,Q1,opML: Optimistic Machine Learning on Blockchain,2024,INCLUDE,direct optimistic ML fraud-proof overlap,optimistic dispute
+Q1-05,OpenAlex,Q1,A review of Blockchain Technology applications for financial services,2022,EXCLUDE,broad application review,none
+Q1-06,OpenAlex,Q1,Tendermint: Byzantine Fault Tolerance in the Age of Blockchains,2016,EXCLUDE,consensus background without AI evidence lifecycle,consensus background
+Q1-07,OpenAlex,Q1,Proof-of-Learning: A Blockchain Consensus Mechanism Based on Machine Learning Competitions,2019,INCLUDE,adjacent ML-derived consensus authority,receipt-credit-consensus lifecycle
+Q1-08,OpenAlex,Q1,How do Machine Learning Robotic Process Automation and Blockchains Affect the Human Factor,2018,EXCLUDE,business-process discussion not claim-matched,none
+Q1-09,OpenAlex,Q1,Blockchain Applications in Smart Grid Review and Frameworks,2019,EXCLUDE,domain survey not claim-matched,none
+Q1-10,OpenAlex,Q1,Hyperledger fabric,2018,EXCLUDE,general blockchain platform background,none
+Q2-01,OpenAlex,Q2,DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning,2025,EXCLUDE,model training result not verifiable inference,none
+Q2-02,OpenAlex,Q2,Portcullis: A Scalable and Verifiable Privacy Gateway for Third-Party LLM Inference,2025,INCLUDE,adjacent third-party verifiable inference,execution verification
+Q2-03,OpenAlex,Q2,The TRIPOD-LLM reporting guideline for studies using large language models,2025,EXCLUDE,reporting guideline not verification mechanism,none
+Q2-04,OpenAlex,Q2,Large language models survey technical frameworks and future challenges,2024,EXCLUDE,broad survey not claim-matched,none
+Q2-05,OpenAlex,Q2,Towards Mitigating LLM Hallucination via Self Reflection,2023,EXCLUDE,semantic quality method not execution verification,none
+Q2-06,OpenAlex,Q2,A Survey of Large Language Models,2026,EXCLUDE,broad survey not claim-matched,none
+Q2-07,OpenAlex,Q2,The Science of Detecting LLM-Generated Text,2024,EXCLUDE,output detection not inference provenance,none
+Q2-08,OpenAlex,Q2,Mapping the Increasing Use of LLMs in Scientific Papers,2024,EXCLUDE,usage mapping not verification,none
+Q2-09,OpenAlex,Q2,From Generation to Judgment: Opportunities and Challenges of LLM-as-a-judge,2025,EXCLUDE,evaluation survey not protocol overlap,semantic evaluation background
+Q2-10,OpenAlex,Q2,LLatrieval: LLM-Verified Retrieval for Verifiable Generation,2024,EXCLUDE,retrieval correctness not execution verification,none
+Q3-01,Crossref,Q3,House Price Prediction with Optimistic Machine Learning Methods Using Bayesian Optimization,2024,EXCLUDE,optimistic means optimization not dispute protocol,none
+Q3-02,Crossref,Q3,A New Consensus Mechanism for Blockchained Federated Learning Systems Using Optimistic Rollups,2024,INCLUDE,adjacent blockchain ML consensus and optimistic-rollup overlap,optimistic dispute
+Q3-03,Crossref,Q3,Empowering Metaverse Through Machine Learning and Blockchain Technology,2022,EXCLUDE,broad application combination,none
+Q3-04,Crossref,Q3,On the Security of Optimistic Blockchain Mechanisms,2023,INCLUDE,defeating and security evidence for optimistic dispute assumptions,optimistic dispute
+Q3-05,Crossref,Q3,Machine learning in blockchain,2020,EXCLUDE,broad book chapter not claim-matched,none
+Q3-06,Crossref,Q3,Machine Learning IOT and Blockchain,2024,EXCLUDE,broad technologies collection,none
+Q3-07,Crossref,Q3,Framework for approaching blockchain in healthcare using machine learning,2020,EXCLUDE,application framework not claim-matched,none
+Q3-08,Crossref,Q3,Machine Learning and Deep Learning Technologies,2021,EXCLUDE,general methods background,none
+Q3-09,Crossref,Q3,Integration of Big Data Machine Learning and Blockchain Technology,2022,EXCLUDE,general integration background,none
+Q3-10,Crossref,Q3,Machine learning,2020,EXCLUDE,general chapter,none
+Q4-01,Crossref,Q4,Deterministic LLMs: a Practical Forensic Framework for Verifiable and Reproducible Local LLM Inference,2026,INCLUDE,direct deterministic reproducibility overlap,execution verification
+Q4-02,Crossref,Q4,The Alignment Imperative,2025,EXCLUDE,conceptual decentralized trust framing without clear claim-matched mechanism,none
+Q4-03,Crossref,Q4,Portcullis: A Scalable and Verifiable Privacy Gateway for Third-Party LLM Inference,2025,INCLUDE,adjacent verifiable third-party inference,execution verification
+Q4-04,Crossref,Q4,The Alignment Imperative duplicate record,2025,EXCLUDE,deduplicated by normalized title,none
+Q4-05,Crossref,Q4,SecTL: Secure and Verifiable Transfer Learning-based inference,2022,INCLUDE,older secure verifiable-inference background,execution verification
+Q4-06,Crossref,Q4,HybridCrypt-LLM: Lightweight Privacy for LLM Training and Inference,2026,EXCLUDE,privacy focus without public verification lifecycle,none
+Q4-07,Crossref,Q4,Technical Appendix: A Proposed Attested-Verifiable Inference Architecture,2026,EXCLUDE,unverified proposal not sufficiently authoritative,none
+Q4-08,Crossref,Q4,SmartProof: Verifiable Pipeline for LLM Smart Contract Synthesis Auditing and Trust Scoring,2025,EXCLUDE,verifies generated smart contracts not model inference,none
+Q4-09,Crossref,Q4,LLM-Trust: Verifiable Intelligence for Distributed Systems Control,2025,EXCLUDE,insufficient claim-matched metadata,none
+Q4-10,Crossref,Q4,LLM-AQuA-DiVeR,2025,EXCLUDE,requirements QA not inference verification,none
+Q6-01,arXiv,Q6,TensorCommitments: A Lightweight Verifiable Inference for Language Models,2026,INCLUDE,direct lightweight proof-of-inference overlap,execution verification
+Q6-02,arXiv,Q6,Communication-Efficient Verifiable Attention for LLM Inference,2026,INCLUDE,adjacent attention verification,execution verification
+Q6-03,arXiv,Q6,Verifying LLM Inference to Detect Model Weight Exfiltration,2025,INCLUDE,direct inference-verification adjacency,execution verification
+Q6-04,arXiv,Q6,SVIP: Towards Verifiable Inference of Open-source Large Language Models,2024,INCLUDE,direct open-source LLM verification overlap,execution verification
+Q6-05,arXiv,Q6,Repeated-Game Security for Restaking-Based Verifiable Inference,2026,INCLUDE,cryptoeconomic restaking verification overlap,receipt-credit-consensus lifecycle
+Q6-06,arXiv,Q6,REST API Testing with Verified LLM-Inferred Dependencies,2026,EXCLUDE,verifies inferred API dependencies not LLM execution,none
+Q6-07,arXiv,Q6,NanoZK: Privacy-Preserving Verifiable Inference for Large Language Models,2026,INCLUDE,zero-knowledge verifiable inference baseline,execution verification
+Q6-08,arXiv,Q6,TOPLOC: A Locality Sensitive Hashing Scheme for Trustless Verifiable Inference,2024,INCLUDE,trustless inference verification overlap,execution verification
+K-01,GitHub,K1,CommitLLM repository metadata,2026,INCLUDE,known-item recovery for committed open-weight inference and challenge audit,execution verification
+K-02,arXiv,K2,opML abstract page,2024,INCLUDE,known-item recovery for optimistic ML fraud proofs,optimistic dispute
+K-03,USENIX,K3,zkGPT official conference page,2025,INCLUDE,peer-reviewed ZK inference baseline,execution verification
+K-04,arXiv,K4,EigenAI abstract page,2026,INCLUDE,deterministic inference and cryptoeconomic public-audit overlap,receipt-credit-consensus lifecycle
+K-05,arXiv,K5,Optimistic TEE-Rollups abstract page,2025,INCLUDE,adjacent AI-blockchain optimistic architecture,semantic evidence binding
+K-06,OpenAlex,K6,opML known-item metadata recovery,2024,INCLUDE,identifier and metadata recovery,optimistic dispute
+K-07,OpenAlex,K7,zkGPT known-item metadata recovery,2025,INCLUDE,identifier and metadata recovery,execution verification
+K-08,OpenAlex,K8,EigenAI known-item metadata recovery,2026,INCLUDE,identifier and metadata recovery,receipt-credit-consensus lifecycle
+K-09,OpenAlex,K9,SVIP known-item metadata recovery,2024,INCLUDE,identifier and metadata recovery,execution verification
+P-01,Google Patents,P1,US11494677B2 Recording inference using a blockchain,2022,INCLUDE,inference audit trail on blockchain,provenance
+P-02,Google Patents,P2,US11562228B2 Efficient verification of machine learning applications,2023,INCLUDE,blockchain-native efficient ML verification,execution verification
+P-03,Google Patents,P3,US11303454B2 Producing and verifying computational determinations using a distributed ledger,2022,INCLUDE,model and inference-event provenance and verification,provenance
+P-04,Google Patents,P4,US20250165967A1 Method for machine learning model verification and transaction,2025,INCLUDE,smart-contract verification plus economic transaction,receipt-credit-consensus lifecycle
+S-01,IEEE SA,S1,IEEE 3127-2025 Blockchain-Based Federated Machine Learning,2025,INCLUDE,adjacent blockchain ML auditability framework,standards adjacency
+S-02,IEEE SA,S2,IEEE 3217-2023 Blockchain Application Interface Specification,2023,EXCLUDE,general interface standard not claim-matched,none
+S-03,IEEE SA,S3,P3215 blockchain consensus framework project,2024,INCLUDE,consensus-framework standardization adjacency,consensus background
+B-01,MLCommons,B1,MLPerf Inference Benchmark Suite,2026,EXCLUDE,performance benchmark does not evaluate inference provenance audit or receipt-credit lifecycle,benchmark gap
