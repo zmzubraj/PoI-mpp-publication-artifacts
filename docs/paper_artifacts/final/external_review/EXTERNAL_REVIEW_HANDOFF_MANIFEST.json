@@ -6,7 +6,7 @@
     "independent_domain_expert_review": "WAITING_EXTERNAL",
     "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE"
   },
-  "review_input_count": 76,
+  "review_input_count": 80,
   "review_inputs": [
     {
       "path": "docs/EXPERIMENT_ARTIFACT_MATRIX.md",
@@ -71,14 +71,20 @@
     {
       "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "47a76c02955f18d67ead21dc7e22397943b1c92dbb45c63bd5aacbb49c3ee79a",
-      "size_bytes": 3978
+      "sha256": "bcfe954cd9ec3b550595505a50242a83d977cb559f27fe49dca5d36d7895dbba",
+      "size_bytes": 4559
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "9f6c2eaeeb6ff915effffacb54213cc28eebc668779609b8cc9c83ac231a9a24",
+      "size_bytes": 185320
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "ef44c1481dab8746ee10d446140b63d742e40a46feec44b446847f901d0fd850",
-      "size_bytes": 7323
+      "sha256": "913d380a3d6d60a985b54b8b5d5530c1564acd0764adce088d163f36b20c9771",
+      "size_bytes": 9588
     },
     {
       "path": "docs/paper_artifacts/final/external_review/INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md",
@@ -89,8 +95,14 @@
     {
       "path": "docs/paper_artifacts/final/external_review/README.md",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "157d42619734b804d01162aa321b09bb2d1a32740fd7e04d35172e1c13e51145",
-      "size_bytes": 6173
+      "sha256": "6146d3e4cf244f08497a7e5c68a2a0da279417a7e9963edbd20d93a2f66c901f",
+      "size_bytes": 7677
+    },
+    {
+      "path": "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
+      "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
+      "sha256": "af15c3929c160afdb0a90d8b4cc61e23d99f12e28a132d815dfb149ac7e9966e",
+      "size_bytes": 7433
     },
     {
       "path": "docs/paper_artifacts/final/external_review/independent_domain_expert_review_record.schema.json",
@@ -435,16 +447,22 @@
       "size_bytes": 516
     },
     {
+      "path": "scripts/build_e3_authority_package.py",
+      "role": "REPRODUCIBILITY_GENERATOR",
+      "sha256": "5e60b60fa9a26d353089d08fc50602e6ed3f432a26585373df77e56a5043613c",
+      "size_bytes": 10525
+    },
+    {
       "path": "scripts/build_e3_authority_request.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "7e0262dfc03da139793f1781c46b36fd4a3162ab372f8253b6677bc52adcd558",
-      "size_bytes": 5744
+      "sha256": "a02e19e073864b580b286a1b27c397e7e298d8ce98166f2ffe1803fb440a5995",
+      "size_bytes": 5927
     },
     {
       "path": "scripts/build_external_review_handoff.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "5f7f68f1681416d259a500a3c382544c3e94d48bd12d459b17eeb54fe89ae4af",
-      "size_bytes": 8393
+      "sha256": "b221088552c0766a195935231f464220e56c12b5fa7ec62eb42db0e2b77b5183",
+      "size_bytes": 8659
     },
     {
       "path": "scripts/build_paper_docx.js",
@@ -461,11 +479,17 @@
     {
       "path": "scripts/verify_e3_authority.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "6e92a2443d9fcdae3a4e9043fa4f4c51bb2c49b6646ad52991f27cbc0c7c5227",
-      "size_bytes": 11123
+      "sha256": "b8b10ac0a2a765c6eb118439c8c486cb8faca54f1c7ebd483f46acce790a5ed9",
+      "size_bytes": 11376
+    },
+    {
+      "path": "scripts/verify_e3_result_attestation.py",
+      "role": "REPRODUCIBILITY_GENERATOR",
+      "sha256": "691499e6bb08801c7960d065de61cacc46484289c166fd79599aac76825749bf",
+      "size_bytes": 34440
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "0b466e7c5e002329da647cb9fe1fd1a480e4ba69f473490528e91a1ccbf09dac",
+  "self_digest": "26dc160d06b228d40727880724cd801f2db853c1d814ed249e884af9545da224",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

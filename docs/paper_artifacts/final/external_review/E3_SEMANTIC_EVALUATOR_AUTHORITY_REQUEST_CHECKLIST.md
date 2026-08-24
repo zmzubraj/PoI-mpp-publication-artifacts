@@ -66,31 +66,52 @@ The authoritative request selection is generated, not copied from this prose:
 ```text
 ./.venv/bin/python scripts/build_e3_authority_request.py
 ./.venv/bin/python scripts/build_e3_authority_request.py --check
+./.venv/bin/python scripts/build_e3_authority_package.py
+./.venv/bin/python scripts/build_e3_authority_package.py --check
 ```
 
-`E3_AUTHORITY_REQUEST_MANIFEST.json` binds every selected artifact to its exact SHA-256 value and byte length, includes a canonical E3-only scope digest, and includes its own self-digest. It remains unsigned request material. Any separately required freeze-level `verification_report.json` and `claim_support_matrix.json` must be generated and bound without treating this request or an authority record as result evidence.
+`E3_AUTHORITY_REQUEST_MANIFEST.json` binds every selected artifact to its exact SHA-256 value and byte length, includes a canonical E3-only scope digest, and includes its own self-digest. `E3_AUTHORITY_REQUEST_PACKAGE.zip` contains that manifest and only those hash-bound inputs, with deterministic archive metadata. Both remain unsigned request and delivery material. Neither creates identity, authority, a signature, a key, execution evidence, or result attestation. Any separately required freeze-level `verification_report.json` and `claim_support_matrix.json` must be generated and bound without treating this request, package, or an authority record as result evidence.
 
 ## Separate future post-execution bind set
 
 A later result attestation, created only after authorized execution, should bind the generated artifacts when they exist:
 
-- `publication/tables/T4_dataset_composition.status.json`
+- `publication/tables/T4_dataset_composition.json`
 - `publication/tables/T8_semantic_verification.csv`
 - `publication/figures/F7_semantic_verification_quality.svg`
-- any raw E3 execution bundle or evaluator-side artifact designated by the execution contract
+- `results/publication/<run_id>/raw_e3_execution.zip`
 
 These artifacts are not currently present as authorized confirmatory publication evidence in the current candidate. They are deliberately excluded from the pre-execution authority record because their hashes do not yet exist.
+
+The post-execution verifier parses typed T4 JSON, typed T8 CSV, structured F7 SVG metadata, and a typed raw-run manifest. All included artifacts must use distinct canonical paths and bind the same model, configuration, input, output, trace, provenance, run, and pre-execution-authority hashes. Merely embedding `E3`, `C3`, or `REAL_MODEL_EXECUTION` tokens is insufficient. A `LIMITED_SCOPE` authorization must retain the minimum attestable core (`RAW_E3_EXECUTION`, `T8`, and at least one authorized metric); it can authenticate only an exact signed subset and always returns `INCOMPLETE_NONPUBLICATION`. Even a full `APPROVED` input set returns `COMPLETE_INPUT_SET_REQUIRES_SEPARATE_C3_ADJUDICATION`, never automatic C3 support.
+
+Use `e3_result_attestation_record.schema.json` for that separate record. Verify the completed record, both detached signatures, the external allowed-signers file, and the exact generated artifact root with:
+
+```text
+./.venv/bin/python scripts/verify_e3_result_attestation.py \
+  --request-manifest docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json \
+  --authority-record /external/path/e3_authority_record.json \
+  --authority-signature /external/path/e3_authority_record.json.sig \
+  --attestation-record /external/path/e3_result_attestation.json \
+  --attestation-signature /external/path/e3_result_attestation.json.sig \
+  --allowed-signers /external/path/allowed_signers \
+  --artifact-root /external/path/e3_artifacts
+```
+
+These paths are examples only. The verifier requires the signature inputs to remain outside the repository and returns `NOT_EVALUATED_BY_THIS_ATTESTATION`; downstream claim adjudication remains separate.
 
 ## Checklist for the requesting side
 
 - [ ] confirm that the requested scope is E3 only, not a blanket authorization for all claims
 - [ ] confirm that the authority is external to the producing chain
 - [ ] generate and verify the canonical `E3_AUTHORITY_REQUEST_MANIFEST.json`
+- [ ] generate and verify the deterministic unsigned `E3_AUTHORITY_REQUEST_PACKAGE.zip`
 - [ ] provide the exact E3 capability request without upgrading current claim status
 - [ ] provide privacy and confidentiality handling expectations
 - [ ] state that `C3` is currently `WAITING_EXTERNAL` with no authorized confirmatory evidence
 - [ ] state that pre-execution approval binds the request manifest, while later result attestation must separately bind exact generated-artifact hashes
 - [ ] state that no AI output or producer self-attestation can substitute for the authority decision
+- [ ] after authorized execution, require a separately signed result attestation that binds the exact run and all `T4`, `T8`, `F7`, and raw-execution hashes
 
 ## Checklist for the future external authority record
 

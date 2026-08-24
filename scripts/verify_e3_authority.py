@@ -179,6 +179,13 @@ def _validate_scope(record: AuthorityRecord, request: dict[str, Any]) -> None:
         not metric_scope.issubset(requested_metrics) or not artifact_scope.issubset(requested_artifacts)
     ):
         raise AuthorityVerificationError("limited authority scope must be a subset of the canonical E3 request")
+    if record.decision == "LIMITED_SCOPE" and not {
+        "RAW_E3_EXECUTION",
+        "T8",
+    }.issubset(artifact_scope):
+        raise AuthorityVerificationError(
+            "limited authority scope must include RAW_E3_EXECUTION and T8"
+        )
 
 
 def verify_authority(

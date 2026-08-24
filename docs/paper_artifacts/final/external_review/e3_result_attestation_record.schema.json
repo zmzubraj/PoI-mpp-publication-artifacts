@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "poi-mpp/e3_result_attestation_record.schema.json",
+  "title": "POI MPP E3 Post-Execution Result Attestation Record",
+  "description": "Schema for a future external attestation of exact authorized E3 result artifacts. Authentication under this schema never determines publication support for C3.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "record_type",
+    "authority_identity",
+    "authority_basis",
+    "expertise_scope",
+    "pre_execution_authority_record",
+    "reviewed_request_manifest",
+    "result_scope",
+    "artifacts",
+    "results_disposition",
+    "attestation_notes",
+    "attestation_date",
+    "publication_support_decision_status",
+    "external_signature_required",
+    "signature_namespace",
+    "signature_reference",
+    "allowed_signers_reference"
+  ],
+  "properties": {
+    "schema_version": {"const": "POI_MPP_E3_RESULT_ATTESTATION_V1"},
+    "record_type": {"const": "POST_EXECUTION_RESULT_ATTESTATION"},
+    "authority_identity": {"type": "string", "minLength": 1},
+    "authority_basis": {"type": "string", "minLength": 1},
+    "expertise_scope": {"type": "string", "minLength": 1},
+    "pre_execution_authority_record": {"$ref": "#/$defs/fileReference"},
+    "reviewed_request_manifest": {"$ref": "#/$defs/requestManifestReference"},
+    "result_scope": {"$ref": "#/$defs/resultScope"},
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {"$ref": "#/$defs/resultArtifact"}
+    },
+    "results_disposition": {"enum": ["ATTESTED_AS_REPORTED", "QUALIFIED", "REJECTED"]},
+    "attestation_notes": {"type": "string", "minLength": 1},
+    "attestation_date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "publication_support_decision_status": {"const": "NOT_EVALUATED_BY_THIS_ATTESTATION"},
+    "external_signature_required": {"const": true},
+    "signature_namespace": {"const": "file"},
+    "signature_reference": {"type": "string", "minLength": 1},
+    "allowed_signers_reference": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "fileReference": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safeRelativePath"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "requestManifestReference": {
+      "type": "object",
+      "required": ["path", "sha256", "self_digest"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safeRelativePath"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "self_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "resultScope": {
+      "type": "object",
+      "required": [
+        "experiment_id",
+        "claim_id",
+        "task_class",
+        "run_id",
+        "evidence_origin",
+        "metric_scope",
+        "artifact_scope",
+        "execution_bindings"
+      ],
+      "properties": {
+        "experiment_id": {"const": "E3"},
+        "claim_id": {"const": "C3"},
+        "task_class": {"const": "GROUNDED_SEMANTIC_ASSURANCE"},
+        "run_id": {"type": "string", "minLength": 1},
+        "evidence_origin": {"const": "REAL_MODEL_EXECUTION"},
+        "metric_scope": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"enum": ["FAR", "FRR", "ABSTAIN", "coverage", "calibration"]}
+        },
+        "artifact_scope": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["T4", "T8", "F7", "RAW_E3_EXECUTION"]}
+        },
+        "execution_bindings": {"$ref": "#/$defs/executionBindings"}
+      },
+      "additionalProperties": false
+    },
+    "executionBindings": {
+      "type": "object",
+      "required": [
+        "model_hash",
+        "config_hash",
+        "input_hash",
+        "output_hash",
+        "trace_hash",
+        "provenance_hash",
+        "pre_execution_authority_record_sha256"
+      ],
+      "properties": {
+        "model_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "config_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "input_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "output_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "trace_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "provenance_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "pre_execution_authority_record_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "resultArtifact": {
+      "type": "object",
+      "required": [
+        "artifact_id",
+        "artifact_role",
+        "path",
+        "sha256",
+        "size_bytes",
+        "experiment_id",
+        "claim_id",
+        "run_id",
+        "evidence_origin"
+      ],
+      "properties": {
+        "artifact_id": {"enum": ["T4", "T8", "F7", "RAW_E3_EXECUTION"]},
+        "artifact_role": {
+          "enum": [
+            "DATASET_COMPOSITION",
+            "SEMANTIC_METRICS",
+            "SEMANTIC_QUALITY_FIGURE",
+            "RAW_EXECUTION_BUNDLE"
+          ]
+        },
+        "path": {"$ref": "#/$defs/safeRelativePath"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "size_bytes": {"type": "integer", "minimum": 1},
+        "experiment_id": {"const": "E3"},
+        "claim_id": {"const": "C3"},
+        "run_id": {"type": "string", "minLength": 1},
+        "evidence_origin": {"const": "REAL_MODEL_EXECUTION"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"artifact_id": {"const": "T4"}}, "required": ["artifact_id"]},
+          "then": {
+            "properties": {
+              "artifact_role": {"const": "DATASET_COMPOSITION"},
+              "path": {"const": "publication/tables/T4_dataset_composition.json"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"artifact_id": {"const": "T8"}}, "required": ["artifact_id"]},
+          "then": {
+            "properties": {
+              "artifact_role": {"const": "SEMANTIC_METRICS"},
+              "path": {"const": "publication/tables/T8_semantic_verification.csv"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"artifact_id": {"const": "F7"}}, "required": ["artifact_id"]},
+          "then": {
+            "properties": {
+              "artifact_role": {"const": "SEMANTIC_QUALITY_FIGURE"},
+              "path": {"const": "publication/figures/F7_semantic_verification_quality.svg"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"artifact_id": {"const": "RAW_E3_EXECUTION"}}, "required": ["artifact_id"]},
+          "then": {
+            "properties": {
+              "artifact_role": {"const": "RAW_EXECUTION_BUNDLE"},
+              "path": {
+                "pattern": "^results/publication/[A-Za-z0-9._-]+/raw_e3_execution\\.zip$"
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

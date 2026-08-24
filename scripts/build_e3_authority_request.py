@@ -37,12 +37,15 @@ REQUEST_INPUTS = (
     "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
     "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md",
     "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
+    "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
     "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
     "publication/artifact_manifest.json",
     "publication/tables/claim_matrix.json",
     "publication/tables/omissions.json",
     "scripts/build_e3_authority_request.py",
+    "scripts/build_e3_authority_package.py",
     "scripts/verify_e3_authority.py",
+    "scripts/verify_e3_result_attestation.py",
 )
 
 REQUESTED_SCOPE: dict[str, Any] = {

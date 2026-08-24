@@ -130,6 +130,9 @@ def test_e3_request_manifest_is_deterministic_hash_closed_and_e3_only(tmp_path: 
     assert "publication/artifact_manifest.json" in paths
     assert "publication/tables/omissions.json" in paths
     assert "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json" in paths
+    assert "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json" in paths
+    assert "scripts/build_e3_authority_package.py" in paths
+    assert "scripts/verify_e3_result_attestation.py" in paths
     assert all(not Path(path).is_absolute() and ".." not in Path(path).parts for path in paths)
     for entry in payload["request_inputs"]:
         artifact = REPO_ROOT / entry["path"]
@@ -211,6 +214,32 @@ def test_e3_authority_verifier_accepts_hash_bound_limited_scope(tmp_path: Path) 
     completed = _run_verifier(request_path, record_path, allowed_signers, signature)
     assert completed.returncode == 0, completed.stderr
     assert json.loads(completed.stdout)["decision"] == "LIMITED_SCOPE"
+
+
+@pytest.mark.parametrize(
+    "artifact_scope",
+    (
+        ["T4"],
+        ["RAW_E3_EXECUTION", "T4"],
+        ["T8", "F7"],
+    ),
+)
+def test_e3_authority_verifier_rejects_limited_scope_without_minimum_attestable_core(
+    tmp_path: Path, artifact_scope: list[str]
+) -> None:
+    request_path = tmp_path / "E3_AUTHORITY_REQUEST_MANIFEST.json"
+    request = _build_request(request_path)
+    record = _authority_record(request_path, request)
+    record["decision"] = "LIMITED_SCOPE"
+    record["authorized_scope"]["metric_scope"] = ["FAR"]
+    record["authorized_scope"]["artifact_scope"] = artifact_scope
+    record_path = tmp_path / "authority_record.json"
+    record_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    allowed_signers, signature = _sign_record(tmp_path, record_path, str(record["authority_identity"]))
+
+    completed = _run_verifier(request_path, record_path, allowed_signers, signature)
+    assert completed.returncode != 0
+    assert "limited authority scope must include RAW_E3_EXECUTION and T8" in completed.stderr
 
 
 def test_e3_authority_verifier_rejects_record_changed_after_signature(tmp_path: Path) -> None:
