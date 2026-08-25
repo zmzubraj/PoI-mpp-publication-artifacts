@@ -71,6 +71,25 @@ class E8SeedPolicy(StrEnum):
     FIXED_PER_SCENARIO = "FIXED_PER_SCENARIO"
 
 
+class E8MultiEpochPolicy(_FrozenModel):
+    schema_version: str = "POI_MPP_E8_MULTI_EPOCH_POLICY_V1"
+    start_epoch: int = Field(ge=1)
+    epoch_count: int = Field(ge=3, le=32)
+    seed_stride: int = Field(gt=0)
+    transition_model: str
+    required_claim_disposition: str
+
+    @model_validator(mode="after")
+    def validate_policy(self) -> "E8MultiEpochPolicy":
+        if self.schema_version != "POI_MPP_E8_MULTI_EPOCH_POLICY_V1":
+            raise ValueError("multi_epoch_policy schema_version must equal POI_MPP_E8_MULTI_EPOCH_POLICY_V1")
+        if self.transition_model != "FROZEN_SCENARIO_REISSUANCE_V1":
+            raise ValueError("multi_epoch_policy transition_model must equal FROZEN_SCENARIO_REISSUANCE_V1")
+        if self.required_claim_disposition != "INCONCLUSIVE":
+            raise ValueError("multi_epoch_policy required_claim_disposition must equal INCONCLUSIVE")
+        return self
+
+
 class AuthorityBoundaryError(ValueError):
     """Raised when the E8 CLI would overstate publication authority."""
 
@@ -354,6 +373,7 @@ class E8ConfirmatoryContract(_FrozenModel):
     minimum_negative_controls: int = Field(ge=1)
     minimum_boundary_rows: int = Field(ge=1)
     seed_policy: E8SeedPolicy
+    multi_epoch_policy: E8MultiEpochPolicy
     allowed_scenarios: tuple[E8AllowedScenario, ...]
     notes: tuple[str, ...] = ()
 
