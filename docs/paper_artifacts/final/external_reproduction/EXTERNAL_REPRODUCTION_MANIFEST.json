@@ -471,8 +471,8 @@
     },
     {
       "path": "scripts/build_external_reproduction_package.py",
-      "sha256": "8c7fa771c897e18a9cc187950c0bc4c86ec61d939dfb33a227df68c35f28e394",
-      "size_bytes": 7523
+      "sha256": "61adc4caab13330ba1141db2d5fcff5847be951669485673747bdd8f39364e84",
+      "size_bytes": 7776
     },
     {
       "path": "scripts/build_novelty_package.py",
@@ -953,6 +953,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "0bc5a51e1850aeee4d1b068a43a223ccd9bc327aa5833608d6b9b6dffc25432f",
+  "self_digest": "376acdeaacf9d66fbfde928efd572fdcd354c9db4c747f293bb6ccfda32765bf",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }
