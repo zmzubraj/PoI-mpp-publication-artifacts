@@ -34,6 +34,20 @@ def test_external_reproduction_manifest_is_deterministic_and_fail_closed() -> No
     assert "scripts/build_novelty_package.py" in paths
 
 
+def test_external_reproduction_manifest_excludes_ambient_untracked_files() -> None:
+    payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout.decode("utf-8").split("\0")
+    tracked_paths = {path for path in tracked if path}
+    packaged_paths = {item["path"] for item in payload["inputs"]}
+
+    assert packaged_paths <= tracked_paths
+
+
 def test_external_reproduction_handoff_requires_real_identity_and_signature() -> None:
     readme = (PACKAGE_ROOT / "README.md").read_text(encoding="utf-8")
     protocol = (PACKAGE_ROOT / "CLEAN_ROOM_PROTOCOL.md").read_text(encoding="utf-8")

@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import subprocess
 import sys
 import tempfile
 from typing import Any
@@ -82,6 +83,24 @@ def _canonical_bytes(payload: dict[str, Any]) -> bytes:
 
 
 def _selected_paths() -> tuple[str, ...]:
+    tracked_process = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+    )
+    tracked_paths = {
+        path
+        for path in tracked_process.stdout.decode("utf-8").split("\0")
+        if path
+    }
+    missing_exact = sorted(set(EXACT_INPUTS) - tracked_paths)
+    if missing_exact:
+        raise ValueError(
+            "required reproduction inputs are not Git-tracked: "
+            + ", ".join(missing_exact)
+        )
+
     selected = set(EXACT_INPUTS)
     for pattern in GLOB_INPUTS:
         matches = sorted(REPO_ROOT.glob(pattern))
@@ -89,7 +108,9 @@ def _selected_paths() -> tuple[str, ...]:
             raise ValueError(f"reproduction input pattern matched no files: {pattern}")
         for match in matches:
             if match.is_file():
-                selected.add(match.relative_to(REPO_ROOT).as_posix())
+                relative_path = match.relative_to(REPO_ROOT).as_posix()
+                if relative_path in tracked_paths:
+                    selected.add(relative_path)
     return tuple(sorted(selected))
 
 

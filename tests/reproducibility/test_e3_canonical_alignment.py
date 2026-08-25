@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from pathlib import Path
 
@@ -131,6 +132,19 @@ def test_current_canonical_prose_preserves_e3_negative_result_and_scope() -> Non
     ).read_text(encoding="utf-8")
     assert "Fresh-current E3 revalidation" in readiness
     assert "request manifest sha256 mismatch" in readiness
+
+
+def test_manuscript_binds_current_publication_manifest_without_stale_failure() -> None:
+    manifest_path = REPO_ROOT / "publication" / "artifact_manifest.json"
+    manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    manuscript = (
+        FINAL_ROOT / "manuscript" / "POI_SUBMISSION_MANUSCRIPT.md"
+    ).read_text(encoding="utf-8")
+
+    assert f"SHA-256 `{manifest_sha256}`" in manuscript
+    assert "Integrated manifest validation currently fails closed because" not in manuscript
+    assert "recorded input hash for `configs/publication_foundry/e7.run.yaml`" not in manuscript
+    assert "Mechanical manifest validation passes against the current bound inputs" in manuscript
 
 
 def test_e3_is_not_present_in_either_canonical_omission_ledger() -> None:
