@@ -125,14 +125,14 @@
     {
       "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "9b444d8935050130c594f9bdda44fe9050f2582bf497d3b7f324ac97d17e2b26",
+      "sha256": "d2191057716d86c0a09237a5dc24caf71819f75294e193a8f0033a4cc3e8b22c",
       "size_bytes": 5539
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "abc787821454463fe054fc82bc752f358f9c9d0fda8943eece250190171eb34a",
-      "size_bytes": 285141
+      "sha256": "fc09f4e8afeeaac853e78fe4bc18572644415c5867589e60d6a253c8e1e9cb09",
+      "size_bytes": 285458
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_MISSING_ARTIFACTS_TRACKER.md",
@@ -700,6 +700,6 @@
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "93f55cc891af6dd61ab48061a55dfcc9e140f3c2dc2afdb1f923b9c3cb4c0243",
+  "self_digest": "e0a48a022df37ed94ef03164dc8522dfb10c9df9e4b0994804d9ebdce406eed7",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

@@ -60,8 +60,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
-      "sha256": "eed909325edc17eb46a7946b2ae3948f653121895b8e48185a029fd9a50cbd77",
-      "size_bytes": 4477
+      "sha256": "67a3bc1ccab9faa9f066ab7fd1d6a559b73473f46da71bc014ffd5be6b86da3b",
+      "size_bytes": 4628
     },
     {
       "path": "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md",
@@ -75,13 +75,13 @@
     },
     {
       "path": "publication/artifact_manifest.json",
-      "sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
+      "sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
       "size_bytes": 49406
     },
     {
       "path": "publication/tables/claim_matrix.json",
-      "sha256": "6ac2e0b9caf04f38294bf9bdfff70a6175a32d4beaac2e88925f6d0bb4ee9a96",
-      "size_bytes": 8386
+      "sha256": "a8edaf86a2f4361baa0d6b70bfb8389f767ea60a4211157e2146cd75666b23f0",
+      "size_bytes": 8552
     },
     {
       "path": "publication/tables/omissions.json",
@@ -141,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "6527b53f6ecc26ce0bb6b0ccc0b0e7b61e306be073d0e19b2e181498c3510f45",
+  "self_digest": "2f026a589967b3e97f55d527a906d555619a2625eb690e07b9117adc186a9fa6",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }
