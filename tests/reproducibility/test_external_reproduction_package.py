@@ -5,6 +5,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+from scripts import build_external_reproduction_package as package_builder
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PACKAGE_ROOT = REPO_ROOT / "docs" / "paper_artifacts" / "final" / "external_reproduction"
@@ -46,6 +50,22 @@ def test_external_reproduction_manifest_excludes_ambient_untracked_files() -> No
     packaged_paths = {item["path"] for item in payload["inputs"]}
 
     assert packaged_paths <= tracked_paths
+
+
+def test_mandatory_glob_rejects_untracked_only_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    untracked = tmp_path / "src" / "only_untracked.py"
+    untracked.parent.mkdir(parents=True)
+    untracked.write_text("# must not satisfy a mandatory package glob\n", encoding="utf-8")
+
+    monkeypatch.setattr(package_builder, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(package_builder, "EXACT_INPUTS", ())
+    monkeypatch.setattr(package_builder, "GLOB_INPUTS", ("src/**/*.py",))
+
+    with pytest.raises(ValueError, match="matched no Git-tracked files"):
+        package_builder._selected_paths()
 
 
 def test_external_reproduction_handoff_requires_real_identity_and_signature() -> None:

@@ -106,11 +106,17 @@ def _selected_paths() -> tuple[str, ...]:
         matches = sorted(REPO_ROOT.glob(pattern))
         if not matches:
             raise ValueError(f"reproduction input pattern matched no files: {pattern}")
+        tracked_matches: list[str] = []
         for match in matches:
             if match.is_file():
                 relative_path = match.relative_to(REPO_ROOT).as_posix()
                 if relative_path in tracked_paths:
-                    selected.add(relative_path)
+                    tracked_matches.append(relative_path)
+        if not tracked_matches:
+            raise ValueError(
+                f"reproduction input pattern matched no Git-tracked files: {pattern}"
+            )
+        selected.update(tracked_matches)
     return tuple(sorted(selected))
 
 
