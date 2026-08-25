@@ -1,0 +1,55 @@
+schema_version: POI_MPP_E4_EXECUTION_CONFIG_V2
+experiment_id: E4
+claim_id: C4
+origin: REPRODUCIBLE_SIMULATION
+method_boundary: EXECUTABLE_LOCAL_DA_RECONSTRUCTION_SIMULATION
+claim_disposition: INCONCLUSIVE
+claim_disposition_reason: LOCAL_DETERMINISTIC_SIMULATION_DOES_NOT_ESTABLISH_NETWORK_GENERALITY
+seed: 424242
+model:
+  model_version: POI_MPP_E4_LOCAL_DA_RECONSTRUCTION_V2
+  total_shards: 8
+  reconstruction_threshold: 5
+  sample_count: 4
+  replacement: false
+  shard_payload_bytes: 64
+scenarios:
+  - scenario_id: honest-negative-control
+    kind: HONEST_NEGATIVE_CONTROL
+    seed_offset: 0
+    expected_status: VERIFIED
+    mutation_count: 0
+  - scenario_id: random-withholding
+    kind: RANDOM_WITHHOLDING
+    seed_offset: 11
+    expected_status: WITHHELD
+    mutation_count: 4
+  - scenario_id: targeted-withholding
+    kind: TARGETED_WITHHOLDING
+    seed_offset: 23
+    expected_status: WITHHELD
+    mutation_count: 4
+  - scenario_id: corrupt-shard
+    kind: CORRUPT_SHARD
+    seed_offset: 37
+    expected_status: CORRUPT
+    mutation_count: 1
+  - scenario_id: duplicate-shard
+    kind: DUPLICATE_SHARD
+    seed_offset: 41
+    expected_status: CORRUPT
+    mutation_count: 1
+  - scenario_id: reordered-shard
+    kind: REORDERED_SHARD
+    seed_offset: 53
+    expected_status: CORRUPT
+    mutation_count: 2
+  - scenario_id: selective-service
+    kind: SELECTIVE_SERVICE
+    seed_offset: 67
+    expected_status: SELECTIVE_SERVICE
+    mutation_count: 1
+notes:
+  - This is an executable deterministic local reconstruction simulation, not a real network execution.
+  - The honest scenario is a negative control; adverse scenarios exercise named failure states.
+  - All outputs remain REPRODUCIBLE_SIMULATION and Claim C4 remains INCONCLUSIVE.
