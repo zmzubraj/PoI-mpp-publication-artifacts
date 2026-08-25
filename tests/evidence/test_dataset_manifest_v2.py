@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from poi_mpp.evidence.dataset_manifest_v2 import (
     DatasetManifestV2,
     DatasetPrivacyStatus,
     DatasetSplitV2,
+    assert_v2_split_isolation,
 )
 from poi_mpp.evidence.models import EvidenceOrigin
 
@@ -204,3 +206,140 @@ def test_dataset_manifest_v2_exports_frozen_enums_and_annotation_schema() -> Non
     assert DatasetExpectedDecision.ACCEPT.value == "ACCEPT"
     assert DatasetExpectedSemanticOutcome.SUPPORTED_GROUNDS.value == "SUPPORTED_GROUNDS"
     assert record.annotation.annotation_scope == "E3_CONFIRMATORY_LABELS_V2"
+
+
+def test_dataset_manifest_v2_verifies_bound_file_bytes_and_detects_tampering(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "dataset"
+    (root / "items").mkdir(parents=True)
+    (root / "labels").mkdir(parents=True)
+    item = b'{"prompt":"grounded"}\n'
+    label = b'{"expected_decision":"ACCEPT"}\n'
+    (root / "items" / "case-001.json").write_bytes(item)
+    (root / "labels" / "case-001.json").write_bytes(label)
+    manifest = DatasetManifestV2.model_validate(
+        _manifest(
+            records=(
+                _record(
+                    item_hash=hashlib.sha256(item).hexdigest(),
+                    label_hash=hashlib.sha256(label).hexdigest(),
+                ),
+            )
+        )
+    )
+
+    verified = manifest.verify_rooted_file_hashes(root)
+    assert verified == ("case-001",)
+
+    (root / "labels" / "case-001.json").write_bytes(b"tampered\n")
+    with pytest.raises(ValueError, match="label_hash mismatch for case-001"):
+        manifest.verify_rooted_file_hashes(root)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "expected_message"),
+    [
+        ("record_id", "record_id overlap"),
+        ("item_hash", "item_hash overlap"),
+        ("label_hash", "label_hash overlap"),
+        ("content_hash", "content_hash overlap"),
+        ("deduplication_group", "deduplication_group overlap"),
+    ],
+)
+def test_v2_split_isolation_rejects_every_bound_overlap(
+    field_name: str,
+    expected_message: str,
+) -> None:
+    development_record = _record(
+        record_id="development-001",
+        item_path="items/development-001.json",
+        label_path="labels/development-001.json",
+        item_hash=_word("a"),
+        label_hash=_word("b"),
+        content_hash=_word("c"),
+        split="DEVELOPMENT",
+        deduplication_group="development-group",
+        evidence_origin="REAL_MODEL_EXECUTION",
+    )
+    confirmatory_record = _record(
+        record_id="confirmatory-001",
+        item_path="items/confirmatory-001.json",
+        label_path="labels/confirmatory-001.json",
+        item_hash=_word("d"),
+        label_hash=_word("e"),
+        content_hash=_word("f"),
+        split="CONFIRMATORY",
+        deduplication_group="confirmatory-group",
+    )
+    confirmatory_record[field_name] = development_record[field_name]
+    development = DatasetManifestV2.model_validate(
+        _manifest(
+            dataset_id="E3_DEVELOPMENT_SET_V2",
+            split="DEVELOPMENT",
+            records=(development_record,),
+        )
+    )
+    confirmatory = DatasetManifestV2.model_validate(
+        _manifest(records=(confirmatory_record,))
+    )
+
+    with pytest.raises(ValueError, match=expected_message):
+        assert_v2_split_isolation(development, confirmatory)
+
+
+def test_v2_split_isolation_requires_development_then_confirmatory_and_reports_counts() -> None:
+    development = DatasetManifestV2.model_validate(
+        _manifest(
+            dataset_id="E3_DEVELOPMENT_SET_V2",
+            split="DEVELOPMENT",
+            records=(
+                _record(
+                    record_id="development-accept",
+                    item_path="items/development-accept.json",
+                    label_path="labels/development-accept.json",
+                    item_hash=_word("a"),
+                    label_hash=_word("b"),
+                    content_hash=_word("c"),
+                    split="DEVELOPMENT",
+                    deduplication_group="development-accept",
+                    evidence_origin="REAL_MODEL_EXECUTION",
+                ),
+                _record(
+                    record_id="development-abstain",
+                    item_path="items/development-abstain.json",
+                    label_path="labels/development-abstain.json",
+                    item_hash=_word("d"),
+                    label_hash=_word("e"),
+                    content_hash=_word("f"),
+                    split="DEVELOPMENT",
+                    expected_decision="ABSTAIN",
+                    expected_semantic_outcome="ABSTAIN_GROUNDS",
+                    deduplication_group="development-abstain",
+                    evidence_origin="REAL_MODEL_EXECUTION",
+                ),
+            ),
+        )
+    )
+    confirmatory = DatasetManifestV2.model_validate(
+        _manifest(
+            records=(
+                _record(
+                    record_id="confirmatory-001",
+                    item_path="items/confirmatory-001.json",
+                    label_path="labels/confirmatory-001.json",
+                    item_hash=_word("1"),
+                    label_hash=_word("2"),
+                    content_hash=_word("3"),
+                    deduplication_group="confirmatory-group",
+                ),
+            )
+        )
+    )
+
+    assert_v2_split_isolation(development, confirmatory)
+    assert development.decision_counts() == {"ABSTAIN": 1, "ACCEPT": 1, "REJECT": 0}
+    assert development.error_family_counts() == {"grounded_citation": 2}
+
+    with pytest.raises(ValueError, match="development manifest must use DEVELOPMENT split"):
+        assert_v2_split_isolation(confirmatory, development)

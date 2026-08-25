@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+import hashlib
 from pathlib import Path, PurePosixPath
 import math
 import re
@@ -261,6 +262,46 @@ class DatasetManifestV2(_FrozenDatasetModel):
             )
         return tuple(bindings)
 
+    def verify_rooted_file_hashes(self, root: str | Path) -> tuple[str, ...]:
+        """Verify the exact item and label bytes bound by this manifest.
+
+        ``content_hash`` remains the normalized semantic-content binding defined by
+        the dataset producer; this method verifies only the raw file hashes whose
+        byte-level meaning is unambiguous.
+        """
+
+        records_by_id = {record.record_id: record for record in self.records}
+        verified: list[str] = []
+        for binding in self.rooted_file_bindings(root):
+            record = records_by_id[binding.record_id]
+            actual_item_hash = hashlib.sha256(binding.item_path.read_bytes()).hexdigest()
+            if actual_item_hash != record.item_hash:
+                raise ValueError(f"item_hash mismatch for {record.record_id}")
+            actual_label_hash = hashlib.sha256(binding.label_path.read_bytes()).hexdigest()
+            if actual_label_hash != record.label_hash:
+                raise ValueError(f"label_hash mismatch for {record.record_id}")
+            verified.append(record.record_id)
+        return tuple(verified)
+
+    def decision_counts(self) -> dict[str, int]:
+        """Return a complete deterministic decision-class summary."""
+
+        return {
+            decision.value: sum(
+                record.expected_decision is decision for record in self.records
+            )
+            for decision in DatasetExpectedDecision
+        }
+
+    def error_family_counts(self) -> dict[str, int]:
+        """Return deterministic error-family counts for calibration review."""
+
+        families = sorted({record.error_family for record in self.records})
+        return {
+            family: sum(record.error_family == family for record in self.records)
+            for family in families
+        }
+
     @staticmethod
     def _resolve_rooted_member(root: Path, *, relative_path: str, label: str) -> Path:
         candidate = root / PurePosixPath(relative_path)
@@ -273,3 +314,39 @@ class DatasetManifestV2(_FrozenDatasetModel):
         if resolved.is_symlink():
             raise ValueError(f"{label} may not be a symlink")
         return resolved
+
+
+def assert_v2_split_isolation(
+    development: DatasetManifestV2,
+    confirmatory: DatasetManifestV2,
+) -> None:
+    """Fail closed when a V2 development/confirmatory pair shares bound identity.
+
+    Near-duplicate and source-family isolation require separately reviewed source
+    metadata and are intentionally not inferred from these record fields.
+    """
+
+    if development.split is not DatasetSplitV2.DEVELOPMENT:
+        raise ValueError("development manifest must use DEVELOPMENT split")
+    if confirmatory.split is not DatasetSplitV2.CONFIRMATORY:
+        raise ValueError("confirmatory manifest must use CONFIRMATORY split")
+
+    fields = (
+        "record_id",
+        "item_hash",
+        "label_hash",
+        "content_hash",
+        "deduplication_group",
+    )
+    for field_name in fields:
+        development_values = {
+            getattr(record, field_name) for record in development.records
+        }
+        confirmatory_values = {
+            getattr(record, field_name) for record in confirmatory.records
+        }
+        overlap = sorted(development_values & confirmatory_values)
+        if overlap:
+            raise ValueError(
+                f"{field_name} overlap between development and confirmatory manifests"
+            )
