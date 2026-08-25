@@ -74,7 +74,7 @@ Novelty provisional থাকার কারণগুলো non-compensating:
 
 বর্তমান workspace বোঝার source of truth হলো canonical
 `publication/artifact_manifest.json`। এর SHA-256 হলো
-`85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0`।
+`1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722`।
 
 এই canonical bundle-এ E1-E8-এর result surface আছে। E3-এর retained signed
 revision-এ externally authorized `REAL_MODEL_EXECUTION` এবং detached

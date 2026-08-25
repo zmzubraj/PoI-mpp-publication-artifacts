@@ -146,6 +146,12 @@ def test_manuscript_binds_current_publication_manifest_without_stale_failure() -
     assert "recorded input hash for `configs/publication_foundry/e7.run.yaml`" not in manuscript
     assert "Mechanical manifest validation passes against the current bound inputs" in manuscript
 
+    bengali_alignment = (
+        FINAL_ROOT / "review" / "MPP_ALIGNMENT_EXPLANATION_BN.md"
+    ).read_text(encoding="utf-8")
+    assert manifest_sha256 in bengali_alignment
+    assert "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0" not in bengali_alignment
+
 
 def test_e3_is_not_present_in_either_canonical_omission_ledger() -> None:
     omissions_json = json.loads(
