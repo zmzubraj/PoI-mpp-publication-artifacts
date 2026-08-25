@@ -209,7 +209,7 @@ Relevant repository contracts include:
 
 ### 4.2 End-to-end state
 
-Within its approved scope, the MPP software is materially implemented: evidence schemas, protocol objects, Python-Solidity parity surfaces, reporting builders, Foundry contract scaffolds, and a canonical publication-artifact pipeline are present. The manifest is the source of truth for result status; software implementation does not compensate for an inconclusive experiment, an absent authority, missing independent review, or an absent freeze sentinel.
+Within its approved scope, the MPP software is materially implemented: evidence schemas, protocol objects, Python-Solidity parity surfaces, reporting builders, Foundry contract scaffolds, and a canonical publication-artifact pipeline are present. The manifest is the source of truth for result status; software implementation does not compensate for an inconclusive experiment, a missing authorization required for any future execution, missing independent review, or an absent freeze sentinel. The retained E3 run is not authority-blocked: its signed-revision pre-execution authorization and post-execution artifact attestation were verified, and its negative result remains `C3=NOT_SUPPORTED`.
 
 ### 4.3 Canonical publication state
 
@@ -326,7 +326,7 @@ The repository currently demonstrates:
 
 The repository does not yet demonstrate:
 
-- external-evaluator-authorized semantic confirmation for E3;
+- general semantic reliability: the externally authorized and post-execution-attested E3 real-model run was negative under the frozen rule (`C3=NOT_SUPPORTED`) and included only eight items, including two invalid items;
 - a publication-freeze sentinel;
 - authenticated independent manual review;
 - 70B or larger model validation;
@@ -348,7 +348,7 @@ Third, semantic claims are narrow. The implemented MPP is limited to objective a
 
 Fourth, empirical support is heterogeneous. E1, E2, E4, and E8 are `INCONCLUSIVE`; E5 and E6 are supported only within declared simulation scenarios; and E7 is supported only for local Foundry boundedness. E3 is an externally attested real-model run, `NOT_SUPPORTED` (FAR 0.500 > alpha_sem 0.25).
 
-Fifth, the canonical bundle remains not publication-ready because it preserves unresolved gates rather than relabeling them as success. External evaluator authority, authenticated independent manual review, and the publication-freeze sentinel remain required. Neither AI production nor user approval is independent review.
+Fifth, the canonical bundle remains not publication-ready because it preserves unresolved gates rather than relabeling them as success. E3 pre-execution authority and its externally signed post-execution artifact attestation were verified for the hash-bound signed revision, but cryptographic validity alone does not prove the evaluator's real-world identity, independence, expertise, or private-key custody. Those out-of-band confirmations, authenticated independent manual review, and the publication-freeze sentinel remain required. Neither AI production nor user approval is independent review.
 
 ## 9. Deferred future phases
 
@@ -372,9 +372,9 @@ The correct current interpretation is therefore not that the architecture is ful
 
 ## Reproducibility and artifact availability
 
-The canonical report bundle is rooted at `publication/artifact_manifest.json`, SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`. It contains machine-readable tables, quantitative SVG and JSON outputs, the claim matrix, and the omission ledger. Conceptual diagrams are retained as editable Mermaid source, and Algorithms 1-5 are retained as manuscript-ready pseudocode and detailed source specifications. Paper-only PNGs are deterministic presentation derivatives generated from canonical figure JSON by `scripts/build_paper_figures.py`; they do not replace the canonical evidence artifacts.
+The current candidate report bundle is rooted at `publication/artifact_manifest.json`, SHA-256 `85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0`. It contains machine-readable tables, quantitative SVG and JSON outputs, the claim matrix, and the omission ledger. Integrated manifest validation currently fails closed because the recorded input hash for `configs/publication_foundry/e7.run.yaml` does not match the working input; therefore this candidate manifest is not a frozen publication bundle. Conceptual diagrams are retained as editable Mermaid source, and Algorithms 1-5 are retained as manuscript-ready pseudocode and detailed source specifications. Paper-only PNGs are deterministic presentation derivatives generated from canonical figure JSON by `scripts/build_paper_figures.py`; they do not replace the canonical evidence artifacts.
 
-The bundle is intentionally not frozen for submission. E3 pre-execution authority and post-execution artifact attestation verify cryptographically, but real-world evaluator identity, independence, expertise, and private-key custody still require accountable out-of-band confirmation. Authenticated independent manual review and the freeze sentinel remain open. AI production, AI review, user approval, clean tests, and matching hashes do not by themselves constitute independent scientific review or authorize submission.
+The bundle is intentionally not frozen for submission. E3 pre-execution authority and post-execution artifact attestation were cryptographically verified for the hash-bound signed revision, but real-world evaluator identity, independence, expertise, and private-key custody still require accountable out-of-band confirmation. Authenticated independent manual review and the freeze sentinel remain open. AI production, AI review, user approval, clean tests, and matching hashes do not by themselves constitute independent scientific review or authorize submission.
 
 ## References
 

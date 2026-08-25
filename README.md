@@ -83,7 +83,8 @@ Current expected blockers:
 
 - the hash-pinned local Qwen2.5 1.5B artifact is present and the local-model gate is closed
 - `E1` and `E2` have canonical `REAL_MODEL_EXECUTION` artifacts, but both claims remain `INCONCLUSIVE`
-- `E3` remains `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`; its `T4`, `T8`, and `F7` confirmatory artifacts are absent
+- `E3` has canonical `REAL_MODEL_EXECUTION` artifacts (`T4`, `T8`, `F7`, and the raw execution bundle) imported through the verified signed-revision receipt; FAR is 0.500 (1/2), FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), and Brier calibration 0.178, so frozen `alpha_sem=0.25` requires `C3=NOT_SUPPORTED`
+- the E3 sample is only `n=8` with invalid `n=2`, so it does not establish general semantic reliability; evaluator real-world identity, independence, expertise, and private-key custody still require accountable out-of-band confirmation
 - `E4` has canonical reproducible-simulation evidence and remains `INCONCLUSIVE`
 - `E5` and `E6` are supported only within their declared reproducible-simulation scopes
 - `E8` is rebuilt from the production publication replay (`REPRODUCIBLE_SIMULATION`) and regenerates `T13` / `F11` with `C8=INCONCLUSIVE`

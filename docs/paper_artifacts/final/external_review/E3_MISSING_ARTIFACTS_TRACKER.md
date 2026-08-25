@@ -46,6 +46,23 @@ recorded evaluator's real-world identity, independence, expertise, or
 private-key custody. Those facts require accountable out-of-band confirmation.
 Independent reproduction and independent scientific review also remain open.
 
+## Fresh-current revalidation status
+
+On 2026-08-25 both canonical verification commands failed closed against the
+current repository request manifest and the current external exchange files
+with `request manifest sha256 mismatch`. Exact file hashes belong in the
+machine-generated request, verification output, and retained import receipt
+rather than this tracker so regenerating the request cannot create a
+self-referential documentation drift. The current result-attestation record is
+dated `2026-08-25`, matching the current verification date. Direct detached
+signature checks remain cryptographically valid for the declared signer key,
+and the four result
+artifacts still match their attested hashes, but those facts do not repair the
+broken request -> authority -> attestation chain. The signed-revision import
+receipt above remains the provenance record for the retained negative result; a
+fresh-current package remains blocked pending a consistent reissue or
+restoration by the accountable external evaluator.
+
 ## Historical boundary
 
 Before the verified run, this tracker required a separately signed authority

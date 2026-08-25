@@ -4,7 +4,7 @@
     "LIMITED_SCOPE"
   ],
   "authority_boundary": "This unsigned manifest requests external pre-execution scope authorization for E3 only. It grants no authority and contains no evaluator identity, decision, signature, or result.",
-  "current_e3_status": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+  "current_e3_status": "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT",
   "post_execution_boundary": "Generated E3 evidence can only be bound by a separate post-execution result attestation created after authorized execution; this request cannot attest to future artifacts.",
   "request_input_count": 22,
   "request_inputs": [
@@ -40,8 +40,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
-      "sha256": "73713b3381917ca80f1d13ed8c45f97f8dd8358b9eec61c5533d4b4136545fc3",
-      "size_bytes": 12648
+      "sha256": "8cced6dca9ac55327261f7ad423ae8f06ac816d0e3cf019bd53a555f3c652c15",
+      "size_bytes": 13192
     },
     {
       "path": "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
@@ -55,13 +55,13 @@
     },
     {
       "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
-      "sha256": "cafb7c78ab834f64461371803b58db786aeae9758d39f3e6f88127a9f001f644",
-      "size_bytes": 29905
+      "sha256": "9f6295806f6ab1706da7ee956a9f2294687ca26eef7bd5eec767a72cd155047f",
+      "size_bytes": 30864
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
-      "sha256": "24bd1947b913888c1b3c6a24783e63025277557f65efd7db9cd67d16e979ccad",
-      "size_bytes": 4275
+      "sha256": "eed909325edc17eb46a7946b2ae3948f653121895b8e48185a029fd9a50cbd77",
+      "size_bytes": 4477
     },
     {
       "path": "docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md",
@@ -95,8 +95,8 @@
     },
     {
       "path": "scripts/build_e3_authority_request.py",
-      "sha256": "822d53bfab20d4fa341cddff115446ee558b54fdab142c1336ff58c68f60fd0e",
-      "size_bytes": 6116
+      "sha256": "07c0ac437e9ab3b7b32bdaf9ff537d61e9e84b36e9cf9a7d1a8b40827067cc6a",
+      "size_bytes": 6129
     },
     {
       "path": "scripts/verify_e3_authority.py",
@@ -141,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "4068bc2b1503f5bd1cef256d6383a27662b3b010c8b7a539d1d5dd27530b06a4",
+  "self_digest": "ceab1d49d6c8e811ed871e2e3098ea66b85fd8592444daf748d9d6a5f47b7018",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }

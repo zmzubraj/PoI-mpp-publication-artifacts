@@ -74,14 +74,26 @@ Novelty provisional থাকার কারণগুলো non-compensating:
 
 বর্তমান workspace বোঝার source of truth হলো canonical
 `publication/artifact_manifest.json`। এর SHA-256 হলো
-`7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`।
+`85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0`।
 
-এই canonical bundle-এ E1-E8-এর result surface আছে। E3-এর externally authorized
-`REAL_MODEL_EXECUTION` এবং detached post-execution artifact attestation
-cryptographically verify হয়েছে। ফলটি positive নয়: FAR 0.500 (1/2) frozen
-frozen `alpha_sem 0.25` (alpha_sem = 0.25) threshold ছাড়িয়েছে, তাই C3 `NOT_SUPPORTED`। FRR 0.167 (1/6),
-ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), এবং Brier 0.178। মোট n=8 এবং
-invalid n=2 হওয়ায় এই run general semantic reliability প্রতিষ্ঠা করে না।
+এই canonical bundle-এ E1-E8-এর result surface আছে। E3-এর retained signed
+revision-এ externally authorized `REAL_MODEL_EXECUTION` এবং detached
+post-execution artifact attestation cryptographically verify হয়েছে। ফলটি
+positive নয়: FAR 0.500 (1/2) frozen `alpha_sem 0.25` (alpha_sem = 0.25)
+threshold ছাড়িয়েছে, তাই C3 `NOT_SUPPORTED`। FRR 0.167 (1/6), ABSTAIN 0.125
+(1/8), coverage 0.875 (7/8), এবং Brier 0.178। মোট n=8 এবং invalid n=2 হওয়ায়
+এই run general semantic reliability প্রতিষ্ঠা করে না।
+
+তবে current repository request manifest এবং current external exchange directory
+একসাথে fresh re-verify করলে fail-closed mismatch দেখা যায়। 2026-08-25-এ rerun
+করা canonical verifier `request manifest sha256 mismatch` দেখায়। Exact current
+hashes machine-generated request এবং verifier output-এ থাকবে; এই narrative
+document-এ বসানো হবে না, যাতে request regeneration নিজেই circular drift না
+তৈরি করে। Current result-attestation record-এর `attestation_date` হলো
+`2026-08-25`, যা current
+verification date-এর সঙ্গে মেলে। তাই blockerটি date নয়; request hash-chain drift।
+Retained negative result canonical history-তে valid থাকলেও fresh-current trust
+chain এখনো blocked।
 
 এখনো independent blocker আছে:
 
@@ -107,7 +119,7 @@ independent scientific review নয়।
   [0.5101091635454027, 1.0], এবং এক honest control-এ false positive নেই। এটা
   general detection claim নয়।
 - `C3` / E3: `NOT_SUPPORTED`; externally attested real-model run-এ FAR 0.500
-  (1/2) frozen frozen `alpha_sem 0.25` (alpha_sem = 0.25) threshold ছাড়িয়েছে। FRR 0.167 (1/6), ABSTAIN 0.125
+  (1/2) frozen `alpha_sem 0.25` (alpha_sem = 0.25) threshold ছাড়িয়েছে। FRR 0.167 (1/6), ABSTAIN 0.125
   (1/8), coverage 0.875 (7/8), Brier 0.178; n=8, invalid n=2। এই negative
   result general semantic reliability claim সমর্থন করে না।
 - `C4` / E4: `INCONCLUSIVE` declared playback simulation; executed
@@ -159,8 +171,11 @@ independent scientific review নয়।
 কারণ:
 
 - evidence disposition একরকম নয়: E1, E2, E4, ও E8 inconclusive; E5 ও E6
-  declared simulation-এ supported; E7 local Foundry-তে supported; E3-এ evidence
-  নেই
+  declared simulation-এ supported; E7 local Foundry-তে supported; E3-এর
+  externally attested real-model result negative—FAR 0.500 (1/2), FRR 0.167
+  (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178; frozen
+  `alpha_sem = 0.25` অতিক্রম করায় C3 `NOT_SUPPORTED`
+- E3 sample মাত্র n=8, invalid n=2; তাই general semantic reliability প্রতিষ্ঠিত নয়
 
 ### ঘ) Reproducibility discipline
 
@@ -173,8 +188,13 @@ independent scientific review নয়।
 
 সীমা:
 
-- canonical publication artifact bundle আছে, কিন্তু freeze, authority, এবং
-  independent-review gate এখনো complete নয়
+- canonical publication artifact bundle এবং signed-revision E3 receipt আছে। সেই
+  revision-এর detached signatures ও artifact hashes cryptographically verified;
+  তবে current repository request এবং current external exchange আবার চালালে
+  `request manifest sha256 mismatch` হয়। তাই fresh-current chain fail-closed
+  `BLOCKED_HASH_CHAIN_DRIFT`
+- evaluator-এর real-world identity, independence, expertise ও private-key custody,
+  independent review, এবং publication freeze এখনো complete নয়
 
 ### ঙ) Primitive novelty
 
@@ -200,7 +220,9 @@ materially novel কি না, সেটা এখনো independently establis
 
 কারণ:
 
-- external evaluator authority এখনো বাকি
+- historical signed revision-এ E3 pre-execution authority ও post-execution
+  attestation verified; current external exchange-এর end-to-end hash chain drifted
+  এবং fresh revalidation blocked
 - independent domain-expert review/signature এখনো বাকি
 - publication-freeze sentinel এখনো নেই
 
@@ -210,7 +232,9 @@ materially novel কি না, সেটা এখনো independently establis
 
 এখনো যেগুলো externalভাবে দরকার:
 
-- external evaluator authority, বিশেষ করে semantic/real-evidence dependent surfaces-এর জন্য
+- accountable evaluator-এর current-chain reconciliation অথবা exact historical
+  signed inputs restoration; এটিকে retroactive pre-execution authority বলা যাবে না
+- evaluator identity, independence, expertise ও private-key custody-এর out-of-band confirmation
 - authenticated independent domain-expert review signature
 
 যা AI করতে পারবে না:

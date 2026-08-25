@@ -11,4 +11,4 @@
 
 ## E3 semantic verification note
 
-E3 confirmatory execution was authorized by an external evaluator and post-execution attestation was verified. The frozen alpha_sem 0.25 rule gives C3 `NOT_SUPPORTED` because FAR 0.500 (1/2 exceeds alpha_sem 0.25). FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178; n=8, invalid n=2.
+E3 confirmatory execution was authorized by an external evaluator and post-execution attestation was verified for the retained signed revision. The frozen alpha_sem 0.25 rule gives C3 `NOT_SUPPORTED` because FAR 0.500 (1/2) exceeds alpha_sem 0.25. FRR 0.167 (1/6), ABSTAIN 0.125 (1/8), coverage 0.875 (7/8), Brier 0.178; n=8, invalid n=2. Cryptographic verification binds the signed files and artifacts; evaluator identity, independence, expertise, and key custody require separate accountable confirmation.

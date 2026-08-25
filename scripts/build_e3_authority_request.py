@@ -104,7 +104,7 @@ def build_manifest() -> dict[str, Any]:
     manifest: dict[str, Any] = {
         "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
         "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST",
-        "current_e3_status": "WAITING_EXTERNAL_EVALUATOR_AUTHORITY",
+        "current_e3_status": "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT",
         "requested_scope": REQUESTED_SCOPE,
         "requested_scope_digest": _sha256(_canonical_bytes(REQUESTED_SCOPE)),
         "request_input_count": len(entries),

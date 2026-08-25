@@ -35,7 +35,7 @@
 
 ## Independent validation
 
-- [ ] confirmatory external evaluator authority is present for E3 before any freeze claim
-- [ ] missing-authority blockers remain explicit instead of being downgraded to `SUPPORTED`
+- [ ] E3 freeze claims require one internally consistent request -> authority -> attestation chain, not detached signatures alone
+- [ ] if only a retained signed revision verifies, current-package drift and other trust-chain blockers remain explicit instead of being downgraded to `SUPPORTED`
 - [ ] privacy-sensitive prompts or evidence are redacted or hashed where required
 - [ ] `MPP_ARTIFACT_COMPLETE` is written only after all automated gates and accountable review pass

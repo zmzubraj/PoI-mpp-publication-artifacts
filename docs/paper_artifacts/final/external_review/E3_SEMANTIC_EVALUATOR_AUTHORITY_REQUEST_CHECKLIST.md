@@ -14,8 +14,9 @@ Current repository statement:
 - design summary: grounded semantic assurance using held-out grounded items
 - required publication artifacts: `T4` + `T8` + `F7`
 - evidence-origin contract: `REAL_MODEL_EXECUTION` for confirmation
-- current publication status: canonical omission records explicitly retain `WAITING_EXTERNAL_EVALUATOR_AUTHORITY`; no authorized confirmatory E3 evidence is present
-- current claim disposition: `WAITING_EXTERNAL`
+- current publication status: the retained signed-revision receipt records an externally authorized and post-execution-attested `REAL_MODEL_EXECUTION`; the current external exchange fails fresh end-to-end verification with `request manifest sha256 mismatch`
+- current E3 status: `NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT`
+- current claim disposition: `NOT_SUPPORTED`; FAR 0.500 (1/2) exceeded frozen `alpha_sem = 0.25`, with n=8 and invalid n=2, so no general semantic reliability claim is supported
 
 Reference surfaces:
 
@@ -47,7 +48,7 @@ The pre-execution record always contains `result_attestation_status=NOT_INCLUDED
 
 ## Deterministic pre-execution request set
 
-The following tracked source set and canonical manifest should be shown to the external authority. The canonical report manifest is `publication/artifact_manifest.json` (SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`); it records E3 as an explicit omission, not evidence.
+The following tracked source set and canonical manifest should be shown to the external authority. Verify the current SHA-256 of `publication/artifact_manifest.json` mechanically rather than copying a prose digest. The current canonical publication manifest contains the imported E3 negative result, and the current E3 omission ledger is empty.
 
 All paths below are relative to the repository root and are the exact contents of `REQUEST_INPUTS` in `scripts/build_e3_authority_request.py`. The authoritative request selection is generated, not copied from this list — confirm with `build_e3_authority_request.py --check`.
 
@@ -66,9 +67,9 @@ All paths below are relative to the repository root and are the exact contents o
 | `docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md` | current E3 design/status summary |
 | `docs/paper_artifacts/final/tables/T7_limitations_and_nonclaims.md` | explicit non-claims and review limits |
 | `experiments/e3_semantic_eval.py` | authorized E3 runner (real execution entry point) |
-| `publication/artifact_manifest.json` | canonical artifact closure and E3 omission status |
+| `publication/artifact_manifest.json` | canonical artifact closure, imported E3 negative result, and remaining publication blockers |
 | `publication/tables/claim_matrix.json` | claim C3 status and required evidence |
-| `publication/tables/omissions.json` | explicit `T4`, `T8`, and `F7` waiting-external records |
+| `publication/tables/omissions.json` | canonical omission ledger; E3 has no active omission row after verified import |
 | `scripts/build_e3_authority_package.py` | deterministic package builder (review for reproducibility) |
 | `scripts/build_e3_authority_request.py` | canonical request manifest generator (`REQUEST_INPUTS` definition) |
 | `scripts/verify_e3_authority.py` | pre-execution authority verifier (fail-closed) |
@@ -96,7 +97,7 @@ A later result attestation, created only after authorized execution, should bind
 - `publication/figures/F7_semantic_verification_quality.svg`
 - `results/publication/<run_id>/raw_e3_execution.zip`
 
-These artifacts are not currently present as authorized confirmatory publication evidence in the current candidate. They are deliberately excluded from the pre-execution authority record because their hashes do not yet exist.
+These artifact roles are already populated for the retained signed-revision negative result, but they remain deliberately excluded from any pre-execution authority record because a future pre-execution request cannot bind post-execution hashes that do not yet exist for that future run.
 
 After the pre-execution authority record and detached signature have been supplied by the accountable external evaluator, invoke the runner only with external trust material and authorized real-execution inputs. The Make target fails before execution if any required input is absent:
 
@@ -142,7 +143,7 @@ These paths are examples only. The verifier requires the signature inputs to rem
 - [ ] generate and verify the deterministic unsigned `E3_AUTHORITY_REQUEST_PACKAGE.zip`
 - [ ] provide the exact E3 capability request without upgrading current claim status
 - [ ] provide privacy and confidentiality handling expectations
-- [ ] state that `C3` is currently `WAITING_EXTERNAL` with no authorized confirmatory evidence
+- [ ] state that `C3` is `NOT_SUPPORTED` for the retained signed-revision negative result and that the current external exchange is separately blocked by hash-chain drift
 - [ ] state that pre-execution approval binds the request manifest, while later result attestation must separately bind exact generated-artifact hashes
 - [ ] state that no AI output or producer self-attestation can substitute for the authority decision
 - [ ] after authorized execution, require a separately signed result attestation that binds the exact run and all `T4`, `T8`, `F7`, and raw-execution hashes

@@ -3,7 +3,7 @@
 ## Audit record
 
 - Manuscript or project: *Complete Proof of Intelligence Consensus Architecture*
-- Version/date: repository manuscript and evidence bundle inspected on 2026-08-24
+- Version/date: repository manuscript and evidence bundle inspected through 2026-08-25
 - Authorization: the user authorized local model, experiment, artifact, and manuscript work; externally signed E3 pre-execution authority and post-execution artifact attestation were verified against the signed revision, but that cryptographic verification does not establish independent scientific review
 - Confidentiality and processing: local-only repository inspection; no unpublished material was uploaded to an external service in this audit
 - Field and study type: blockchain/AI systems architecture with real-model pilots, local EVM measurements, and reproducible simulations
@@ -13,6 +13,26 @@
 - Materials reviewed: manuscript Markdown/DOCX/PDF, canonical publication manifest, claim matrix, omission ledger, E1-E8 tables and figures, algorithm and Mermaid sources, replay/freeze code, external-review request schemas
 - Materials unavailable or not independently confirmed: accountable out-of-band evaluator identity/independence/private-key custody confirmation, independently signed domain-expert review, external reproduction return, detached review signature, frozen bundle sentinel, selected-venue template and completed checklist, author/CRediT/declaration approvals
 - Reviewer role: AI developmental audit only; not an independent human or editorial decision
+
+## Fresh-current E3 revalidation
+
+The retained canonical E3 receipt remains bound to signed revision
+`ab78c6fddd0b872e92ed607504400964eb3559a8`; it preserves the externally attested
+negative result and C3 `NOT_SUPPORTED`. On 2026-08-25 both canonical
+verification commands were re-run against the current repository request manifest
+and the current files under `/Users/rainbow/Documents/POI_E3_EXTERNAL`. Authority
+verification failed `request manifest sha256 mismatch`, and result-attestation
+verification failed because that same pre-execution authority check failed.
+Exact current hashes are retained in the machine-generated request and verifier
+output rather than copied into this narrative audit, avoiding a circular request
+regeneration dependency. The current result-attestation record is dated
+`2026-08-25`, matching the current verification date. The detached signatures
+remain cryptographically valid for the exact authority and attestation
+JSON files, and the four attested artifact hashes match the current artifact
+files, but those narrower checks do not repair the broken current
+request -> authority -> attestation chain. Fresh-current E3 end-to-end
+verification is therefore `BLOCKED_HASH_CHAIN_DRIFT`; it is not evidence that
+the retained negative result should be removed or upgraded.
 
 ## Contribution map
 
@@ -81,6 +101,7 @@ No fabricated evidence or hidden synthetic promotion was found in the canonical 
 | STOP-2 | `OPEN` | independent validity of the package | no authenticated external domain-expert review exists | completed hash-bound record and verified detached signature |
 | STOP-3 | `OPEN` | formal submission readiness | no target venue, article type, current template, or author declarations are fixed | accountable author decision and venue-specific QA |
 | STOP-4 | `OPEN` | frozen reproducibility claim | no final freeze sentinel can be issued while external gates remain open | close upstream gates, replay clean candidate, verify, then freeze |
+| STOP-5 | `OPEN` | fresh-current E3 trust chain | current repository request and current external authority/attestation files fail canonical verification with `request manifest sha256 mismatch` | accountable evaluator restores the exact historical signed inputs or issues an honestly labelled reconciliation record binding the current files; do not fabricate retroactive pre-execution authority |
 
 ## Novelty matrix
 
@@ -152,6 +173,7 @@ The evidence-origin rules are strong, but authorship, conflicts, funding, AI-use
 | Priority | Action | Owner | Required evidence | Acceptance test | Dependencies | Effort | New data? |
 |---|---|---|---|---|---|---|---|
 | P0 | confirm E3 evaluator identity, independence, expertise, and key custody | accountable evaluator and author | out-of-band identity binding, conflict/independence declaration, and custody confirmation referencing the verified key fingerprint and hashes | accountable signed record is authenticated without changing the attested result | evaluator contact and trusted channel | external | no |
+| P0 | reconcile the fresh-current E3 hash chain | accountable evaluator and author | exact historical signed request/authority inputs or a new, honestly labelled reconciliation record with detached signature and complete hash bindings | both canonical verifiers pass for one internally consistent package, without describing later reconciliation as retroactive pre-execution authority | evaluator contact and trusted channel | external | no |
 | P0 | obtain independent domain-expert review | independent qualified human | complete review record, all checks, conflicts, independence basis, signature | verifier reports `manual_review_authenticated=true` | reviewable candidate bundle | external | no, unless reviewer requests |
 | P1 | preserve and independently reproduce E3 negative result | independent external team | exact clean-room replay logs, discrepancies, raw provenance, and detached attestation | authenticated reproduction record agrees or reports discrepancies without upgrading C3 | external team and package | substantial | yes |
 | P1 | close strongest-prior-art case | search owner plus independent challenger | reproducible queries, screening, chaining, novelty matrix, contradiction ledger | independent challenge reconciled | search access | substantial | no experimental data |
@@ -181,6 +203,7 @@ The evidence-origin rules are strong, but authorship, conflicts, funding, AI-use
 | 2026-08-24 | official three-venue portfolio and accountable-author decision package | KQ-16 and venue-package requirement | venue-rule knowledge moved from `UNKNOWN` to `PARTIAL`; readiness remains `NOT_READY` | accountable venue selection, independent signed review, declarations, template/checklist, freeze sentinel |
 | 2026-08-24 | permanent E1/E2 claim-narrowing audit and deterministic external-reproduction handoff | KQ-03, KQ-04, independent reproduction | current claims are explicitly narrowed; external reproduction remains `WAITING_EXTERNAL`; readiness remains `NOT_READY` | real external team execution, authenticated attestation, independent review, declarations, freeze sentinel |
 | 2026-08-24 | externally authorized and post-execution-attested E3 real-model run | KQ-05, STOP-1, provenance and semantic claim boundary | C3 changed from `WAITING_EXTERNAL` to `NOT_SUPPORTED`; readiness remains `NOT_READY` | preserve negative result; confirm identity/independence/key custody; obtain independent reproduction and review |
+| 2026-08-25 | fresh-current E3 authority and result-attestation verification against the current repository request and current external directory | provenance, trust-chain freshness, STOP-5 | both canonical verifiers fail closed with `request manifest sha256 mismatch`; retained signed-revision negative result and C3 `NOT_SUPPORTED` remain unchanged | accountable evaluator restores exact historical signed inputs or issues an honestly labelled reconciliation record; identity/independence/key custody and independent review remain external |
 
 ## P1/P2 gate table
 

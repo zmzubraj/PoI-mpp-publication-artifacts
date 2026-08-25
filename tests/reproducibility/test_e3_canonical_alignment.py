@@ -71,6 +71,7 @@ def test_current_canonical_prose_preserves_e3_negative_result_and_scope() -> Non
         FINAL_ROOT / "review" / "SUBMISSION_READINESS_VALIDATION.md",
         REPO_ROOT / "docs" / "MAIN_RESULTS_TARGETS.md",
         REPO_ROOT / "docs" / "PAPER_ARTIFACT_MAP.md",
+        REPO_ROOT / "README.md",
     ]
     combined = "\n".join(path.read_text(encoding="utf-8") for path in current_surfaces)
     for required in (
@@ -94,14 +95,57 @@ def test_current_canonical_prose_preserves_e3_negative_result_and_scope() -> Non
         "E3 remains absent pending external evaluator authority",
         "E3 remains blocked for external authority",
         "external evaluator authority has not been supplied",
+        "external-evaluator-authorized semantic confirmation for E3",
+        "External evaluator authority, authenticated independent manual review",
     )
     for phrase in forbidden:
         assert phrase not in combined
+
+    request_checklist = (
+        FINAL_ROOT
+        / "external_review"
+        / "E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md"
+    ).read_text(encoding="utf-8")
+    assert "no authorized confirmatory E3 evidence is present" not in request_checklist
+    assert "`C3` is currently `WAITING_EXTERNAL`" not in request_checklist
+    assert "records E3 as an explicit omission" not in request_checklist
+    assert "E3 omission status" not in request_checklist
+    assert "waiting-external records" not in request_checklist
+    assert "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT" in request_checklist
+    assert "contains the imported E3 negative result" in request_checklist
+    assert "current E3 omission ledger is empty" in request_checklist
 
     manuscript = current_surfaces[0].read_text(encoding="utf-8")
     assert "does not establish general semantic reliability" in manuscript
     assert "cryptographic validity" in manuscript
     assert "private-key custody" in manuscript
+
+    bengali_alignment = (
+        FINAL_ROOT / "review" / "MPP_ALIGNMENT_EXPLANATION_BN.md"
+    ).read_text(encoding="utf-8")
+    assert "E3-এ evidence" not in bengali_alignment
+    assert "external evaluator authority এখনো বাকি" not in bengali_alignment
+
+    readiness = (
+        FINAL_ROOT / "review" / "SUBMISSION_READINESS_VALIDATION.md"
+    ).read_text(encoding="utf-8")
+    assert "Fresh-current E3 revalidation" in readiness
+    assert "request manifest sha256 mismatch" in readiness
+
+
+def test_e3_is_not_present_in_either_canonical_omission_ledger() -> None:
+    omissions_json = json.loads(
+        (REPO_ROOT / "publication" / "tables" / "omissions.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert not [row for row in omissions_json if row["experiment_id"] == "E3"]
+
+    omissions_csv_path = REPO_ROOT / "publication" / "tables" / "omissions.csv"
+    csv_text = omissions_csv_path.read_text(encoding="utf-8")
+    if csv_text:
+        rows = list(csv.DictReader(csv_text.splitlines()))
+        assert not [row for row in rows if row["experiment_id"] == "E3"]
 
 
 def test_e3_status_table_has_no_superseded_waiting_authority_row() -> None:
