@@ -1,0 +1,24 @@
+claim_scope: SCENARIO_SPECIFIC_SENSITIVITY_ONLY
+evidence_origin: REPRODUCIBLE_SIMULATION
+expected_scenario_ids:
+- support-capacity-committed-1
+- support-capacity-committed-64
+- support-operator-slot-1
+- support-operator-slot-64
+- negative-identity-uniform-1
+- negative-identity-uniform-64
+experiment_id: E6
+failure_disposition: INCONCLUSIVE
+required_model_version: POI_MPP_E6_SIMULATOR_V1
+schema_version: POI_MPP_E6_MULTI_SEED_SENSITIVITY_V2
+seeds:
+- 101
+- 211
+- 307
+simulations_per_seed: 1024
+source_contract_path: configs/confirmatory/e6.yaml
+source_contract_sha256: ba9df46d33733bcc9740fbd05f6cce974d54c047e1355af437eede441b3d342d
+source_plan_path: configs/publication_simulation/e6.scenarios.yaml
+source_plan_sha256: b222c600b596b66839968699d74ed438f7b210116afd6ed4c9ca23ea2f29266d
+source_run_config_path: configs/publication_simulation/e6.run.yaml
+source_run_config_sha256: 7cf790c1b5718119b76f21fcf5b5852353e5529423e077db24f69e470d183936

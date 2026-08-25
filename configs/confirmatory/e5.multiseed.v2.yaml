@@ -1,0 +1,20 @@
+claim_scope: SCENARIO_SPECIFIC_SENSITIVITY_ONLY
+evidence_origin: REPRODUCIBLE_SIMULATION
+expected_scenario_ids:
+- publication-independent-baseline
+- publication-shared-backstop
+experiment_id: E5
+failure_disposition: INCONCLUSIVE
+required_model_version: POI_MPP_E5_SIMULATOR_V1
+schema_version: POI_MPP_E5_MULTI_SEED_SENSITIVITY_V2
+seeds:
+- 101
+- 211
+- 307
+simulations_per_seed: 4096
+source_contract_path: configs/confirmatory/e5.yaml
+source_contract_sha256: 54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d
+source_plan_path: configs/publication_simulation/e5.scenarios.yaml
+source_plan_sha256: 7958e492c507aca0acbcd5f8b79def63820f8c8b944e15adf3ed60d556dd7fd5
+source_run_config_path: configs/publication_simulation/e5.run.yaml
+source_run_config_sha256: 415b7dcc9a548ce2229007e688938ee8eaa607270406e2c9ad9b56a418ced555
