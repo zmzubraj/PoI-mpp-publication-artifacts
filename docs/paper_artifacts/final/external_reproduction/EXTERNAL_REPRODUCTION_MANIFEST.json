@@ -1,8 +1,8 @@
 {
   "authority_boundary": "This manifest packages inputs only. It does not prove execution, identity, independence, agreement, scientific validity, or publication readiness.",
-  "canonical_publication_manifest_sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
+  "canonical_publication_manifest_sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
   "independent_reproduction_complete": false,
-  "input_count": 179,
+  "input_count": 188,
   "inputs": [
     {
       "path": "Makefile",
@@ -25,9 +25,19 @@
       "size_bytes": 1741
     },
     {
+      "path": "configs/confirmatory/e5.multiseed.v2.yaml",
+      "sha256": "3888ecc3b95d21f1a0c864edadb8dfd69a323351d8823154e1f7cddd21359531",
+      "size_bytes": 832
+    },
+    {
       "path": "configs/confirmatory/e5.yaml",
       "sha256": "54f7d4df156aac42743478d1f65607561c18a7a37c97f64b0a8b705e1616d95d",
       "size_bytes": 918
+    },
+    {
+      "path": "configs/confirmatory/e6.multiseed.v2.yaml",
+      "sha256": "35209c28c5c12a5e8dd41fe83f26b655cea830c540f05113f23a5c57d6398903",
+      "size_bytes": 944
     },
     {
       "path": "configs/confirmatory/e6.yaml",
@@ -41,8 +51,8 @@
     },
     {
       "path": "configs/confirmatory/e8.yaml",
-      "sha256": "498a690833471054c5439cd673a7292c0430440d90f348b5eb9e8a300727a466",
-      "size_bytes": 7485
+      "sha256": "62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
+      "size_bytes": 8178
     },
     {
       "path": "contracts/src/AuditManager.sol",
@@ -231,8 +241,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/tables/README.md",
-      "sha256": "915482df4348f7ab37af1bb387c546ba47b3a746dfbc50eac13eb66e428e363e",
-      "size_bytes": 1804
+      "sha256": "fd76c26925845f8082b01bf61e695ef65ac5338badc77ee74282fc1a736be015",
+      "size_bytes": 1805
     },
     {
       "path": "docs/paper_artifacts/final/tables/T1_caption_notes.md",
@@ -286,13 +296,13 @@
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.csv",
-      "sha256": "344a52f2aafe293b72227287ab0f2daf53996e079a3744a1b56f676b559509dc",
-      "size_bytes": 3490
+      "sha256": "5c0d7a6639d7d20909ab2cbfa43b52ff1699acf9683663b56fe081cce2c96a3d",
+      "size_bytes": 3643
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
-      "sha256": "eed909325edc17eb46a7946b2ae3948f653121895b8e48185a029fd9a50cbd77",
-      "size_bytes": 4477
+      "sha256": "67a3bc1ccab9faa9f066ab7fd1d6a559b73473f46da71bc014ffd5be6b86da3b",
+      "size_bytes": 4628
     },
     {
       "path": "docs/paper_artifacts/final/tables/T5_c7_evm_boundedness_current_surface.csv",
@@ -306,7 +316,7 @@
     },
     {
       "path": "docs/paper_artifacts/final/tables/T5_caption_notes.md",
-      "sha256": "6897c19951d2ac0cf4c893bdaaafcadd8dfa54cb7cbdd43fcb8aa4c9eab6df27",
+      "sha256": "4bd2319a0f03d6c71b09f0b857009867e2ea05af4dc70d6acea65f3185c3dbc6",
       "size_bytes": 990
     },
     {
@@ -321,7 +331,7 @@
     },
     {
       "path": "docs/paper_artifacts/final/tables/T6_caption_notes.md",
-      "sha256": "23e717a5a2c1a2738bc6b25f52caabbe4762bbce0a59a61a425ee54db0924e1a",
+      "sha256": "fbe8936a62d85485bdf17025081ea51991d1c677149f85716606f2c51f8179e1",
       "size_bytes": 843
     },
     {
@@ -395,9 +405,19 @@
       "size_bytes": 2706
     },
     {
+      "path": "experiments/e5_multiseed_sensitivity.py",
+      "sha256": "77f13c12e30435b89de3ec1ba893032cda221020f2411bcefc59a5f010a7ce31",
+      "size_bytes": 1174
+    },
+    {
       "path": "experiments/e5_watcher_economics.py",
       "sha256": "da5c46a9792793eec931712351e4c871d2f4def8fd1338d51662227dd6af9ff3",
       "size_bytes": 15892
+    },
+    {
+      "path": "experiments/e6_multiseed_sensitivity.py",
+      "sha256": "6ba7417acb2b3e41a666db67b070cb146e1810012485a4629cec679ab8d61a10",
+      "size_bytes": 1174
     },
     {
       "path": "experiments/e6_sybil_economics.py",
@@ -415,6 +435,11 @@
       "size_bytes": 1038
     },
     {
+      "path": "experiments/e8_multiepoch_publication.py",
+      "sha256": "c99da532f405952f7a9245d82b82e9f5a72d5973158b87f67d53733660d504e5",
+      "size_bytes": 849
+    },
+    {
       "path": "package-lock.json",
       "sha256": "17179521efc1a4fbb9c64fbe0a8a6b963a17e95ddef33b68783abacd0c7e9371",
       "size_bytes": 7984
@@ -426,13 +451,13 @@
     },
     {
       "path": "publication/artifact_manifest.json",
-      "sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
+      "sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
       "size_bytes": 49406
     },
     {
       "path": "publication/tables/claim_matrix.json",
-      "sha256": "6ac2e0b9caf04f38294bf9bdfff70a6175a32d4beaac2e88925f6d0bb4ee9a96",
-      "size_bytes": 8386
+      "sha256": "a8edaf86a2f4361baa0d6b70bfb8389f767ea60a4211157e2146cd75666b23f0",
+      "size_bytes": 8552
     },
     {
       "path": "publication/tables/omissions.json",
@@ -690,9 +715,24 @@
       "size_bytes": 29809
     },
     {
+      "path": "src/poi_mpp/experiments/e5_e6_multiseed.py",
+      "sha256": "3df10c91fcc981a0094f32ffc6ea236884ba0a142c55722c5bf2a98c649c8c9d",
+      "size_bytes": 6721
+    },
+    {
+      "path": "src/poi_mpp/experiments/e5_multiseed.py",
+      "sha256": "ca54212e43726ec43e905dcdbde6af4821e9270947485b99ad9489b23005ce85",
+      "size_bytes": 10089
+    },
+    {
       "path": "src/poi_mpp/experiments/e5_watcher.py",
       "sha256": "d6b8123c82b88443461b445f4d3e5465d0f5bc150cb822d9273b5777d93d8a47",
       "size_bytes": 44793
+    },
+    {
+      "path": "src/poi_mpp/experiments/e6_multiseed.py",
+      "sha256": "8b45ec58ea3fb5bb22e0b081eef43f9d937d383b34d21459250fa49c17849e23",
+      "size_bytes": 11083
     },
     {
       "path": "src/poi_mpp/experiments/e6_sybil.py",
@@ -706,8 +746,13 @@
     },
     {
       "path": "src/poi_mpp/experiments/e8_consensus.py",
-      "sha256": "e607511312f1557cb7215325e1fb2e2e5e16fbf5d663794b89eda5e2b4272a40",
-      "size_bytes": 79181
+      "sha256": "db25ae09561f1aca8bd44a28e4793814eb1065e30281c87102e8286c90a748e1",
+      "size_bytes": 80134
+    },
+    {
+      "path": "src/poi_mpp/experiments/e8_multiepoch.py",
+      "sha256": "b2db25eda7840dd054c94314aeb8d14e02235816b93f15ffe8c93af9a3c9b123",
+      "size_bytes": 14092
     },
     {
       "path": "src/poi_mpp/orchestration/__init__.py",
@@ -908,6 +953,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "4cda33a25c1b91fc900e98abd659e948dd98c20bcd250a5ec1ff54c323a6999d",
+  "self_digest": "b286e6baa824c85bd7f95f85b15767d42f57e069d7609927dbfc5e6771d9c109",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

@@ -1,6 +1,6 @@
 # Final paper tables pack
 
-This directory contains editable paper-table drafts reconciled to the canonical publication manifest (SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`) on Monday, August 24, 2026.
+This directory contains editable paper-table drafts reconciled to the canonical publication manifest (SHA-256 `1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722`) on Tuesday, August 25, 2026.
 
 Boundary rules:
 

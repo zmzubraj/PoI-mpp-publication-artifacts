@@ -1,6 +1,6 @@
 {
   "authority_boundary": "This manifest binds review inputs only. The retained E3 receipt records cryptographic verification at its signed revision, while the current repository request and current external exchange fail end-to-end verification because their request hash bindings drifted. Signature verification of exact files does not prove evaluator identity, independence, expertise, private-key custody, independent scientific review, or publication readiness.",
-  "canonical_publication_manifest_sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
+  "canonical_publication_manifest_sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
   "external_gates": {
     "e3_c3_disposition": "NOT_SUPPORTED",
     "e3_current_exchange_end_to_end_verification": "BLOCKED_HASH_CHAIN_DRIFT",
@@ -77,14 +77,14 @@
     {
       "path": "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx",
       "role": "RENDERED_MANUSCRIPT_DELIVERABLE",
-      "sha256": "f96d1a99c56fa6255dca31da7194c149a9467a8e5e12994a4bfdd864f0d06281",
-      "size_bytes": 659647
+      "sha256": "041a1d35e8666548692cfb566e0cef1e81bad15fcbe60b1aa0f7f7c84898278c",
+      "size_bytes": 659644
     },
     {
       "path": "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.pdf",
       "role": "RENDERED_MANUSCRIPT_DELIVERABLE",
-      "sha256": "7a2b21abd8c6cc7ada4611a04fe7d7b019402d448561a11e590743e96f827174",
-      "size_bytes": 982030
+      "sha256": "a252af0aaabf9ae074bc388f24cda3fc461698999b5cde0bbfd09c983c53f075",
+      "size_bytes": 982039
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/CLEAN_ROOM_PROTOCOL.md",
@@ -95,8 +95,8 @@
     {
       "path": "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA",
-      "sha256": "941e657c1c9814e435def5ba7cdb748a4f46481e21bf837a32c110a6bc955037",
-      "size_bytes": 33376
+      "sha256": "f723cfa9243fe89b566ca90dac5e7bf535f0fd9dec18558e3693507f72f9b399",
+      "size_bytes": 34996
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/README.md",
@@ -281,7 +281,7 @@
     {
       "path": "docs/paper_artifacts/final/review/PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "f87b8943f52ceae841e84fc6a9f5d32e48dc4d0531171bb594d7d2d0fb386ee5",
+      "sha256": "d868387322a4c1ba1391c35da69e42a83aebdbe5ecf20b797a8da658e1eb3e37",
       "size_bytes": 4921
     },
     {
@@ -305,8 +305,8 @@
     {
       "path": "docs/paper_artifacts/final/tables/README.md",
       "role": "EDITABLE_MANUSCRIPT_TABLE",
-      "sha256": "915482df4348f7ab37af1bb387c546ba47b3a746dfbc50eac13eb66e428e363e",
-      "size_bytes": 1804
+      "sha256": "fd76c26925845f8082b01bf61e695ef65ac5338badc77ee74282fc1a736be015",
+      "size_bytes": 1805
     },
     {
       "path": "docs/paper_artifacts/final/tables/T1_caption_notes.md",
@@ -371,14 +371,14 @@
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.csv",
       "role": "EDITABLE_MANUSCRIPT_TABLE",
-      "sha256": "344a52f2aafe293b72227287ab0f2daf53996e079a3744a1b56f676b559509dc",
-      "size_bytes": 3490
+      "sha256": "5c0d7a6639d7d20909ab2cbfa43b52ff1699acf9683663b56fe081cce2c96a3d",
+      "size_bytes": 3643
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
       "role": "EDITABLE_MANUSCRIPT_TABLE",
-      "sha256": "eed909325edc17eb46a7946b2ae3948f653121895b8e48185a029fd9a50cbd77",
-      "size_bytes": 4477
+      "sha256": "67a3bc1ccab9faa9f066ab7fd1d6a559b73473f46da71bc014ffd5be6b86da3b",
+      "size_bytes": 4628
     },
     {
       "path": "docs/paper_artifacts/final/tables/T5_c7_evm_boundedness_current_surface.csv",
@@ -395,7 +395,7 @@
     {
       "path": "docs/paper_artifacts/final/tables/T5_caption_notes.md",
       "role": "EDITABLE_MANUSCRIPT_TABLE",
-      "sha256": "6897c19951d2ac0cf4c893bdaaafcadd8dfa54cb7cbdd43fcb8aa4c9eab6df27",
+      "sha256": "4bd2319a0f03d6c71b09f0b857009867e2ea05af4dc70d6acea65f3185c3dbc6",
       "size_bytes": 990
     },
     {
@@ -413,7 +413,7 @@
     {
       "path": "docs/paper_artifacts/final/tables/T6_caption_notes.md",
       "role": "EDITABLE_MANUSCRIPT_TABLE",
-      "sha256": "23e717a5a2c1a2738bc6b25f52caabbe4762bbce0a59a61a425ee54db0924e1a",
+      "sha256": "fbe8936a62d85485bdf17025081ea51991d1c677149f85716606f2c51f8179e1",
       "size_bytes": 843
     },
     {
@@ -611,14 +611,14 @@
     {
       "path": "publication/artifact_manifest.json",
       "role": "CANONICAL_PUBLICATION_EVIDENCE_INDEX",
-      "sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
+      "sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
       "size_bytes": 49406
     },
     {
       "path": "publication/tables/claim_matrix.json",
       "role": "CANONICAL_PUBLICATION_EVIDENCE_INDEX",
-      "sha256": "6ac2e0b9caf04f38294bf9bdfff70a6175a32d4beaac2e88925f6d0bb4ee9a96",
-      "size_bytes": 8386
+      "sha256": "a8edaf86a2f4361baa0d6b70bfb8389f767ea60a4211157e2146cd75666b23f0",
+      "size_bytes": 8552
     },
     {
       "path": "publication/tables/omissions.json",
@@ -700,6 +700,6 @@
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "3d79758baf8cb1e12e82b3a25ffaa089010d4c07a2a728a5bf4d34f7ff713fa8",
+  "self_digest": "93f55cc891af6dd61ab48061a55dfcc9e140f3c2dc2afdb1f923b9c3cb4c0243",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

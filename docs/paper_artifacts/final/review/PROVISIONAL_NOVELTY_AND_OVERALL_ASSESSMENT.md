@@ -6,7 +6,7 @@ This developmental assessment is intentionally outside the manuscript. It is not
 
 ## Evidence boundary
 
-The assessment is grounded in the canonical PoI MPP artifact manifest, SHA-256 `7177d57747304d003160cdcb45bd572337028a8ffed8793dfa57e2d1444aaabf`, the current evidence dispositions for E1-E8, and a bounded primary-source predecessor check. The latter is not yet a reproducible, independently challenged literature search package.
+The assessment is grounded in the canonical PoI MPP artifact manifest, SHA-256 `1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722`, the current evidence dispositions for E1-E8, and a bounded primary-source predecessor check. The latter is not yet a reproducible, independently challenged literature search package.
 
 Strong predecessors identified in the bounded check include:
 
