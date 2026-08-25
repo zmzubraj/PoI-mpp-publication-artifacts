@@ -114,7 +114,8 @@ def test_e3_request_manifest_is_deterministic_hash_closed_and_e3_only(tmp_path: 
 
     assert payload["schema_version"] == "POI_MPP_E3_AUTHORITY_REQUEST_V1"
     assert payload["status"] == "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
-    assert payload["current_e3_status"] == "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT"
+    assert payload["repository_context_status"] == "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT"
+    assert "current_e3_status" not in payload
     assert payload["requested_scope"] == {
         "experiment_id": "E3",
         "claim_id": "C3",

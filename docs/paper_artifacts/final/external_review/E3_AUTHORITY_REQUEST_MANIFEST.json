@@ -3,9 +3,9 @@
     "APPROVED",
     "LIMITED_SCOPE"
   ],
-  "authority_boundary": "This unsigned manifest requests external pre-execution scope authorization for E3 only. It grants no authority and contains no evaluator identity, decision, signature, or result.",
-  "current_e3_status": "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT",
+  "authority_boundary": "This unsigned manifest requests external pre-execution scope authorization for E3 only. It grants no authority and contains no evaluator identity, decision, signature, or future-run result; repository_context_status only summarizes the retained historical result and current-chain drift.",
   "post_execution_boundary": "Generated E3 evidence can only be bound by a separate post-execution result attestation created after authorized execution; this request cannot attest to future artifacts.",
+  "repository_context_status": "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT",
   "request_input_count": 22,
   "request_inputs": [
     {
@@ -95,8 +95,8 @@
     },
     {
       "path": "scripts/build_e3_authority_request.py",
-      "sha256": "07c0ac437e9ab3b7b32bdaf9ff537d61e9e84b36e9cf9a7d1a8b40827067cc6a",
-      "size_bytes": 6129
+      "sha256": "f01dc53bd66294d16b25a9c9820feb38d4e17501a39485cb730bf605c0b7c2f7",
+      "size_bytes": 6261
     },
     {
       "path": "scripts/verify_e3_authority.py",
@@ -141,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "ceab1d49d6c8e811ed871e2e3098ea66b85fd8592444daf748d9d6a5f47b7018",
+  "self_digest": "6527b53f6ecc26ce0bb6b0ccc0b0e7b61e306be073d0e19b2e181498c3510f45",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }

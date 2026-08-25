@@ -104,7 +104,7 @@ def build_manifest() -> dict[str, Any]:
     manifest: dict[str, Any] = {
         "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
         "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST",
-        "current_e3_status": "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT",
+        "repository_context_status": "NOT_SUPPORTED_SIGNED_REVISION_CURRENT_CHAIN_DRIFT",
         "requested_scope": REQUESTED_SCOPE,
         "requested_scope_digest": _sha256(_canonical_bytes(REQUESTED_SCOPE)),
         "request_input_count": len(entries),
@@ -113,7 +113,8 @@ def build_manifest() -> dict[str, Any]:
         "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
         "authority_boundary": (
             "This unsigned manifest requests external pre-execution scope authorization for E3 only. "
-            "It grants no authority and contains no evaluator identity, decision, signature, or result."
+            "It grants no authority and contains no evaluator identity, decision, signature, or future-run result; "
+            "repository_context_status only summarizes the retained historical result and current-chain drift."
         ),
         "post_execution_boundary": (
             "Generated E3 evidence can only be bound by a separate post-execution result attestation "
