@@ -1,11 +1,14 @@
 {
-  "authority_boundary": "This manifest binds review inputs only. E3 signature verification authenticates exact files and hashes, but does not prove evaluator identity, independence, expertise, private-key custody, independent scientific review, or publication readiness.",
+  "authority_boundary": "This manifest binds review inputs only. The retained E3 receipt records cryptographic verification at its signed revision, while the current repository request and current external exchange fail end-to-end verification because their request hash bindings drifted. Signature verification of exact files does not prove evaluator identity, independence, expertise, private-key custody, independent scientific review, or publication readiness.",
   "canonical_publication_manifest_sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
   "external_gates": {
     "e3_c3_disposition": "NOT_SUPPORTED",
+    "e3_current_exchange_end_to_end_verification": "BLOCKED_HASH_CHAIN_DRIFT",
+    "e3_current_exchange_failure": "request manifest sha256 mismatch",
     "e3_evaluator_identity_independence_key_custody": "WAITING_EXTERNAL",
-    "e3_post_execution_attestation": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
-    "e3_pre_execution_authority": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+    "e3_post_execution_attestation": "VERIFIED_AT_SIGNED_REVISION",
+    "e3_pre_execution_authority": "VERIFIED_AT_SIGNED_REVISION",
+    "e3_signed_revision": "ab78c6fddd0b872e92ed607504400964eb3559a8",
     "independent_domain_expert_review": "WAITING_EXTERNAL",
     "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE"
   },
@@ -74,14 +77,14 @@
     {
       "path": "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.docx",
       "role": "RENDERED_MANUSCRIPT_DELIVERABLE",
-      "sha256": "01d4619647d6000e82288127c43bf9190cb82733d701704bcb05ab641cc75645",
-      "size_bytes": 659379
+      "sha256": "f96d1a99c56fa6255dca31da7194c149a9467a8e5e12994a4bfdd864f0d06281",
+      "size_bytes": 659647
     },
     {
       "path": "docs/paper_artifacts/final/deliverables/POI_MPP_EVIDENCE_BOUND_MANUSCRIPT.pdf",
       "role": "RENDERED_MANUSCRIPT_DELIVERABLE",
-      "sha256": "365141a2661043a3772f8294f03e2e8cd2beee01116594e59f87ce7f1a964d28",
-      "size_bytes": 980834
+      "sha256": "7a2b21abd8c6cc7ada4611a04fe7d7b019402d448561a11e590743e96f827174",
+      "size_bytes": 982030
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/CLEAN_ROOM_PROTOCOL.md",
@@ -92,8 +95,8 @@
     {
       "path": "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA",
-      "sha256": "84e866be0f8565c50c5521c2f0d2bce67a5d749e7be1cb06dfdaa1e76c809b94",
-      "size_bytes": 31021
+      "sha256": "941e657c1c9814e435def5ba7cdb748a4f46481e21bf837a32c110a6bc955037",
+      "size_bytes": 33376
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/README.md",
@@ -122,26 +125,26 @@
     {
       "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "fc8a0f9646f5b7db463e121a8bf39a2da48f7453000fc00ade70971c70394950",
-      "size_bytes": 5409
+      "sha256": "9b444d8935050130c594f9bdda44fe9050f2582bf497d3b7f324ac97d17e2b26",
+      "size_bytes": 5539
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "d72534b7c77ed3d86b8581908c777d51aa739901a8c633d60dc1d7ad9b47c7b6",
-      "size_bytes": 283161
+      "sha256": "abc787821454463fe054fc82bc752f358f9c9d0fda8943eece250190171eb34a",
+      "size_bytes": 285141
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_MISSING_ARTIFACTS_TRACKER.md",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "122a9bee06cf8db04e77d8c7534ed8a777e0763b565eda8d3cb80624bfcaf1a1",
-      "size_bytes": 3179
+      "sha256": "89a440cb674179a94bd61ffadb4c64266c73804e52602daf05aa72a26c389f50",
+      "size_bytes": 4198
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_SEMANTIC_EVALUATOR_AUTHORITY_REQUEST_CHECKLIST.md",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "73713b3381917ca80f1d13ed8c45f97f8dd8358b9eec61c5533d4b4136545fc3",
-      "size_bytes": 12648
+      "sha256": "8cced6dca9ac55327261f7ad423ae8f06ac816d0e3cf019bd53a555f3c652c15",
+      "size_bytes": 13192
     },
     {
       "path": "docs/paper_artifacts/final/external_review/E3_STALE_SIGNATURE_HANDOFF_NOTE.md",
@@ -164,8 +167,8 @@
     {
       "path": "docs/paper_artifacts/final/external_review/README.md",
       "role": "UNSIGNED_EXTERNAL_REVIEW_REQUEST_OR_SCHEMA",
-      "sha256": "ed9f97edf635c52cc32d9426a887e5fbb3ea20e9d35155bd68257750525e0e92",
-      "size_bytes": 8272
+      "sha256": "8938871225dc675fde623eb1eeda66457487424a975a8a2633b5f0c335e66de2",
+      "size_bytes": 9299
     },
     {
       "path": "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
@@ -188,8 +191,8 @@
     {
       "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
       "role": "MANUSCRIPT_SOURCE_OR_CITATION_AUDIT",
-      "sha256": "cafb7c78ab834f64461371803b58db786aeae9758d39f3e6f88127a9f001f644",
-      "size_bytes": 29905
+      "sha256": "9f6295806f6ab1706da7ee956a9f2294687ca26eef7bd5eec767a72cd155047f",
+      "size_bytes": 30864
     },
     {
       "path": "docs/paper_artifacts/final/manuscript/REFERENCES_AUDIT.md",
@@ -272,8 +275,8 @@
     {
       "path": "docs/paper_artifacts/final/review/MPP_ALIGNMENT_EXPLANATION_BN.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "50d07d2eefbc2d88c2cd18338b12ccbb68b4d879afccc85ef8c0c78a94188848",
-      "size_bytes": 15135
+      "sha256": "6ce5a2ae4ac201142600811761e430481eafa8f51030b64419002ee76d3ae1cc",
+      "size_bytes": 17134
     },
     {
       "path": "docs/paper_artifacts/final/review/PROVISIONAL_NOVELTY_AND_OVERALL_ASSESSMENT.md",
@@ -284,8 +287,8 @@
     {
       "path": "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
       "role": "DEVELOPMENTAL_REVIEW_CONTEXT",
-      "sha256": "46a0bd420a25d5c31e3ff3c50bc7295ebe94d8dab2e9f7c6c9d5e34161fc02e9",
-      "size_bytes": 28543
+      "sha256": "e166c3b0d62d4893f653fc28eaabc0967688c63f299f00bd0b50515d49294e6c",
+      "size_bytes": 31241
     },
     {
       "path": "docs/paper_artifacts/final/review/TARGET_VENUE_PORTFOLIO.md",
@@ -374,8 +377,8 @@
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
       "role": "EDITABLE_MANUSCRIPT_TABLE",
-      "sha256": "24bd1947b913888c1b3c6a24783e63025277557f65efd7db9cd67d16e979ccad",
-      "size_bytes": 4275
+      "sha256": "eed909325edc17eb46a7946b2ae3948f653121895b8e48185a029fd9a50cbd77",
+      "size_bytes": 4477
     },
     {
       "path": "docs/paper_artifacts/final/tables/T5_c7_evm_boundedness_current_surface.csv",
@@ -638,14 +641,14 @@
     {
       "path": "scripts/build_e3_authority_request.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "822d53bfab20d4fa341cddff115446ee558b54fdab142c1336ff58c68f60fd0e",
-      "size_bytes": 6116
+      "sha256": "f01dc53bd66294d16b25a9c9820feb38d4e17501a39485cb730bf605c0b7c2f7",
+      "size_bytes": 6261
     },
     {
       "path": "scripts/build_external_review_handoff.py",
       "role": "REPRODUCIBILITY_GENERATOR",
-      "sha256": "afd44577051f875ae7d4351f21b207465adbb8fd7c1ab229db8c91a1b12cf48a",
-      "size_bytes": 11429
+      "sha256": "8d9cdb1290607ca88812f31289e43dbe4b0c15163c51dc8b07a29a87205334a4",
+      "size_bytes": 11881
     },
     {
       "path": "scripts/build_novelty_package.py",
@@ -697,6 +700,6 @@
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "6f8799946bef8a4822e3e52298a246fbe97122f0cfb30a159583aeff8efbb63c",
+  "self_digest": "3d79758baf8cb1e12e82b3a25ffaa089010d4c07a2a728a5bf4d34f7ff713fa8",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

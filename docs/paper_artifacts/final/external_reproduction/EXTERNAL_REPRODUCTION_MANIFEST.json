@@ -2,7 +2,7 @@
   "authority_boundary": "This manifest packages inputs only. It does not prove execution, identity, independence, agreement, scientific validity, or publication readiness.",
   "canonical_publication_manifest_sha256": "85c83c54f95f7f0b6cb58602dcdffa674b3ec2b6d251f85d23bceb31be44e9c0",
   "independent_reproduction_complete": false,
-  "input_count": 166,
+  "input_count": 179,
   "inputs": [
     {
       "path": "Makefile",
@@ -18,6 +18,11 @@
       "path": "configs/confirmatory/e4.publication.yaml",
       "sha256": "62de2a3383017e32e75e48420d3d46e0cec38f1df0be114bd2c7053ec8bb9530",
       "size_bytes": 901
+    },
+    {
+      "path": "configs/confirmatory/e4.v2.yaml",
+      "sha256": "ae02d5bc687f66db803f7a14ccd11f06ac08bdd81ed342a17dbeae11b6f710c9",
+      "size_bytes": 1741
     },
     {
       "path": "configs/confirmatory/e5.yaml",
@@ -36,8 +41,8 @@
     },
     {
       "path": "configs/confirmatory/e8.yaml",
-      "sha256": "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
-      "size_bytes": 8272
+      "sha256": "498a690833471054c5439cd673a7292c0430440d90f348b5eb9e8a300727a466",
+      "size_bytes": 7485
     },
     {
       "path": "contracts/src/AuditManager.sol",
@@ -91,13 +96,13 @@
     },
     {
       "path": "contracts/test/HashVectors.t.sol",
-      "sha256": "6cb47efb9f60c6922aa8525249755aacda55746a12c24a2deb03f0cfb3af60a0",
-      "size_bytes": 14856
+      "sha256": "e416ca30f9bdf9a763e121f3ef920fb42925fd1568307ea2c4f8077e79fdd54e",
+      "size_bytes": 15476
     },
     {
       "path": "contracts/test/ProtocolRoles.t.sol",
-      "sha256": "47d66e51bad9c0f0ae1564723ced70842f36b9e1bf3cfb93daf7326afabb4630",
-      "size_bytes": 10410
+      "sha256": "07af2d17b4faa67cb14b286bde0825bfe3ed4969abf575f1b551f284109ca0dc",
+      "size_bytes": 10493
     },
     {
       "path": "contracts/test/ReceiptLifecycle.t.sol",
@@ -156,8 +161,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/manuscript/POI_SUBMISSION_MANUSCRIPT.md",
-      "sha256": "cafb7c78ab834f64461371803b58db786aeae9758d39f3e6f88127a9f001f644",
-      "size_bytes": 29905
+      "sha256": "9f6295806f6ab1706da7ee956a9f2294687ca26eef7bd5eec767a72cd155047f",
+      "size_bytes": 30864
     },
     {
       "path": "docs/paper_artifacts/final/novelty/NOVELTY_CASE.md",
@@ -216,8 +221,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/review/SUBMISSION_READINESS_VALIDATION.md",
-      "sha256": "46a0bd420a25d5c31e3ff3c50bc7295ebe94d8dab2e9f7c6c9d5e34161fc02e9",
-      "size_bytes": 28543
+      "sha256": "e166c3b0d62d4893f653fc28eaabc0967688c63f299f00bd0b50515d49294e6c",
+      "size_bytes": 31241
     },
     {
       "path": "docs/paper_artifacts/final/review/figure_table_external_review_record.schema.json",
@@ -286,8 +291,8 @@
     },
     {
       "path": "docs/paper_artifacts/final/tables/T4_experiment_design_and_current_status.md",
-      "sha256": "24bd1947b913888c1b3c6a24783e63025277557f65efd7db9cd67d16e979ccad",
-      "size_bytes": 4275
+      "sha256": "eed909325edc17eb46a7946b2ae3948f653121895b8e48185a029fd9a50cbd77",
+      "size_bytes": 4477
     },
     {
       "path": "docs/paper_artifacts/final/tables/T5_c7_evm_boundedness_current_surface.csv",
@@ -385,6 +390,11 @@
       "size_bytes": 18927
     },
     {
+      "path": "experiments/e4_executable_da.py",
+      "sha256": "00b8f03d57c7fe315d09dce719dda21da8c985ccfb141207b8634a5e88c3e6f7",
+      "size_bytes": 2706
+    },
+    {
       "path": "experiments/e5_watcher_economics.py",
       "sha256": "da5c46a9792793eec931712351e4c871d2f4def8fd1338d51662227dd6af9ff3",
       "size_bytes": 15892
@@ -461,13 +471,13 @@
     },
     {
       "path": "scripts/reproduce.py",
-      "sha256": "8c662bff061821965e27dd67a120feb28cb6b5318a0607b5b143cee86655e040",
-      "size_bytes": 34209
+      "sha256": "faa97260aa4903fd6f5b89db94ac84063fd965c6865212897df389a2d34cb21e",
+      "size_bytes": 35320
     },
     {
       "path": "scripts/verify_bundle.py",
-      "sha256": "d468b3ddeb233bbd126b88b5b1a1a4fefe1fa8cb170c6f31132a7c1cc53c8ee6",
-      "size_bytes": 61285
+      "sha256": "a5859bf8838e4c68a9fc01a3f724b29b62606559b3c209a54432bc3bf88d1956",
+      "size_bytes": 61968
     },
     {
       "path": "src/poi_mpp/__init__.py",
@@ -531,23 +541,43 @@
     },
     {
       "path": "src/poi_mpp/auditor/semantic/__init__.py",
-      "sha256": "05a53711ff6b3d2d3db11696bc5a15b6699c1f4606c77f67f83a005b08cbba48",
-      "size_bytes": 1105
+      "sha256": "5782b29f44ea3e768595f92d7890fac21081ab983a2dda56dd4b74a31ae74967",
+      "size_bytes": 2220
+    },
+    {
+      "path": "src/poi_mpp/auditor/semantic/authority.py",
+      "sha256": "e195ab2e2a16e6d9756efe12f6b2851201c30b4854e6c8e9f9fe05e09e1f44ce",
+      "size_bytes": 14097
+    },
+    {
+      "path": "src/poi_mpp/auditor/semantic/authority_registry.py",
+      "sha256": "896c89f1b3e716e9fe42bffe916fc4e33d4d9b6c0e68b60bc07b92fcb2cb04af",
+      "size_bytes": 20294
     },
     {
       "path": "src/poi_mpp/auditor/semantic/calibration.py",
-      "sha256": "5e82a3926ef9f7a65ac1d0f57c160760cee8aa6ae8e99bd802fec0d21d09f8fd",
-      "size_bytes": 1495
+      "sha256": "9fd4e08ab885c0ffa8206b2d611d2afbbb22e6dc87bab47a99a8646c0745cc58",
+      "size_bytes": 14637
     },
     {
       "path": "src/poi_mpp/auditor/semantic/models.py",
-      "sha256": "4fbbd9da683ee573fc06e1a33919c2a6a5e070b0cd6b449389c1510c85448117",
-      "size_bytes": 12425
+      "sha256": "85da6628d0f33707b6c9c5f7c09388b0a08985f2f587b2751c8e19ba3986f0b9",
+      "size_bytes": 35058
+    },
+    {
+      "path": "src/poi_mpp/auditor/semantic/policy_v2.py",
+      "sha256": "c6e092ae3acb69b66eeea363a1c594f9d5fe1572f37cd599694c522617aeb1da",
+      "size_bytes": 13022
     },
     {
       "path": "src/poi_mpp/auditor/semantic/verifier.py",
       "sha256": "9e022d7ef46397f4de5968d5739e7dbcf7e2aed020b48ec3d9e8ddfa45710e55",
       "size_bytes": 5804
+    },
+    {
+      "path": "src/poi_mpp/auditor/semantic/verifier_v2.py",
+      "sha256": "d83edc6b89ab80c64cab13a4b2bb945e0e2c54c4e1289483cd9886d87f7b6b5e",
+      "size_bytes": 35425
     },
     {
       "path": "src/poi_mpp/datasets/__init__.py",
@@ -570,9 +600,24 @@
       "size_bytes": 1658
     },
     {
+      "path": "src/poi_mpp/evidence/claim_spec.py",
+      "sha256": "a0136799e3b7d35b152cef3e0192077da7657ba720f777ddb4a26ef52e422f5a",
+      "size_bytes": 18630
+    },
+    {
       "path": "src/poi_mpp/evidence/config.py",
       "sha256": "7482a96c005a8d851e5b14b9e359771b37e07c46cb1cf72727317a375890c77c",
       "size_bytes": 7326
+    },
+    {
+      "path": "src/poi_mpp/evidence/dataset_manifest_v2.py",
+      "sha256": "0c8a80de68979e21a39947cfdc2a0220a5beab9a97c4178b51b068fa12d64971",
+      "size_bytes": 13455
+    },
+    {
+      "path": "src/poi_mpp/evidence/environment_manifest.py",
+      "sha256": "fe6e2ebba7e14f9599ad8fcedd537243e7aa81424621ffa1e2af6c18690910c0",
+      "size_bytes": 11415
     },
     {
       "path": "src/poi_mpp/evidence/models.py",
@@ -620,6 +665,16 @@
       "size_bytes": 35437
     },
     {
+      "path": "src/poi_mpp/experiments/e3_confirmatory_freeze.py",
+      "sha256": "c63597f3737665739527feed8d82e26e39e134aff8312d38117b6246c2a56367",
+      "size_bytes": 26794
+    },
+    {
+      "path": "src/poi_mpp/experiments/e3_development.py",
+      "sha256": "fec1557ccadd055821a9e98933a9d277adb0e8cb7d10dfafe458572b392b4d62",
+      "size_bytes": 30220
+    },
+    {
       "path": "src/poi_mpp/experiments/e3_semantic.py",
       "sha256": "caa173af01179e740d55a1cf0bc2afcd3f7cf1cbf4bf6bf8f58dcc3227b7cdc9",
       "size_bytes": 37766
@@ -628,6 +683,11 @@
       "path": "src/poi_mpp/experiments/e4_da.py",
       "sha256": "1ed3dc261cd5f9b5883c5ab594bd6a84fd02da8d34f5eaca012e4831ae539e00",
       "size_bytes": 12019
+    },
+    {
+      "path": "src/poi_mpp/experiments/e4_execution.py",
+      "sha256": "f70534343e9abdc801fa2ed7a04b0b3e5b25e2abbff90f5e81c50a84e3f996c5",
+      "size_bytes": 29809
     },
     {
       "path": "src/poi_mpp/experiments/e5_watcher.py",
@@ -691,18 +751,23 @@
     },
     {
       "path": "src/poi_mpp/protocol/receipt.py",
-      "sha256": "840e000fd8989ac8e0f849057a5b1595d1c9527ccd07213ba895cbd937ecf364",
-      "size_bytes": 1125
+      "sha256": "ccfc7bd5cc546e3bbd75077902bc36e00a131c519f1085755df70b10678cb054",
+      "size_bytes": 1867
     },
     {
       "path": "src/poi_mpp/protocol/reference_machine.py",
-      "sha256": "52d34bc157218bff70e3711dfb2115816b97a1805c0cbbd62efea8acd495b9d5",
-      "size_bytes": 5461
+      "sha256": "34ed18389dd6729dd4504d8dd83b2769935e5d0ecb80331d41dd25167534b9c9",
+      "size_bytes": 8448
+    },
+    {
+      "path": "src/poi_mpp/protocol/task_envelope.py",
+      "sha256": "b838fc10bcda2f681fc1e92c043c22e9a2eef9b95959ab23a07d4a69870c28eb",
+      "size_bytes": 3338
     },
     {
       "path": "src/poi_mpp/protocol/types.py",
-      "sha256": "ade3e6706c467d8d0568d30ee2427eacf203b80e98e745c563e18c54a49f5283",
-      "size_bytes": 15777
+      "sha256": "dc159478927eaeef6a2a90ad663418b328bd07fca66f3aa624e74c4200b79907",
+      "size_bytes": 17575
     },
     {
       "path": "src/poi_mpp/reporting/__init__.py",
@@ -843,6 +908,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "0a1550a815896c03e08f406ddb550856a5d312022b1c45486ed436ad491f57fb",
+  "self_digest": "4cda33a25c1b91fc900e98abd659e948dd98c20bcd250a5ec1ff54c323a6999d",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

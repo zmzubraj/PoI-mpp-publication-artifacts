@@ -195,17 +195,22 @@ def build_manifest() -> dict[str, Any]:
         "review_input_count": len(entries),
         "review_inputs": entries,
         "external_gates": {
-            "e3_pre_execution_authority": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
-            "e3_post_execution_attestation": "VERIFIED_EXTERNAL_CRYPTOGRAPHICALLY",
+            "e3_pre_execution_authority": "VERIFIED_AT_SIGNED_REVISION",
+            "e3_post_execution_attestation": "VERIFIED_AT_SIGNED_REVISION",
+            "e3_signed_revision": "ab78c6fddd0b872e92ed607504400964eb3559a8",
+            "e3_current_exchange_end_to_end_verification": "BLOCKED_HASH_CHAIN_DRIFT",
+            "e3_current_exchange_failure": "request manifest sha256 mismatch",
             "e3_c3_disposition": "NOT_SUPPORTED",
             "e3_evaluator_identity_independence_key_custody": "WAITING_EXTERNAL",
             "independent_domain_expert_review": "WAITING_EXTERNAL",
             "publication_freeze_sentinel": "BLOCKED_UNTIL_EXTERNAL_GATES_CLOSE",
         },
         "authority_boundary": (
-            "This manifest binds review inputs only. E3 signature verification authenticates exact files "
-            "and hashes, but does not prove evaluator identity, independence, expertise, private-key "
-            "custody, independent scientific review, or publication readiness."
+            "This manifest binds review inputs only. The retained E3 receipt records cryptographic "
+            "verification at its signed revision, while the current repository request and current "
+            "external exchange fail end-to-end verification because their request hash bindings drifted. "
+            "Signature verification of exact files does not prove evaluator identity, independence, "
+            "expertise, private-key custody, independent scientific review, or publication readiness."
         ),
     }
     manifest["self_digest"] = _sha256(_canonical_bytes(manifest))
