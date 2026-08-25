@@ -234,7 +234,7 @@
       "sha256": "98a2466b77fd6216554cc60932d9afc03161367c1a5f133a1f940a6f1c2e9fc1"
     },
     {
-      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
       "disposition": "SUPPORTED",
       "experiment_id": "E7",
       "input_role": "run_config",
@@ -246,7 +246,7 @@
       "relative_path": "configs/publication_foundry/e7.run.yaml",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": "POI_MPP_RUN_CONFIG_V1",
-      "sha256": "cc80e38f12373cc990ed8a8cac1c1a8c9c41c27f120d34335320b3c2efe3296e"
+      "sha256": "37ae2efc5ce078bb14d839c8622a6260345ae4fc8a540bbcb4bc6508bffebfc9"
     },
     {
       "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
@@ -261,7 +261,7 @@
       "relative_path": "configs/confirmatory/e8.yaml",
       "run_id": "run-e8-publication-v1",
       "schema_version": "POI_MPP_E8_CONFIRMATORY_CONTRACT_V1",
-      "sha256": "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+      "sha256": "62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a"
     },
     {
       "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
@@ -276,7 +276,7 @@
       "relative_path": "results/publication/e8-11de165/e8_publication_artifact.json",
       "run_id": "run-e8-publication-v1",
       "schema_version": "POI_MPP_E8_SCENARIO_ROW_V1",
-      "sha256": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7"
+      "sha256": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c"
     }
   ],
   "omissions": [],
@@ -352,8 +352,8 @@
       "sha256": "3002605571a577c10d3a8cf23a376d07dff92bdc0f4e3ed1d19ed9376d9a5457",
       "source_closure_hash": null,
       "source_hashes": [
-        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
-        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+        "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c",
+        "62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a"
       ]
     },
     {
@@ -374,16 +374,16 @@
       "relative_path": "figures/F11_consensus_dynamics.svg",
       "run_id": "run-e8-publication-v1",
       "schema_version": null,
-      "sha256": "0b73e4d8fecd5090e662835d56fdfa202a83a018afb2cc5ec37e6caf20c60ba1",
+      "sha256": "45e3920325b882f72f58cb36a8c6c3e3482f0725a5cb0cf8d3ff060a71be8898",
       "source_closure_hash": null,
       "source_hashes": [
-        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
-        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+        "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c",
+        "62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a"
       ]
     },
     {
       "artifact_id": "F12",
-      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
       "derivation_edge": "E7->F12:json",
       "derived_from_input_paths": [
         "configs/publication_foundry/e7.run.yaml"
@@ -402,15 +402,15 @@
       "source_closure_hash": null,
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
-        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
-        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
+        "ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18",
         "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
         "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
       ]
     },
     {
       "artifact_id": "F12",
-      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
       "derivation_edge": "E7->F12:svg",
       "derived_from_input_paths": [
         "configs/publication_foundry/e7.run.yaml"
@@ -425,12 +425,12 @@
       "relative_path": "figures/F12_evm_gas_state_scaling.svg",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": null,
-      "sha256": "8d709fba726445793bd46966a0098f3d3629fe9754287735c19814f717a4e6d0",
+      "sha256": "772702f00f6e797161c29fb14ddf6906c632dac5e5dc714a8081f7085bb8f25e",
       "source_closure_hash": null,
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
-        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
-        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
+        "ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18",
         "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
         "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
       ]
@@ -670,7 +670,7 @@
     },
     {
       "artifact_id": "RAW_E7_LIVE_BUNDLE",
-      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
       "derivation_edge": "E7->RAW_E7_LIVE_BUNDLE:json",
       "derived_from_input_paths": [
         "configs/publication_foundry/e7.run.yaml"
@@ -688,12 +688,12 @@
       "relative_path": "raw/E7_live_bundle.json",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": "POI_MPP_E7_BUNDLE_V1",
-      "sha256": "03c60ecaf306613f6ca3e7532287a84ae5a152ec19a932dd046b66f834a9e489",
-      "source_closure_hash": "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+      "sha256": "1d896f76af3f3eccbdbfc602e3f94ddad30946361b079f4e05d8bfdf6fdf8928",
+      "source_closure_hash": "ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18",
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
-        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
-        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
+        "ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18",
         "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
         "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
       ]
@@ -819,7 +819,7 @@
     },
     {
       "artifact_id": "T12",
-      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
       "derivation_edge": "E7->T12:csv",
       "derived_from_input_paths": [
         "configs/publication_foundry/e7.run.yaml"
@@ -834,19 +834,19 @@
       "relative_path": "tables/T12_evm_boundedness.csv",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": null,
-      "sha256": "0cbaf25fc81c7adec976011d06e7bd54d855f68ad8979691bcd5ad1b6421005e",
+      "sha256": "a065920b3bcaacd6db712a8a2921176cd21ad1caacbdb7ee80896efb31499f97",
       "source_closure_hash": null,
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
-        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
-        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
+        "ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18",
         "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
         "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
       ]
     },
     {
       "artifact_id": "T12",
-      "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+      "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
       "derivation_edge": "E7->T12:json",
       "derived_from_input_paths": [
         "configs/publication_foundry/e7.run.yaml"
@@ -861,12 +861,12 @@
       "relative_path": "tables/T12_evm_boundedness.json",
       "run_id": "publication-e7-foundry-v1",
       "schema_version": null,
-      "sha256": "edad608961acb3658cefce918a0ef84e2b284833fa8796835246cc7cf82e7e3b",
+      "sha256": "368dfd228cb9ca4ff2f8e6eaba052a7e128981d84e050da7e5170235b288d114",
       "source_closure_hash": null,
       "source_hashes": [
         "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4",
-        "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
-        "4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f",
+        "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
+        "ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18",
         "9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4",
         "922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
       ]
@@ -889,11 +889,11 @@
       "relative_path": "tables/T13_consensus_safety.csv",
       "run_id": "run-e8-publication-v1",
       "schema_version": null,
-      "sha256": "2bf4a408ad873b446e99b028b8b5a2c2b4791f1fa61041c6337d4107982e8606",
+      "sha256": "8205c7507fda97bf7ced2cdd6e3a1e0126f38e9eaa019cffbcd0844a7417c45d",
       "source_closure_hash": null,
       "source_hashes": [
-        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
-        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+        "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c",
+        "62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a"
       ]
     },
     {
@@ -914,11 +914,11 @@
       "relative_path": "tables/T13_consensus_safety.json",
       "run_id": "run-e8-publication-v1",
       "schema_version": null,
-      "sha256": "56f878a702c22b87b5056ae5ba082159b9a333896c370bad679b3a35db40f8cf",
+      "sha256": "630a2a1b97039eac3a26161dae8573159cb960ae046ba8454764787a75b64a88",
       "source_closure_hash": null,
       "source_hashes": [
-        "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7",
-        "5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+        "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c",
+        "62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a"
       ]
     },
     {
@@ -1152,7 +1152,7 @@
       "relative_path": "tables/claim_matrix.csv",
       "run_id": null,
       "schema_version": null,
-      "sha256": "42a4a11e6082ea390c3e8d884dd38ae302382fb253a93de0eaf4d85088aaf323",
+      "sha256": "31fd705942131cf0dccd63422f52f4705732ba72ead51d06a3d9e3cd6ce8920d",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1171,7 +1171,7 @@
       "relative_path": "tables/claim_matrix.json",
       "run_id": null,
       "schema_version": null,
-      "sha256": "6ac2e0b9caf04f38294bf9bdfff70a6175a32d4beaac2e88925f6d0bb4ee9a96",
+      "sha256": "a8edaf86a2f4361baa0d6b70bfb8389f767ea60a4211157e2146cd75666b23f0",
       "source_closure_hash": null,
       "source_hashes": []
     },
@@ -1215,5 +1215,5 @@
     }
   ],
   "schema_version": "POI_MPP_PUBLICATION_REPORT_MANIFEST_V4",
-  "self_digest": "85a5c6be6b9e8d3cd20699eebd215b354f9e3d397e2509a9d933f939f93f7d52"
+  "self_digest": "591659120c34f03c8df7fe3ce2e496957482343bc2f37eba3487c972d4694c1f"
 }

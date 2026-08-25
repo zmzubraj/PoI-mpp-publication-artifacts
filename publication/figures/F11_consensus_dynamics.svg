@@ -78,5 +78,5 @@
 <polyline fill='none' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3' points='90,420 201.428571,420 312.857143,420 424.285714,420 535.714286,341.344538 647.142857,420 758.571429,60 870,420'/>
 <line x1='700' y1='161' x2='736' y2='161' stroke='#7570b3' stroke-width='3' stroke-dasharray='10 3 2 3'/>
 <text x='744' y='165' font-family='Menlo, monospace' font-size='13'>ATTACKER_COMMITTEE_WEIGHT_SHARE:GE_TWO_THIRDS</text>
-<text x='60' y='510' font-family='Menlo, monospace' font-size='13'>source_hashes: 406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7,5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd</text>
+<text x='60' y='510' font-family='Menlo, monospace' font-size='13'>source_hashes: 6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c,62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a</text>
 </svg>

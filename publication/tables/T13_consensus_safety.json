@@ -17,7 +17,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "support-honest-baseline",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 270,
     "uncertainty": "N/A"
   },
@@ -39,7 +39,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "support-high-compute-capped",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 300,
     "uncertainty": "N/A"
   },
@@ -61,7 +61,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "support-sybil-split",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 300,
     "uncertainty": "N/A"
   },
@@ -83,7 +83,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "support-subsidized-compute",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 300,
     "uncertainty": "N/A"
   },
@@ -105,7 +105,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "support-collusion-bounded",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 360,
     "uncertainty": "N/A"
   },
@@ -127,7 +127,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "support-receipt-churn",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 270,
     "uncertainty": "N/A"
   },
@@ -149,7 +149,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "negative-cap-removed",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 480,
     "uncertainty": "N/A"
   },
@@ -171,7 +171,7 @@
     "sample_size": 10,
     "sampling_disposition": "COMMITTEE_SAMPLED",
     "scenario_id": "boundary-zero-credit-rich",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 180,
     "uncertainty": "N/A"
   },
@@ -193,7 +193,7 @@
     "sample_size": 10,
     "sampling_disposition": "ZERO_TOTAL_WEIGHT",
     "scenario_id": "boundary-pending-only",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 0,
     "uncertainty": "N/A"
   },
@@ -215,7 +215,7 @@
     "sample_size": 10,
     "sampling_disposition": "ZERO_TOTAL_WEIGHT",
     "scenario_id": "boundary-zero-total-weight",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd",
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a",
     "total_active_weight_micros": 0,
     "uncertainty": "N/A"
   }

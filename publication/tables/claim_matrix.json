@@ -100,7 +100,7 @@
   {
     "artifact_id": "T12",
     "claim_id": "E7_LOCAL_EVM_BOUNDEDNESS_AND_PARITY",
-    "config_hash": "dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a",
+    "config_hash": "2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c",
     "disposition": "SUPPORTED",
     "experiment_id": "E7",
     "limits": "",
@@ -109,7 +109,7 @@
     "origin": "FOUNDRY_MEASUREMENT",
     "run_id": "publication-e7-foundry-v1",
     "scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
-    "source_hashes": "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4|dd9446c9905acdf373ffa2eee592226ab9726afca6d8e04004b608393b31ac9a|4fdf9b927fffe04c2a4931328638706beb22cada2ea0730e35e7e80de8300f9f|9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4|922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
+    "source_hashes": "c5e7fe21f4d786a789a356fd13992444216d2de451734be72ee5e1cacec7dda4|2ba887f564965dfd7ce4990c8b8fc2b4ca2c8f47b3d7460f1cc4f59d205ab66c|ed799c8c25519e73d005e959533cfe844adde2da847a80adc6a25145ee5cfc18|9f9f325b004cf07cd98e41c813a76fcf9899d3c105297647c5f1d8d962fdadd4|922517a36954a11041f8305df15a9cc900b814d779604096d25723d99d148d58"
   },
   {
     "artifact_id": "T13",
@@ -117,12 +117,12 @@
     "config_hash": "2d76a145b8131227e7bedd66c6507af95249926cbdae352b14a5003df0eab49e",
     "disposition": "INCONCLUSIVE",
     "experiment_id": "E8",
-    "limits": "ablation=CHURN|ablation=COLLATERAL_RICH_ZERO_CREDIT|ablation=COLLUSION|ablation=CONCENTRATION_CAP_REMOVED|ablation=HIGH_COMPUTE|ablation=MISSING_RECEIPTS|ablation=NONE|ablation=SUBSIDIZED_COMPUTE|ablation=SYBIL_SPLIT|attacker_operator_ids=attacker-1|attacker_operator_ids=attacker-1,attacker-2|beta_micros=10000|committee_algorithm_version=POI_MPP_COMMITTEE_SAMPLER_SHA256_NO_REPLACEMENT_V1|committee_size=2|concentration_cap_micros=10000|concentration_cap_micros=120|role=BOUNDARY|role=NEGATIVE_CONTROL|role=SUPPORT|target_epoch=8|E8 publication artifacts are reproducible simulations only; they are not live consensus evidence.|Frozen scenario assertions are publication criteria only; they are not measured result claims.",
+    "limits": "ablation=CHURN|ablation=COLLATERAL_RICH_ZERO_CREDIT|ablation=COLLUSION|ablation=CONCENTRATION_CAP_REMOVED|ablation=HIGH_COMPUTE|ablation=MISSING_RECEIPTS|ablation=NONE|ablation=SUBSIDIZED_COMPUTE|ablation=SYBIL_SPLIT|attacker_operator_ids=attacker-1|attacker_operator_ids=attacker-1,attacker-2|beta_micros=10000|committee_algorithm_version=POI_MPP_COMMITTEE_SAMPLER_SHA256_NO_REPLACEMENT_V1|committee_size=2|concentration_cap_micros=10000|concentration_cap_micros=120|role=BOUNDARY|role=NEGATIVE_CONTROL|role=SUPPORT|target_epoch=8|E8 publication artifacts are reproducible simulations only; they are not live consensus evidence.|Frozen scenario assertions are publication criteria only; they are not measured result claims.|Multi-epoch rows reissue the frozen scenario cohort at each epoch; they do not model endogenous operator adaptation, entry, exit, learning, or live-network feedback.",
     "maturity": "REPRODUCIBLE_SIMULATION",
     "omission_reason": "",
     "origin": "REPRODUCIBLE_SIMULATION",
     "run_id": "run-e8-publication-v1",
     "scope": "E8_CONFIRMATORY_PUBLICATION_V1",
-    "source_hashes": "406ebbe759efd318b1894167b1cf547684cab866ec27fc8b23bb71f1d95986d7|5009bf85d3f0314ca340e61c9a3ade8dea2558b992013572830f56178be1aafd"
+    "source_hashes": "6555d3693aaff9c35af776d8a8b986ed2881512f9b7e28afccbd70959398265c|62cb0bcd6743d86fab45d42b459b221d48047bfaf6d738b2be46bb7ecd5eb39a"
   }
 ]
