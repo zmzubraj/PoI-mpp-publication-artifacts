@@ -2,7 +2,7 @@
   "authority_boundary": "This manifest packages inputs only. It does not prove execution, identity, independence, agreement, scientific validity, or publication readiness.",
   "canonical_publication_manifest_sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
   "independent_reproduction_complete": false,
-  "input_count": 188,
+  "input_count": 190,
   "inputs": [
     {
       "path": "Makefile",
@@ -696,13 +696,23 @@
     },
     {
       "path": "src/poi_mpp/experiments/e3_development.py",
-      "sha256": "fec1557ccadd055821a9e98933a9d277adb0e8cb7d10dfafe458572b392b4d62",
-      "size_bytes": 30220
+      "sha256": "4a0435cc880349808ab4a0e1ad3d47b33fc1c4d6a8c17fe86dc92826d9199995",
+      "size_bytes": 30226
     },
     {
       "path": "src/poi_mpp/experiments/e3_semantic.py",
       "sha256": "caa173af01179e740d55a1cf0bc2afcd3f7cf1cbf4bf6bf8f58dcc3227b7cdc9",
       "size_bytes": 37766
+    },
+    {
+      "path": "src/poi_mpp/experiments/e3_v2_authority.py",
+      "sha256": "c36d4b9694ca6800ce5f9fd1ece9deabf2878ecfcf98b5af6e65dd78b84794b0",
+      "size_bytes": 13216
+    },
+    {
+      "path": "src/poi_mpp/experiments/e3_v2_scope.py",
+      "sha256": "c2c3849e2e701131981879841da1a6e90dcae92f51e9196875d45efc4100a9a8",
+      "size_bytes": 26384
     },
     {
       "path": "src/poi_mpp/experiments/e4_da.py",
@@ -953,6 +963,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "376acdeaacf9d66fbfde928efd572fdcd354c9db4c747f293bb6ccfda32765bf",
+  "self_digest": "4bd8a9007d2d841e5ce3beea08904a239fa63d168f2f7dffba335fe03f9c1076",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

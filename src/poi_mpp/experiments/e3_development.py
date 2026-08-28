@@ -20,7 +20,7 @@ from poi_mpp.worker.model_manifest import PinnedModelManifest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-_AUTHORITY_VERIFIER = REPO_ROOT / "scripts" / "verify_e3_authority.py"
+_AUTHORITY_VERIFIER = REPO_ROOT / "scripts" / "verify_e3_v2_authority.py"
 _SHA256 = set("0123456789abcdef")
 _PREEXEC_STATIC_FILES = frozenset(
     {
@@ -274,7 +274,7 @@ def _read_bundle_json(bundle_root: Path, relative_path: str, *, label: str) -> t
 
 
 def _load_verify_authority():
-    module_name = "_poi_mpp_verify_e3_authority_runtime"
+    module_name = "_poi_mpp_verify_e3_v2_authority_runtime"
     module = sys.modules.get(module_name)
     if module is None:
         spec = importlib.util.spec_from_file_location(module_name, _AUTHORITY_VERIFIER)
