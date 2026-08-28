@@ -2,7 +2,7 @@
   "authority_boundary": "This manifest packages inputs only. It does not prove execution, identity, independence, agreement, scientific validity, or publication readiness.",
   "canonical_publication_manifest_sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
   "independent_reproduction_complete": false,
-  "input_count": 190,
+  "input_count": 191,
   "inputs": [
     {
       "path": "Makefile",
@@ -690,6 +690,11 @@
       "size_bytes": 35437
     },
     {
+      "path": "src/poi_mpp/experiments/e3_annotation_worksheet.py",
+      "sha256": "06738d4db2ecd3b9766274144fd5773dcd29faa811986af076eb444e86c92306",
+      "size_bytes": 24224
+    },
+    {
       "path": "src/poi_mpp/experiments/e3_confirmatory_freeze.py",
       "sha256": "c63597f3737665739527feed8d82e26e39e134aff8312d38117b6246c2a56367",
       "size_bytes": 26794
@@ -963,6 +968,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "4bd8a9007d2d841e5ce3beea08904a239fa63d168f2f7dffba335fe03f9c1076",
+  "self_digest": "867c196b4f8706983064927fca1393c476567d05bebe107b3216217195789c06",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

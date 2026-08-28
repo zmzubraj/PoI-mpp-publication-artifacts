@@ -5,6 +5,20 @@
 **Scientific effect:** none; historical C3-v1 remains `NOT_SUPPORTED` and C3-v2 remains prospective.
 **Scope:** one frozen 1B–3B open-weight model for the primary E3-v2 result. A separately frozen 7B–8B model is optional and must not be pooled with the primary model.
 
+**Engineering checkpoint (2026-08-29):** the local worksheet compiler,
+dual-annotation/adjudication sealer, development-bundle validator, deterministic
+calibration fitter, and external-authority boundary have focused test coverage.
+This is engineering evidence only. No real V2 development annotations or real
+V2 calibration observations were present under
+`/Users/rainbow/Documents/POI_E3_EXTERNAL` at this checkpoint, so Phase 3
+remains `WAITING_EXTERNAL`.
+
+The real-model confirmatory runner is deliberately fail-closed until a separate
+accountable confirmatory-freeze approval verifier exists. The stub adapter is
+plumbing-only and emits `PIPELINE_SELF_TEST`; it cannot become publication
+evidence. Therefore neither 500-item confirmatory execution nor Phase-4 freeze
+work is authorized by this Phase-3 handoff.
+
 This handoff identifies the external facts and real executions required to close
 Phase 3 of `docs/POI_MPP_V2_IMPLEMENTATION_PLAN.md`. Repository code and
 synthetic fixtures cannot complete the real execution or accountable review

@@ -259,6 +259,19 @@ def test_run_e3_v2_refuses_existing_run_directory(tmp_path: Path) -> None:
     assert "already exists" in completed.stderr
 
 
+def test_real_model_runner_blocks_until_accountable_confirmatory_freeze_approval(
+    tmp_path: Path,
+) -> None:
+    paths = _write_execution_inputs(tmp_path)
+    output_root = tmp_path / "E3V2_RUN_OUTPUT"
+
+    completed = _run_runner(paths, output_root, adapter="transformers")
+
+    assert completed.returncode != 0
+    assert "accountable_freeze_approval" in completed.stderr
+    assert not (output_root / RUN_ID).exists()
+
+
 def test_run_e3_v2_limited_scope_authority_is_waiting(tmp_path: Path) -> None:
     from poi_mpp.experiments.e3_v2_scope import build_manifest
 

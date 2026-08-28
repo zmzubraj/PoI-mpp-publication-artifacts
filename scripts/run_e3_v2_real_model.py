@@ -3,7 +3,9 @@
 
 Runs the pinned model over all 500 frozen confirmatory items in manifest
 order after fail-closed verification of the external authority grant, the
-development bundle bindings, and the confirmatory freeze lineage.  Emits raw
+development bundle bindings, the confirmatory freeze lineage, and a separate
+accountable freeze approval. Until the approval verifier is implemented, real
+model execution remains blocked; the stub adapter is plumbing-only. Emits raw
 hash-bound execution evidence (outputs.jsonl, trace.jsonl, summary.json,
 execution_manifest.json) under an external output root.  This script never
 decides C3-v2 support: the disposition is computed only by the importer under
@@ -29,6 +31,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from poi_mpp.experiments.e3_confirmatory_freeze import (  # noqa: E402
     E3ConfirmatoryFreezeError,
+    prepare_e3_phase4_confirmatory_freeze,
     validate_e3_phase4_confirmatory_freeze_materials,
 )
 from poi_mpp.experiments.e3_development import (  # noqa: E402
@@ -261,6 +264,16 @@ def run_execution(
     ):
         raise E3V2ExecutionError(
             "confirmatory composition does not match the frozen C3-v2 support rule"
+        )
+
+    if adapter_name != "stub":
+        freeze_gate = prepare_e3_phase4_confirmatory_freeze(
+            bundle_root=confirmatory_bundle_root,
+            development_manifest_path=development_manifest_path,
+        )
+        raise E3V2ExecutionError(
+            "E3-v2 real execution is WAITING_EXTERNAL: "
+            f"{freeze_gate.reason}; missing: {', '.join(freeze_gate.missing_inputs)}"
         )
 
     if adapter_name == "stub":

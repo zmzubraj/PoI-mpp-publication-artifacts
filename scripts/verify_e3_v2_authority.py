@@ -38,9 +38,17 @@ class AuthorityVerificationError(ValueError):
     pass
 
 
+def _assert_no_symlink_components(path: Path, *, label: str) -> None:
+    absolute = path if path.is_absolute() else Path.cwd() / path
+    probe = Path(absolute.anchor)
+    for component in absolute.parts[1:]:
+        probe = probe / component
+        if probe.is_symlink():
+            raise AuthorityVerificationError(f"{label} may not be a symlink")
+
+
 def _read_json(path: Path, *, label: str) -> tuple[dict[str, Any], bytes]:
-    if path.is_symlink():
-        raise AuthorityVerificationError(f"{label} may not be a symlink")
+    _assert_no_symlink_components(path, label=label)
     try:
         raw = path.resolve(strict=True).read_bytes()
     except (FileNotFoundError, OSError) as error:
@@ -55,8 +63,7 @@ def _read_json(path: Path, *, label: str) -> tuple[dict[str, Any], bytes]:
 
 
 def _external_file(path: Path, *, label: str) -> Path:
-    if path.is_symlink():
-        raise AuthorityVerificationError(f"{label} may not be a symlink")
+    _assert_no_symlink_components(path, label=label)
     try:
         resolved = path.resolve(strict=True)
     except FileNotFoundError as error:

@@ -95,8 +95,8 @@
     {
       "path": "docs/paper_artifacts/final/external_reproduction/EXTERNAL_REPRODUCTION_MANIFEST.json",
       "role": "UNSIGNED_EXTERNAL_REPRODUCTION_REQUEST_OR_SCHEMA",
-      "sha256": "5099630ef86b59494015b5871a8e3da47f546894ecd2df1fd77fdc82d4e35fdd",
-      "size_bytes": 35358
+      "sha256": "a5a2a525abfb96982fa66bad0c27a01fdacb152793c20b779db9b67a53c8a932",
+      "size_bytes": 35549
     },
     {
       "path": "docs/paper_artifacts/final/external_reproduction/README.md",
@@ -700,6 +700,6 @@
     }
   ],
   "schema_version": "POI_MPP_EXTERNAL_REVIEW_HANDOFF_V1",
-  "self_digest": "9c7bdfeea78e3d4914359822a4862438694bca43568c7d89e62fe99237abb0c4",
+  "self_digest": "f1a7fc94af0aeefb9921a95e5a11558ac64fab25bd113a7a747c9f262bf9ea8a",
   "status": "UNSIGNED_REVIEW_INPUT_ONLY"
 }

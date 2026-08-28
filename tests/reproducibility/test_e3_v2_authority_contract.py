@@ -274,6 +274,46 @@ def test_verify_e3_v2_authority_rejects_repository_local_authority_record(tmp_pa
         inside_repo.unlink(missing_ok=True)
 
 
+def test_verify_e3_v2_authority_rejects_request_manifest_with_symlinked_parent(
+    tmp_path: Path,
+) -> None:
+    request_path, request = _build_request(tmp_path)
+    record_path, allowed_signers, signature, _ = _write_signed_record(
+        tmp_path, request_path, request
+    )
+    linked_parent = tmp_path / "linked-request-parent"
+    linked_parent.symlink_to(request_path.parent, target_is_directory=True)
+
+    completed = _run_verifier(
+        linked_parent / request_path.name,
+        record_path,
+        allowed_signers,
+        signature,
+    )
+    assert completed.returncode != 0
+    assert "request manifest may not be a symlink" in completed.stderr
+
+
+def test_verify_e3_v2_authority_rejects_allowed_signers_with_symlinked_parent(
+    tmp_path: Path,
+) -> None:
+    request_path, request = _build_request(tmp_path)
+    record_path, allowed_signers, signature, _ = _write_signed_record(
+        tmp_path, request_path, request
+    )
+    linked_parent = tmp_path / "linked-allowed-signers-parent"
+    linked_parent.symlink_to(allowed_signers.parent, target_is_directory=True)
+
+    completed = _run_verifier(
+        request_path,
+        record_path,
+        linked_parent / allowed_signers.name,
+        signature,
+    )
+    assert completed.returncode != 0
+    assert "allowed-signers file may not be a symlink" in completed.stderr
+
+
 def test_verify_e3_v2_authority_limited_scope_requires_minimum_core(tmp_path: Path) -> None:
     request_path, request = _build_request(tmp_path)
     record_path, allowed_signers, signature, _ = _write_signed_record(
