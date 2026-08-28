@@ -73,6 +73,7 @@ EXACT_INPUTS = (
     "docs/paper_artifacts/final/external_review/E3_AUTHORITY_REQUEST_PACKAGE.zip",
     "docs/paper_artifacts/final/external_review/E3_MISSING_ARTIFACTS_TRACKER.md",
     "docs/paper_artifacts/final/external_review/E3_STALE_SIGNATURE_HANDOFF_NOTE.md",
+    "docs/paper_artifacts/final/external_review/E3_V2_ACCOUNTABLE_HUMAN_OPERATOR_RUNBOOK.md",
     "docs/paper_artifacts/final/external_review/INDEPENDENT_DOMAIN_EXPERT_REVIEW_PACKET.md",
     "docs/paper_artifacts/final/external_review/e3_result_attestation_record.schema.json",
     "docs/paper_artifacts/final/external_review/semantic_evaluator_authority_record.schema.json",
