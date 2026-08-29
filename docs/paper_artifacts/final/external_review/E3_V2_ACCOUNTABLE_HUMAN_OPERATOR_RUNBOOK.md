@@ -1,6 +1,6 @@
 # E3-v2 Phase-3 accountable-human operator runbook
 
-**Status:** executable through development-dataset sealing, policy/model collection, and accountable signatures. Pre-execution environment validation and real development inference remain `WAITING_ENGINEERING` until a development-only authority request, runner, observation exporter, and calibration CLI are implemented and independently reviewed.
+**Status:** executable through development-dataset sealing, policy/model collection, and accountable signatures. The Phase-3 engineering artifacts and adversarial tests are implemented. The single canonical gate is `WAITING_EXTERNAL_ENGINEERING_REVIEW`; no real inference or calibration freeze is authorized until a real independent reviewer returns a verified, hash-bound signed record.
 
 **Audience:** the two real humans who will curate and independently annotate the E3-v2 development set, plus a third adjudicator if any annotation disagreement occurs.
 
@@ -622,18 +622,38 @@ MATERIALS_VALIDATED_WAITING_AUTHORITY
 
 This is not execution authority and not scientific evidence.
 
-## 19. Mandatory current HOLD before environment freeze or real inference
+## 19. Canonical engineering checkpoint state
 
-**Stop here and return the package to the repository integration owner.**
+**Canonical gate state: `WAITING_EXTERNAL_ENGINEERING_REVIEW`. Stop here.**
 
-Current repository state does not provide:
+The Phase-3 engineering artifacts and adversarial tests are implemented and locally
+verified. That mechanical evidence does not satisfy the separately owned signed
+review gate. Real inference remains prohibited until a qualified external reviewer
+returns a verified signed review record plus identity, independence, and key-custody
+evidence bound to the reviewed commit and file hashes.
 
-1. a development-only, pre-execution authority request builder;
-2. a verified development-only real-model runner;
-3. a canonical exporter from raw development output to `DevelopmentCalibrationObservationV2`;
-4. a CLI that fits and atomically emits the Phase-3 calibration freeze and metrics.
+1. **Development-only authority request builder** — `scripts/build_e3_v2_development_authority_request.py`
+   and `src/poi_mpp/experiments/e3_v2_development_authority.py`. Binds the sealed
+   dataset, model, decode policy, environment, and policy inputs without referencing
+   confirmatory lineage. Fails closed if confirmatory materials are present.
 
-The existing V2 authority request builder depends on confirmatory lineage and a calibration freeze, so it cannot authorize the development execution that must occur before those artifacts exist. Bypassing this circularity with an ad-hoc script, self-signature, or the confirmatory runner is prohibited.
+2. **Development-only real-model runner** — `scripts/run_e3_v2_development_model.py`.
+   Runs the pinned 1B–3B unquantized model over 120–150 development items in
+   offline/local-only mode. Never reads confirmatory freeze material. Emits raw
+   outputs.jsonl, trace.jsonl, summary.json, and execution_manifest.json.
+
+3. **Canonical observation exporter** — `src/poi_mpp/worker/development_observation_exporter.py`.
+   Converts raw execution output into `DevelopmentCalibrationObservationV2` with
+   authoritative dataset-record binding hashes. Enforces REAL_MODEL_EXECUTION origin
+   and fail-closed decision parsing (contradictions → ABSTAIN).
+
+4. **Calibration CLI** — `scripts/fit_e3_v2_development_calibration.py`. Calls
+   `fit_development_calibration_v2`, emits error ledger, NOT_YET_ASSESSABLE
+   leakage report, metrics, and FROZEN_DEVELOPMENT_ONLY freeze atomically.
+
+The existing `scripts/run_e3_v2_real_model.py` remains the 500-item confirmatory
+runner and is deliberately blocked. Bypassing the development pipeline with
+an ad-hoc script, self-signature, or the confirmatory runner is prohibited.
 
 Create a curation-stage manifest that is explicitly not the final development-bundle manifest:
 
@@ -647,7 +667,7 @@ for base in ('sealed-dataset','POI_E3_V2_DEVELOPMENT/policy','POI_E3_V2_DEVELOPM
     if not target.exists(): continue
     for p in sorted(target.rglob('*')):
         if p.is_file(): included.append({'path':p.relative_to(root).as_posix(),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
-payload={'schema_version':'POI_MPP_E3_V2_CURATION_HOLD_MANIFEST_V1','status':'WAITING_ENGINEERING','files':included}
+payload={'schema_version':'POI_MPP_E3_V2_CURATION_HOLD_MANIFEST_V1','status':'WAITING_EXTERNAL_ENGINEERING_REVIEW','files':included}
 (root/'CURATION_HOLD_MANIFEST.json').write_bytes(json.dumps(payload,allow_nan=False,ensure_ascii=False,separators=(',',':'),sort_keys=True).encode())
 print('hold_entries',len(included))
 PY
@@ -666,20 +686,24 @@ shasum -a 256 E3_V2_PHASE3_PREEXECUTION_HANDOFF.zip
 
 Transmit the archive hash through a second channel. Do not send private keys or unrestricted identity documents in the archive.
 
-## 20. What the integration owner must add before execution
+## 20. Engineering completion versus external review
 
-The next engineering batch must use RED–GREEN–REFACTOR and independent read-only review to add:
+The following engineering artifacts are now implemented:
 
-- a development-only authority request schema binding the sealed dataset, policy, model, runtime, metric scope, and allowed outputs;
-- canonical external signature verification reusing the V2 trust verifier rather than duplicating it;
-- a local-files-only 1B–3B development runner that records raw prompt/output/trace/config hashes and never reads confirmatory material;
-- exact parsing of `decision`, `support_fraction`, and `calibrated_confidence`, with contradictions and parse errors becoming `ABSTAIN`;
-- a deterministic observation exporter with authoritative dataset-record binding hashes and `REAL_MODEL_EXECUTION` origin;
-- a calibration CLI that calls `fit_development_calibration_v2`, emits error ledger, provisional `NOT_YET_ASSESSABLE` leakage report, metrics, and `FROZEN_DEVELOPMENT_ONLY` calibration freeze atomically;
-- adversarial tests for tampering, replay, local/symlink trust, stale authority, scope mismatch, duplicate rows, model/config drift, partial output, and synthetic-origin promotion;
-- an independent read-only review before any real inference.
+| Artifact | Implementation status | External signed review status |
+|---|---|---|
+| Development authority request and verifier | Implemented with canonical material hashes and canonical external trust primitive | `WAITING_EXTERNAL` |
+| Local-files-only 1B–3B development runner | Implemented; atomic output; pinned cache bytes re-hashed; synthetic stub is non-evidence | `WAITING_EXTERNAL` |
+| Canonical observation exporter | Implemented; one-to-one row, prompt, raw output, trace, summary, and manifest closure | `WAITING_EXTERNAL` |
+| Development calibration CLI | Implemented; authority-bound input, real-only observations, atomic self-digested output | `WAITING_EXTERNAL` |
+| Adversarial and regression tests | RED failures captured and GREEN locally; exact command output belongs in the checkpoint record | developmental evidence only |
 
-Only after those checks pass may the humans receive a new command sheet for real local development inference.
+No person, email address, public key, independent-review verdict, or key-custody fact
+is asserted by this runbook. An AI read-only code review may be retained as
+developmental QA only; it cannot close the accountable-human review gate.
+
+The HOLD is released only after the canonical external review verifier accepts the
+hash-bound signed review record and the repository remains at the reviewed commit.
 
 ## 21. Acceptance gate presented to the project owner
 
@@ -693,11 +717,11 @@ The project owner will accept the accountable development package only if all ro
 | Annotation | two complete independent ledgers; agreement counts; third-person adjudication for every disagreement |
 | License/privacy | complete truthful `CC-BY-4.0` / `AUTHORIZED_PUBLIC` ledger under current code |
 | Model | exact 40-character revisions; unquantized 1B–3B safetensors; file hashes; reviewed license |
-| Environment | `WAITING_ENGINEERING`; later requires local-only declaration, real runner/exporter hashes, dependency lock, SBOM, hardware and driver inventory |
+| Environment | engineering implementation is complete; external signed engineering review remains `WAITING_EXTERNAL`; after it passes, bind local-only declaration, runner/exporter hashes, dependency lock, SBOM, hardware and driver inventory |
 | Policy | frozen claim, prompt, output schema, contradiction, recovery, and taxonomy review |
 | Provenance | canonical manifest closure, no symlinks, detached human signatures, second-channel archive hash |
-| Execution | remains `WAITING_ENGINEERING` until the approved development runner exists |
-| Calibration | remains `WAITING_ENGINEERING` until real authorized observations are exported and deterministically frozen |
+| Execution | `WAITING_EXTERNAL_ENGINEERING_REVIEW`; then still requires a separately verified development authority and sealed real bundle |
+| Calibration | `BLOCKED_BY_SEQUENCE` until authorized real observations exist; it cannot be frozen from synthetic or stub output |
 | Confirmatory | remains `BLOCKED_BY_DESIGN`; no 500-item data inspection or execution |
 
 ## 22. Immediate stop conditions

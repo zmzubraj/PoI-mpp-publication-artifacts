@@ -20,7 +20,7 @@ from poi_mpp.worker.model_manifest import PinnedModelManifest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-_AUTHORITY_VERIFIER = REPO_ROOT / "scripts" / "verify_e3_v2_authority.py"
+_CONFIRMATORY_AUTHORITY_VERIFIER = REPO_ROOT / "scripts" / "verify_e3_v2_authority.py"
 _SHA256 = set("0123456789abcdef")
 _PREEXEC_STATIC_FILES = frozenset(
     {
@@ -273,29 +273,30 @@ def _read_bundle_json(bundle_root: Path, relative_path: str, *, label: str) -> t
     return payload, path, raw
 
 
-def _load_verify_authority():
+def _load_confirmatory_verify_authority():
     module_name = "_poi_mpp_verify_e3_v2_authority_runtime"
     module = sys.modules.get(module_name)
     if module is None:
-        spec = importlib.util.spec_from_file_location(module_name, _AUTHORITY_VERIFIER)
+        spec = importlib.util.spec_from_file_location(
+            module_name, _CONFIRMATORY_AUTHORITY_VERIFIER
+        )
         if spec is None or spec.loader is None:
-            raise E3DevelopmentBundleError("canonical authority verifier is unavailable")
+            raise E3DevelopmentBundleError("canonical confirmatory authority verifier is unavailable")
         module = importlib.util.module_from_spec(spec)
-        scripts_root = str(_AUTHORITY_VERIFIER.parent)
-        inserted = False
-        if scripts_root not in sys.path:
+        scripts_root = str(_CONFIRMATORY_AUTHORITY_VERIFIER.parent)
+        inserted = scripts_root not in sys.path
+        if inserted:
             sys.path.insert(0, scripts_root)
-            inserted = True
         try:
             sys.modules[module_name] = module
             spec.loader.exec_module(module)
         finally:
             if inserted:
                 sys.path.pop(0)
-    verify = getattr(module, "verify_authority", None)
-    if verify is None:
-        raise E3DevelopmentBundleError("canonical authority verifier is unavailable")
-    return verify
+    verifier = getattr(module, "verify_authority", None)
+    if verifier is None:
+        raise E3DevelopmentBundleError("canonical confirmatory authority verifier is unavailable")
+    return verifier
 
 
 def _parse_file_hash_listing(path: Path) -> dict[str, str]:
@@ -380,14 +381,25 @@ def _require_authority(
     _require_external_file(authority_record_path, label="authority record")
     allowed_signers = _require_external_file(allowed_signers_path, label="allowed-signers file")
     signature = _require_external_file(signature_path, label="detached signature")
-    verify_authority = _load_verify_authority()
     try:
-        grant = verify_authority(
-            request_manifest_path,
-            authority_record_path,
-            allowed_signers_path=allowed_signers,
-            signature_path=signature,
-        )
+        request_payload = json.loads(request_manifest_path.read_bytes())
+        if request_payload.get("schema_version") == "POI_MPP_E3_V2_DEVELOPMENT_AUTHORITY_REQUEST_V1":
+            from poi_mpp.experiments.e3_v2_development_authority import (
+                verify_development_authority,
+            )
+            grant = verify_development_authority(
+                request_manifest_path=request_manifest_path,
+                authority_record_path=authority_record_path,
+                allowed_signers_path=allowed_signers,
+                signature_path=signature,
+            )
+        else:
+            grant = _load_confirmatory_verify_authority()(
+                request_manifest_path,
+                authority_record_path,
+                allowed_signers_path=allowed_signers,
+                signature_path=signature,
+            )
     except Exception as error:  # pragma: no cover - canonical verifier owns exact error types
         raise E3DevelopmentBundleError(str(error)) from error
     if grant.experiment_id != "E3" or grant.claim_id != "C3":
@@ -663,13 +675,20 @@ def prepare_e3_phase3_development_bundle(
         allowed_signers_path=allowed_signers,
         signature_path=signature,
     )
-    if getattr(grant, "decision", None) == "LIMITED_SCOPE":
+    try:
+        request_schema = json.loads(request_manifest.read_bytes()).get("schema_version")
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError) as error:
+        raise E3DevelopmentBundleError("authority request manifest is invalid") from error
+    if (
+        getattr(grant, "decision", None) == "LIMITED_SCOPE"
+        and request_schema != "POI_MPP_E3_V2_DEVELOPMENT_AUTHORITY_REQUEST_V1"
+    ):
         return E3DevelopmentWaitingExternal(
             status=E3DevelopmentBundleStatus.WAITING_EXTERNAL,
             missing_inputs=(),
             reason="limited_scope_runner_not_implemented",
         )
-    if getattr(grant, "decision", None) != "APPROVED":
+    if getattr(grant, "decision", None) not in {"APPROVED", "LIMITED_SCOPE"}:
         raise E3DevelopmentBundleError("authority decision must be APPROVED or LIMITED_SCOPE")
     if not _authority_binds_development_bundle(
         authority_grant=grant,

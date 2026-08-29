@@ -100,8 +100,8 @@
     },
     {
       "path": "scripts/verify_e3_authority.py",
-      "sha256": "631df21662a701664a30b2078a30264411f7268bb50c315b91f04acea29cb211",
-      "size_bytes": 11998
+      "sha256": "aa7d1f08d0cbe80f1d2a9a813a0a6c4336a225fe15a682051a14bba0180a5704",
+      "size_bytes": 14400
     },
     {
       "path": "scripts/verify_e3_result_attestation.py",
@@ -141,6 +141,6 @@
   "requested_scope_digest": "d79722a7e2b34c6507119fc3d74fb822d1710120725d80324ee64592c0ea7f30",
   "result_attestation_status": "NOT_INCLUDED_PRE_EXECUTION_AUTHORIZATION",
   "schema_version": "POI_MPP_E3_AUTHORITY_REQUEST_V1",
-  "self_digest": "f3b7ceb0fca78ca5033f6c6712ad00413289a48af6fe1ae457cce220f35a3275",
+  "self_digest": "8bcf4bd36d791be00dad579e33d80fe1fb6bd031fc114c35f73da04bdf6a9609",
   "status": "UNSIGNED_PRE_EXECUTION_SCOPE_REQUEST"
 }

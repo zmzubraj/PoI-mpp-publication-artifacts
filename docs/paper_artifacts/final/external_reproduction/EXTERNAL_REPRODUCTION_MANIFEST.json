@@ -701,8 +701,8 @@
     },
     {
       "path": "src/poi_mpp/experiments/e3_development.py",
-      "sha256": "4a0435cc880349808ab4a0e1ad3d47b33fc1c4d6a8c17fe86dc92826d9199995",
-      "size_bytes": 30226
+      "sha256": "1373d135e3d7eb84665da52e9516678331693c24b437090db92869659cdb3628",
+      "size_bytes": 31305
     },
     {
       "path": "src/poi_mpp/experiments/e3_semantic.py",
@@ -968,6 +968,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "867c196b4f8706983064927fca1393c476567d05bebe107b3216217195789c06",
+  "self_digest": "cfdee49b18b45c1b38eff1ec5706194d3eb444f134ce83052d569d3a609ea427",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

@@ -483,6 +483,7 @@ def test_prepare_never_broadens_limited_scope_authority(
     candidate_bundle.mkdir()
     for path in (request_path, authority_record, allowed_signers, signature):
         path.write_text("test-only", encoding="utf-8")
+    request_path.write_text('{"schema_version":"POI_MPP_E3_V2_AUTHORITY_REQUEST_V1"}', encoding="utf-8")
 
     class _LimitedGrant:
         experiment_id = "E3"

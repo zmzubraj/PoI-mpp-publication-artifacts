@@ -8,6 +8,7 @@ scope. It deliberately does not validate or attest to post-execution results.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from datetime import date
 import hashlib
 import json
@@ -31,6 +32,17 @@ from poi_mpp.experiments.e3_semantic import (  # noqa: E402
 
 class AuthorityVerificationError(ValueError):
     pass
+
+
+@dataclass(frozen=True)
+class ExternalSignatureVerificationTranscript:
+    """Hash-bound transcript emitted by the canonical external trust path."""
+
+    record_bytes: bytes
+    authority_identity: str
+    namespace: str
+    allowed_signers_sha256: str
+    signature_sha256: str
 
 
 class _FrozenModel(BaseModel):
@@ -137,8 +149,12 @@ def _read_json(path: Path, *, label: str) -> tuple[dict[str, Any], bytes]:
 
 
 def _external_file(path: Path, *, label: str) -> Path:
-    if path.is_symlink():
-        raise AuthorityVerificationError(f"{label} may not be a symlink")
+    absolute = path if path.is_absolute() else Path.cwd() / path
+    probe = Path(absolute.anchor)
+    for component in absolute.parts[1:]:
+        probe = probe / component
+        if probe.is_symlink():
+            raise AuthorityVerificationError(f"{label} may not be a symlink")
     try:
         resolved = path.resolve(strict=True)
     except FileNotFoundError as error:
@@ -152,6 +168,63 @@ def _external_file(path: Path, *, label: str) -> Path:
     if not resolved.is_file() or resolved.stat().st_size == 0:
         raise AuthorityVerificationError(f"{label} must be a non-empty file")
     return resolved
+
+
+def verify_external_detached_signature(
+    *,
+    record_bytes: bytes,
+    authority_identity: str,
+    allowed_signers_path: Path,
+    signature_path: Path,
+    namespace: str,
+) -> ExternalSignatureVerificationTranscript:
+    """Verify signed bytes through the canonical E3 external trust boundary.
+
+    Schema-specific verifiers must validate their request and signed record
+    before calling this primitive.  This function owns external-path,
+    symlink-component, non-empty-file, and detached SSH verification rules.
+    """
+
+    if not isinstance(record_bytes, bytes) or not record_bytes:
+        raise AuthorityVerificationError("signed authority record bytes must be non-empty")
+    if not isinstance(authority_identity, str) or not authority_identity.strip():
+        raise AuthorityVerificationError("authority identity must be non-blank")
+    if not isinstance(namespace, str) or not namespace.strip():
+        raise AuthorityVerificationError("signature namespace must be non-blank")
+    allowed_signers = _external_file(allowed_signers_path, label="allowed-signers file")
+    signature = _external_file(signature_path, label="detached signature")
+    completed = subprocess.run(
+        [
+            "ssh-keygen",
+            "-Y",
+            "verify",
+            "-f",
+            str(allowed_signers),
+            "-I",
+            authority_identity,
+            "-n",
+            namespace,
+            "-s",
+            str(signature),
+        ],
+        input=record_bytes,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).decode(
+            "utf-8", errors="replace"
+        ).strip()
+        raise AuthorityVerificationError(
+            f"external E3 authority signature verification failed: {detail or 'unknown failure'}"
+        )
+    return ExternalSignatureVerificationTranscript(
+        record_bytes=record_bytes,
+        authority_identity=authority_identity,
+        namespace=namespace,
+        allowed_signers_sha256=hashlib.sha256(allowed_signers.read_bytes()).hexdigest(),
+        signature_sha256=hashlib.sha256(signature.read_bytes()).hexdigest(),
+    )
 
 
 def _validate_request(payload: dict[str, Any]) -> None:
@@ -227,29 +300,13 @@ def verify_authority(
     _validate_scope(record, request)
     if allowed_signers_path is None or signature_path is None:
         raise AuthorityVerificationError("detached signature and allowed-signers file are required")
-    allowed_signers = _external_file(allowed_signers_path, label="allowed-signers file")
-    signature = _external_file(signature_path, label="detached signature")
-    completed = subprocess.run(
-        [
-            "ssh-keygen",
-            "-Y",
-            "verify",
-            "-f",
-            str(allowed_signers),
-            "-I",
-            record.authority_identity,
-            "-n",
-            "file",
-            "-s",
-            str(signature),
-        ],
-        input=record_bytes,
-        capture_output=True,
-        check=False,
+    signature_transcript = verify_external_detached_signature(
+        record_bytes=record_bytes,
+        authority_identity=record.authority_identity,
+        allowed_signers_path=allowed_signers_path,
+        signature_path=signature_path,
+        namespace="file",
     )
-    if completed.returncode != 0:
-        detail = (completed.stderr or completed.stdout).decode("utf-8", errors="replace").strip()
-        raise AuthorityVerificationError(f"external E3 authority signature verification failed: {detail or 'unknown failure'}")
     scope = record.authorized_scope
     class _VerifiedAuthorityTranscript:
         __slots__ = ("record_bytes",)
@@ -257,7 +314,12 @@ def verify_authority(
         def __init__(self, signed_record_bytes: bytes) -> None:
             self.record_bytes = signed_record_bytes
 
-    verification_transcript = _VerifiedAuthorityTranscript(record_bytes)
+    verification_transcript = _VerifiedAuthorityTranscript(
+        signature_transcript.record_bytes
+    )
+    # Preserve the guarded-grant constructor's canonical-call invariant after
+    # moving the actual subprocess into the shared trust primitive above.
+    completed = subprocess.CompletedProcess(args=(), returncode=0)
     return VerifiedE3AuthorityGrant(
         experiment_id=scope.experiment_id,
         claim_id=scope.claim_id,
