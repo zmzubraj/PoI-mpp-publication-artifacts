@@ -23,3 +23,22 @@ independent-review verdict and does not authorize model execution.
 Residual gate: an independently owned, signed engineering review record plus
 out-of-band identity, independence, expertise, and private-key-custody evidence
 is still absent. State remains `WAITING_EXTERNAL_ENGINEERING_REVIEW`.
+
+## Developmental AI review record
+
+This record is not the required accountable-human signed review.
+
+- Initial reviewed commit: `0fd5497f7dc3e15ef3699d50ba3824821962404d`.
+- Finding: `P3-12`, calibration-signal integrity for fail-closed parse rows.
+- Remediation commit: `023f65964beab43ed1cd04ffc4b6f2618f790155`.
+- Follow-up disposition: the original finding is resolved; no additional
+  blocking finding was discovered in the targeted remediation slice.
+- Initial focused review execution: `38 passed`; Foundry: `56 passed, 0 failed`.
+- Post-remediation targeted reviewer execution: `11 passed`.
+- Integration-owner post-remediation focused execution: `39 passed`.
+- Canonical authority-request, authority-package, and external-reproduction
+  `--check` executions passed after remediation.
+
+The reviewer did not assert a real-world identity, accountable independence,
+or private-key custody. Those claims require external evidence under
+`E3_V2_PHASE3_EXTERNAL_ENGINEERING_REVIEW_HANDOFF.md`.
