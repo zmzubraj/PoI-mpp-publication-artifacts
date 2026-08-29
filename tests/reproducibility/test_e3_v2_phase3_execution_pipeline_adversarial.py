@@ -256,6 +256,25 @@ def test_exporter_requires_complete_hash_bound_execution_closure(
         _export(bundle, dataset, outputs, trace, summary, manifest)
 
 
+def test_exporter_zeroes_numeric_signals_for_fail_closed_parse_rows(tmp_path: Path) -> None:
+    bundle, dataset, rows, outputs, trace, summary, manifest = _execution_files(tmp_path)
+    rows[0]["decision"] = "ABSTAIN"
+    rows[0]["parse_status"] = "UNPARSEABLE_FAIL_CLOSED"
+    rows[0]["support_fraction"] = 1.0
+    rows[0]["calibrated_confidence"] = 1.0
+    outputs.write_bytes(b"".join(canonical_json_bytes(row) + b"\n" for row in rows))
+    manifest_payload = json.loads(manifest.read_bytes())
+    manifest_payload["output_files"]["outputs"] = sha256_bytes(outputs.read_bytes())
+    manifest_payload.pop("self_digest")
+    manifest_payload["self_digest"] = sha256_bytes(canonical_json_bytes(manifest_payload))
+    manifest.write_bytes(canonical_json_bytes(manifest_payload))
+
+    observations = _export(bundle, dataset, outputs, trace, summary, manifest)
+    observation = next(row for row in observations if row.record_id == rows[0]["record_id"])
+    assert observation.support_fraction == 0.0
+    assert observation.calibrated_confidence == 0.0
+
+
 def test_calibration_requires_verified_authority_and_execution_manifest_inputs() -> None:
     parameters = inspect.signature(_calibration().run_calibration_cli).parameters
     assert {

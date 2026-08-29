@@ -2,7 +2,7 @@
   "authority_boundary": "This manifest packages inputs only. It does not prove execution, identity, independence, agreement, scientific validity, or publication readiness.",
   "canonical_publication_manifest_sha256": "1e8e57869d68bafdbcbdcf59a81e1f6d6c5d5089188a88f80a99d12748fcb722",
   "independent_reproduction_complete": false,
-  "input_count": 191,
+  "input_count": 193,
   "inputs": [
     {
       "path": "Makefile",
@@ -715,6 +715,11 @@
       "size_bytes": 13216
     },
     {
+      "path": "src/poi_mpp/experiments/e3_v2_development_authority.py",
+      "sha256": "1e30f518b6bf876fad15782451167369c8a130368df8c9018e05ef2821dd7782",
+      "size_bytes": 19242
+    },
+    {
       "path": "src/poi_mpp/experiments/e3_v2_scope.py",
       "sha256": "c2c3849e2e701131981879841da1a6e90dcae92f51e9196875d45efc4100a9a8",
       "size_bytes": 26384
@@ -915,6 +920,11 @@
       "size_bytes": 2207
     },
     {
+      "path": "src/poi_mpp/worker/development_observation_exporter.py",
+      "sha256": "45f12795d22945f89076f6014784cc3d96067c7decbee0b5d4f5ae59f0847605",
+      "size_bytes": 19837
+    },
+    {
       "path": "src/poi_mpp/worker/e2_tensor_capture.py",
       "sha256": "407a5fecd4eebcfad74e1c888b7f36341c224f54a2ffaba4d03a9c1d5d23255e",
       "size_bytes": 18090
@@ -968,6 +978,6 @@
     "raw command logs and output hashes"
   ],
   "schema_version": "POI_MPP_EXTERNAL_REPRODUCTION_PACKAGE_V1",
-  "self_digest": "cfdee49b18b45c1b38eff1ec5706194d3eb444f134ce83052d569d3a609ea427",
+  "self_digest": "51a2bd2739b06b91d5bc94d8a536e41589b70dc1f69601316050265077f39054",
   "status": "WAITING_EXTERNAL_REPRODUCTION"
 }

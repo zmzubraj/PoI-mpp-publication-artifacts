@@ -340,8 +340,15 @@ def export_raw_execution_to_observations(
 
         default_support = 1.0 if observed_decision is VerificationDecision.ACCEPT else 0.0
         default_confidence = 1.0 if observed_decision is not VerificationDecision.ABSTAIN else 0.0
-        support_fraction = row.get("support_fraction", default_support if parse_status == "OK" else 0.0)
-        calibrated_confidence = row.get("calibrated_confidence", default_confidence if parse_status == "OK" else 0.0)
+        if parse_status == "OK":
+            support_fraction = row.get("support_fraction", default_support)
+            calibrated_confidence = row.get("calibrated_confidence", default_confidence)
+        else:
+            # Fail-closed rows must not retain caller-controlled numeric signals
+            # that could influence threshold fitting after the decision is forced
+            # to ABSTAIN.
+            support_fraction = 0.0
+            calibrated_confidence = 0.0
         if not isinstance(support_fraction, (int, float)) or not 0.0 <= support_fraction <= 1.0:
             raise DevelopmentObservationExportError(f"record {record_id}: invalid support_fraction")
         if not isinstance(calibrated_confidence, (int, float)) or not 0.0 <= calibrated_confidence <= 1.0:
