@@ -1,0 +1,18 @@
+{
+  "contract_hash": "d2bfaa61eb98bafb0c5dd558cc9ea329f2ca1845e3720585b9a7732de7808f23",
+  "frozen_artifact_path": null,
+  "plan_hash": "042acef9428af3b9e3b24d3dfa968e31fbc6481b1eb536c94605fd47c36d52cd",
+  "publication_decision": {
+    "claim_id": "C6",
+    "claim_support": "INCONCLUSIVE",
+    "completeness": "INCOMPLETE",
+    "reasons": [
+      "artifact[0]: provenance.code_revision is UNVERSIONED_BLOCKED"
+    ]
+  },
+  "publication_precheck_reasons": [],
+  "publication_scope": "E6_CONFIRMATORY_PUBLICATION_V1",
+  "required_model_version": "POI_MPP_E6_SIMULATOR_V1",
+  "run_config_hash": "c24525f204aa2e9d433998863a14a654d0d1313e417504794a768f384e7bce88",
+  "schema_version": "POI_MPP_E6_PUBLICATION_METADATA_V1"
+}

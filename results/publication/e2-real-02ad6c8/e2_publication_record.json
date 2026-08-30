@@ -1,0 +1,69 @@
+{
+  "artifact_id": "E2-E2-SUMMARY",
+  "ci_required": true,
+  "claim_disposition": "SUPPORTED",
+  "claim_id": "C2",
+  "confidence_interval": [
+    0.5101091635454027,
+    1.0
+  ],
+  "content_hash": "aabd9008051c93874b76b7abce3b2cffec5c002224f43f31ec44eff530cb8b88",
+  "denominator": 4,
+  "experiment_id": "E2",
+  "origin": "REAL_MODEL_EXECUTION",
+  "parent_hashes": [],
+  "payload": {
+    "empirical_confidence_interval": [
+      0.20654931437723742,
+      1.0
+    ],
+    "empirical_denominator": 1,
+    "empirical_detected": 1,
+    "empirical_detection_rate": 1.0,
+    "exact_confidence_interval": [
+      0.4385029682449545,
+      1.0
+    ],
+    "exact_denominator": 3,
+    "exact_detected": 3,
+    "exact_detection_rate": 1.0,
+    "false_positive_count": 0,
+    "false_positive_rate": 0.0,
+    "honest_control_count": 1,
+    "minimum_supported_denominator": 2,
+    "minimum_unique_attack_seeds": 2,
+    "publication_precheck_reasons": [],
+    "residual_surface_ledger": [
+      "exact equality only; no tolerance or probabilistic bound applies",
+      "exact mismatch observed; reject and inspect corruption or serialization drift",
+      "declared modulus path relies on caller-declared exact modular semantics",
+      "binary nonzero Freivalds challenges provide at most 2^-k error under declared exact arithmetic",
+      "field audit rejected the proposed product",
+      "empirical floating-point audit rejected the proposed product",
+      "floating-point checks do not provide exact field soundness"
+    ],
+    "unique_attack_seed_count": 4,
+    "unsupported_attack_count": 0
+  },
+  "provenance": {
+    "artifact_root": null,
+    "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+    "code_revision": "UNVERSIONED_BLOCKED",
+    "config_hash": "3cdcdc33fa668187d53c56973d25665799b7f5a6dde8a1d3119b8de80687a4b5",
+    "dataset_hash": "99d4a776f4f13a38a77495a6c9ff0d285fb71bd09eff60f1551866ad76663321",
+    "environment_hash": "09ed1e6114ff1f852b0839058fb4c20f546844446b2e23becce6d3dbe1047c1c",
+    "evidence_root": null,
+    "experiment_id": "E2",
+    "input_root": null,
+    "model_hash": "f9ff3b28cce44e9cbbddf5211b98025f2511a51a0114c18983ec99b3d124ccf6",
+    "origin": "REAL_MODEL_EXECUTION",
+    "parent_hashes": [],
+    "response_root": null,
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "schema_version": "POI_MPP_RUN_MANIFEST_V1",
+    "trace_root": null
+  },
+  "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+  "schema_version": "POI_MPP_ARTIFACT_RECORD_V1",
+  "stage": "FROZEN"
+}

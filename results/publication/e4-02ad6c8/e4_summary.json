@@ -1,0 +1,21 @@
+{
+  "assumption_ledger": [
+    "CORRELATED_LOSS_DECLARED",
+    "STATIC_WITHOUT_REPLACEMENT_HYPERGEOMETRIC"
+  ],
+  "claim_disposition": "INCONCLUSIVE",
+  "claim_id": "C4",
+  "claim_target": "ATTACK_DETECTION",
+  "denominator": 2,
+  "exact_scenario_count": 1,
+  "expected_outcome_detected_count": 2,
+  "maximum_supported_interval_width": 0.5,
+  "minimum_observed_denominator": 10,
+  "minimum_supported_scenarios": 2,
+  "observed_scenario_count": 1,
+  "origins": [
+    "REPRODUCIBLE_SIMULATION"
+  ],
+  "scenario_count": 2,
+  "schema_version": "POI_MPP_E4_SUMMARY_V1"
+}

@@ -1,0 +1,79 @@
+{
+  "artifact_id": "E2-E2-SUMMARY",
+  "ci_required": true,
+  "claim_disposition": "INCONCLUSIVE",
+  "claim_id": "C2",
+  "confidence_interval": [
+    0.5101091635454027,
+    1.0
+  ],
+  "content_hash": "15f20ae0f3c1a21c0fd8b321de787175325197d19f5d2742659000dffe825376",
+  "denominator": 4,
+  "experiment_id": "E2",
+  "origin": "REAL_MODEL_EXECUTION",
+  "parent_hashes": [],
+  "payload": {
+    "claim_disposition_reason": "NARROW_SCOPE_PILOT is methodologically capped at INCONCLUSIVE; one model, one task, one layer, one token, one 4x4 activation slice, and four attack observations cannot support paper claim C2",
+    "empirical_confidence_interval": [
+      0.20654931437723742,
+      1.0
+    ],
+    "empirical_denominator": 1,
+    "empirical_detected": 1,
+    "empirical_detection_rate": 1.0,
+    "exact_confidence_interval": [
+      0.4385029682449545,
+      1.0
+    ],
+    "exact_denominator": 3,
+    "exact_detected": 3,
+    "exact_detection_rate": 1.0,
+    "false_positive_count": 0,
+    "false_positive_rate": 0.0,
+    "frozen_scope": {
+      "activation_slice": "4x4",
+      "attack_observation_count": 4,
+      "layer_count": 1,
+      "model_count": 1,
+      "task_count": 1,
+      "token_count": 1
+    },
+    "honest_control_count": 1,
+    "measurement_design": "NARROW_SCOPE_PILOT",
+    "minimum_supported_denominator": 2,
+    "minimum_unique_attack_seeds": 2,
+    "publication_precheck_reasons": [],
+    "residual_surface_ledger": [
+      "exact equality only; no tolerance or probabilistic bound applies",
+      "exact mismatch observed; reject and inspect corruption or serialization drift",
+      "declared modulus path relies on caller-declared exact modular semantics",
+      "binary nonzero Freivalds challenges provide at most 2^-k error under declared exact arithmetic",
+      "field audit rejected the proposed product",
+      "empirical floating-point audit rejected the proposed product",
+      "floating-point checks do not provide exact field soundness"
+    ],
+    "unique_attack_seed_count": 4,
+    "unsupported_attack_count": 0
+  },
+  "provenance": {
+    "artifact_root": null,
+    "authorization_scope": "PUBLICATION_EVIDENCE_AUTHORIZED",
+    "code_revision": "UNVERSIONED_BLOCKED",
+    "config_hash": "932da13a9fcd822045e5e4688b9c19d14098394e7d9507b84ed29ca2721a12e1",
+    "dataset_hash": "b28738687c056c467028a121019740d3750c8198b18f19ee80db9270b859b608",
+    "environment_hash": "228328f1f359f51d48252a77745c2bcff2de5b90d2a06c0270a3ba60038f393c",
+    "evidence_root": null,
+    "experiment_id": "E2",
+    "input_root": null,
+    "model_hash": "f9ff3b28cce44e9cbbddf5211b98025f2511a51a0114c18983ec99b3d124ccf6",
+    "origin": "REAL_MODEL_EXECUTION",
+    "parent_hashes": [],
+    "response_root": null,
+    "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+    "schema_version": "POI_MPP_RUN_MANIFEST_V1",
+    "trace_root": null
+  },
+  "run_id": "run-e2-real-pilot-qwen25-1p5b-r989aa79-s7-t24",
+  "schema_version": "POI_MPP_ARTIFACT_RECORD_V1",
+  "stage": "FROZEN"
+}

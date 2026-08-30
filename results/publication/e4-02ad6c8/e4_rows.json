@@ -1,0 +1,58 @@
+[
+  {
+    "assumption_label": "CORRELATED_LOSS_DECLARED",
+    "certificate_observation_key": "cert-correlated-loss-corrupt",
+    "claim_target": "ATTACK_DETECTION",
+    "confidence_interval": [
+      0.1811918241010821,
+      0.5671457233147638
+    ],
+    "denominator": 20,
+    "exact_miss_probability": null,
+    "expected_outcome": "CORRUPT",
+    "expected_outcome_detected": true,
+    "experiment_id": "E4",
+    "interval_kind": "WILSON",
+    "miss_probability": 0.35,
+    "mode": "CORRELATED_LOSS",
+    "notes": [
+      "exact closed-form intentionally not used"
+    ],
+    "observation_key": "obs-correlated-loss-corrupt",
+    "observed_attack_detected": true,
+    "observed_availability_success": false,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "reconstruction_status": "CORRUPT",
+    "run_id": "publication-e4-simulation-v1",
+    "scenario_id": "correlated-loss-corrupt",
+    "schema_version": "POI_MPP_E4_SCENARIO_ROW_V1",
+    "seed_observation_key": "seed-correlated-loss-corrupt"
+  },
+  {
+    "assumption_label": "STATIC_WITHOUT_REPLACEMENT_HYPERGEOMETRIC",
+    "certificate_observation_key": "cert-static-withheld-wo-replacement",
+    "claim_target": "ATTACK_DETECTION",
+    "confidence_interval": [
+      0.038461538461538464,
+      0.038461538461538464
+    ],
+    "denominator": 1,
+    "exact_miss_probability": "1/26",
+    "expected_outcome": "WITHHELD",
+    "expected_outcome_detected": true,
+    "experiment_id": "E4",
+    "interval_kind": "EXACT",
+    "miss_probability": 0.038461538461538464,
+    "mode": "STATIC_WITHOUT_REPLACEMENT",
+    "notes": [],
+    "observation_key": "obs-static-withheld-wo-replacement",
+    "observed_attack_detected": true,
+    "observed_availability_success": false,
+    "origin": "REPRODUCIBLE_SIMULATION",
+    "reconstruction_status": "WITHHELD",
+    "run_id": "publication-e4-simulation-v1",
+    "scenario_id": "static-withheld-wo-replacement",
+    "schema_version": "POI_MPP_E4_SCENARIO_ROW_V1",
+    "seed_observation_key": "seed-static-withheld-wo-replacement"
+  }
+]
