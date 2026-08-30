@@ -4,6 +4,37 @@ This repository is the **Minimum Publishable Prototype (MPP)** for the Proof-of-
 
 The MPP is intentionally narrower than the full protocol. Its purpose is to generate real, reproducible evidence for the paper's central research claims without implementing the entire frontier-scale system.
 
+Repository owner, research-artifact maintainer, and public-release authority:
+**Zubaer Mahmood Zubraj** ([`@zmzubraj`](https://github.com/zmzubraj)).
+The owner authorized this repository to remain publicly accessible on
+30 August 2026. No repository-wide reuse licence is currently granted; public
+hosting does not imply permission to reuse third-party material or claim
+authorship of team-originated protocol work.
+
+## Current scientific status
+
+- Publication freeze: **incomplete**; external domain-expert review and the
+  final freeze sentinel are absent.
+- `C3`: `NOT_SUPPORTED` within the frozen E3 scope because measured
+  `FAR = 0.500` exceeds `alpha_sem = 0.25`.
+- `E1`, `E2`, `E4`, and `E8`: `INCONCLUSIVE` in their current scopes.
+- `E5` and `E6`: supported only within their declared reproducible-simulation
+  scopes.
+- The repository is a public research artifact, not a peer-reviewed,
+  independently validated, submission-ready, or production-safe protocol.
+
+```mermaid
+flowchart LR
+    A[Public owner-authorized artifact] --> B[Candidate evidence bundle]
+    B --> C{Claim dispositions}
+    C --> D[C3 NOT_SUPPORTED]
+    C --> E[E1/E2/E4/E8 INCONCLUSIVE]
+    C --> F[E5/E6 simulation-bounded]
+    D --> G[External review and freeze still open]
+    E --> G
+    F --> G
+```
+
 ## Core vertical slice
 
 `Task -> Single model execution -> Trace + Intelligence Evidence Capsule -> Commitment -> Post-commit randomized audit -> Optional dispute -> Data-availability gate -> Matured receipt -> Next-epoch PoI weight`
